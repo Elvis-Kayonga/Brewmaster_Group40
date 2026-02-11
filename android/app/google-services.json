@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "371292882083",
+    "project_id": "brewmaster-coffee",
+    "storage_bucket": "brewmaster-coffee.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:371292882083:android:99668219f23b86170f6b16",
+        "android_client_info": {
+          "package_name": "com.brewmaster.brewmaster"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB7ZPYxAc9frKh8ZeZdJFLpX1y3BkloVi8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
