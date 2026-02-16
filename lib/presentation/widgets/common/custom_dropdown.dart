@@ -97,7 +97,7 @@ class CustomDropdown<T> extends StatelessWidget {
     final effectiveBorderRadius = borderRadius ?? AppTheme.borderRadiusMedium;
 
     return DropdownButtonFormField<T>(
-      value: value,
+      initialValue: value,
       items: items.map((item) => _buildDropdownItem(item)).toList(),
       onChanged: enabled ? onChanged : null,
       validator: validator,
@@ -131,10 +131,7 @@ class CustomDropdown<T> extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(effectiveBorderRadius),
-          borderSide: const BorderSide(
-            color: AppTheme.primaryColor,
-            width: 2,
-          ),
+          borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(effectiveBorderRadius),
@@ -142,14 +139,13 @@ class CustomDropdown<T> extends StatelessWidget {
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(effectiveBorderRadius),
-          borderSide: const BorderSide(
-            color: AppTheme.errorColor,
-            width: 2,
-          ),
+          borderSide: const BorderSide(color: AppTheme.errorColor, width: 2),
         ),
         disabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(effectiveBorderRadius),
-          borderSide: BorderSide(color: AppTheme.textHint.withOpacity(0.5)),
+          borderSide: BorderSide(
+            color: AppTheme.textHint.withValues(alpha: 0.5),
+          ),
         ),
         labelStyle: AppTheme.body.copyWith(color: AppTheme.textSecondary),
         hintStyle: AppTheme.body.copyWith(color: AppTheme.textHint),
@@ -236,10 +232,7 @@ class SimpleDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomDropdown<String>(
       items: items
-          .map((item) => DropdownItem<String>(
-                value: item,
-                label: item,
-              ))
+          .map((item) => DropdownItem<String>(value: item, label: item))
           .toList(),
       value: value,
       onChanged: onChanged,
@@ -382,10 +375,7 @@ class _SearchableDropdownState<T> extends State<SearchableDropdown<T>> {
                         return ListTile(
                           dense: true,
                           leading: item.icon != null
-                              ? Icon(
-                                  item.icon,
-                                  size: AppTheme.iconSizeMedium,
-                                )
+                              ? Icon(item.icon, size: AppTheme.iconSizeMedium)
                               : null,
                           title: Text(
                             item.label,
@@ -396,8 +386,9 @@ class _SearchableDropdownState<T> extends State<SearchableDropdown<T>> {
                             ),
                           ),
                           selected: isSelected,
-                          selectedTileColor:
-                              AppTheme.primaryColor.withOpacity(0.1),
+                          selectedTileColor: AppTheme.primaryColor.withValues(
+                            alpha: 0.1,
+                          ),
                           onTap: item.isEnabled
                               ? () {
                                   widget.onChanged?.call(item.value);
@@ -426,8 +417,9 @@ class _SearchableDropdownState<T> extends State<SearchableDropdown<T>> {
         _filteredItems = widget.items;
       } else {
         _filteredItems = widget.items
-            .where((item) =>
-                item.label.toLowerCase().contains(query.toLowerCase()))
+            .where(
+              (item) => item.label.toLowerCase().contains(query.toLowerCase()),
+            )
             .toList();
       }
     });
@@ -466,10 +458,7 @@ class _SearchableDropdownState<T> extends State<SearchableDropdown<T>> {
               vertical: AppTheme.padding12,
             ),
             prefixIcon: widget.prefixIcon != null
-                ? Icon(
-                    widget.prefixIcon,
-                    color: AppTheme.textSecondary,
-                  )
+                ? Icon(widget.prefixIcon, color: AppTheme.textSecondary)
                 : null,
             suffixIcon: Icon(
               _isOpen ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
@@ -494,8 +483,9 @@ class _SearchableDropdownState<T> extends State<SearchableDropdown<T>> {
           child: Text(
             selectedLabel ?? widget.hintText ?? '',
             style: AppTheme.body.copyWith(
-              color:
-                  selectedLabel != null ? AppTheme.textPrimary : AppTheme.textHint,
+              color: selectedLabel != null
+                  ? AppTheme.textPrimary
+                  : AppTheme.textHint,
             ),
           ),
         ),

@@ -114,16 +114,21 @@ class AppTheme {
   static const double borderRadiusRound = 24.0;
 
   /// Pre-built BorderRadius objects
-  static final BorderRadius borderRadiusSmallAll =
-      BorderRadius.circular(borderRadiusSmall);
-  static final BorderRadius borderRadiusMediumAll =
-      BorderRadius.circular(borderRadiusMedium);
-  static final BorderRadius borderRadiusLargeAll =
-      BorderRadius.circular(borderRadiusLarge);
-  static final BorderRadius borderRadiusXLargeAll =
-      BorderRadius.circular(borderRadiusXLarge);
-  static final BorderRadius borderRadiusRoundAll =
-      BorderRadius.circular(borderRadiusRound);
+  static final BorderRadius borderRadiusSmallAll = BorderRadius.circular(
+    borderRadiusSmall,
+  );
+  static final BorderRadius borderRadiusMediumAll = BorderRadius.circular(
+    borderRadiusMedium,
+  );
+  static final BorderRadius borderRadiusLargeAll = BorderRadius.circular(
+    borderRadiusLarge,
+  );
+  static final BorderRadius borderRadiusXLargeAll = BorderRadius.circular(
+    borderRadiusXLarge,
+  );
+  static final BorderRadius borderRadiusRoundAll = BorderRadius.circular(
+    borderRadiusRound,
+  );
 
   // ==========================================================================
   // ICON SIZES
@@ -167,10 +172,7 @@ class AppTheme {
           fontWeight: FontWeight.bold,
           color: onPrimaryColor,
         ),
-        iconTheme: IconThemeData(
-          color: onPrimaryColor,
-          size: iconSizeMedium,
-        ),
+        iconTheme: IconThemeData(color: onPrimaryColor, size: iconSizeMedium),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: surfaceColor,
@@ -191,7 +193,7 @@ class AppTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: surfaceColor,
-        indicatorColor: primaryLight.withOpacity(0.3),
+        indicatorColor: primaryLight.withValues(alpha: 0.3),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return const IconThemeData(
@@ -231,7 +233,7 @@ class AppTheme {
           fontWeight: FontWeight.w500,
         ),
         unselectedLabelTextStyle: caption.copyWith(color: textSecondary),
-        indicatorColor: primaryLight.withOpacity(0.3),
+        indicatorColor: primaryLight.withValues(alpha: 0.3),
         elevation: 4,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -243,9 +245,7 @@ class AppTheme {
             horizontal: padding24,
             vertical: padding12,
           ),
-          shape: RoundedRectangleBorder(
-            borderRadius: borderRadiusMediumAll,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: borderRadiusMediumAll),
           elevation: 2,
         ),
       ),
@@ -257,9 +257,7 @@ class AppTheme {
             horizontal: padding24,
             vertical: padding12,
           ),
-          shape: RoundedRectangleBorder(
-            borderRadius: borderRadiusMediumAll,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: borderRadiusMediumAll),
           side: const BorderSide(color: primaryColor, width: 1.5),
         ),
       ),
@@ -310,18 +308,13 @@ class AppTheme {
         hintStyle: body.copyWith(color: textHint),
         errorStyle: caption.copyWith(color: errorColor),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: surfaceColor,
         elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: borderRadiusMediumAll,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: borderRadiusMediumAll),
         margin: const EdgeInsets.all(margin8),
       ),
-      iconTheme: const IconThemeData(
-        color: textPrimary,
-        size: iconSizeMedium,
-      ),
+      iconTheme: const IconThemeData(color: textPrimary, size: iconSizeMedium),
       dividerTheme: const DividerThemeData(
         color: textHint,
         thickness: 1,
@@ -330,9 +323,7 @@ class AppTheme {
       snackBarTheme: SnackBarThemeData(
         backgroundColor: textPrimary,
         contentTextStyle: body.copyWith(color: onPrimaryColor),
-        shape: RoundedRectangleBorder(
-          borderRadius: borderRadiusMediumAll,
-        ),
+        shape: RoundedRectangleBorder(borderRadius: borderRadiusMediumAll),
         behavior: SnackBarBehavior.floating,
       ),
       textTheme: const TextTheme(
@@ -399,7 +390,7 @@ class AppTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: const Color(0xFF1E1E1E),
-        indicatorColor: primaryColor.withOpacity(0.3),
+        indicatorColor: primaryColor.withValues(alpha: 0.3),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return const IconThemeData(

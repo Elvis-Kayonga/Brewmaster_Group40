@@ -2,21 +2,10 @@ import 'package:flutter/material.dart';
 import '../../../config/theme.dart';
 
 /// Button type enumeration
-enum ButtonType {
-  primary,
-  secondary,
-  outlined,
-  text,
-  danger,
-  success,
-}
+enum ButtonType { primary, secondary, outlined, text, danger, success }
 
 /// Button size enumeration
-enum ButtonSize {
-  small,
-  medium,
-  large,
-}
+enum ButtonSize { small, medium, large }
 
 /// Custom Button widget following Clean Architecture principles
 /// Requirements: 1.5, 10.2, 16.1
@@ -108,23 +97,11 @@ class CustomButton extends StatelessWidget {
   ) {
     switch (type) {
       case ButtonType.outlined:
-        return OutlinedButton(
-          onPressed: onPressed,
-          style: style,
-          child: child,
-        );
+        return OutlinedButton(onPressed: onPressed, style: style, child: child);
       case ButtonType.text:
-        return TextButton(
-          onPressed: onPressed,
-          style: style,
-          child: child,
-        );
+        return TextButton(onPressed: onPressed, style: style, child: child);
       default:
-        return ElevatedButton(
-          onPressed: onPressed,
-          style: style,
-          child: child,
-        );
+        return ElevatedButton(onPressed: onPressed, style: style, child: child);
     }
   }
 
@@ -144,30 +121,17 @@ class CustomButton extends StatelessWidget {
 
     if (leadingIcon != null) {
       children.add(
-        Icon(
-          leadingIcon,
-          size: _getIconSize(),
-          color: _getContentColor(),
-        ),
+        Icon(leadingIcon, size: _getIconSize(), color: _getContentColor()),
       );
       children.add(SizedBox(width: _getIconSpacing()));
     }
 
-    children.add(
-      Text(
-        text,
-        style: _getTextStyle(),
-      ),
-    );
+    children.add(Text(text, style: _getTextStyle()));
 
     if (trailingIcon != null) {
       children.add(SizedBox(width: _getIconSpacing()));
       children.add(
-        Icon(
-          trailingIcon,
-          size: _getIconSize(),
-          color: _getContentColor(),
-        ),
+        Icon(trailingIcon, size: _getIconSize(), color: _getContentColor()),
       );
     }
 
@@ -192,8 +156,10 @@ class CustomButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(effectiveBorderRadius),
           ),
-          disabledBackgroundColor: AppTheme.primaryColor.withOpacity(0.5),
-          disabledForegroundColor: AppTheme.onPrimaryColor.withOpacity(0.7),
+          disabledBackgroundColor: AppTheme.primaryColor.withValues(alpha: 0.5),
+          disabledForegroundColor: AppTheme.onPrimaryColor.withValues(
+            alpha: 0.7,
+          ),
         );
 
       case ButtonType.secondary:
@@ -205,8 +171,12 @@ class CustomButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(effectiveBorderRadius),
           ),
-          disabledBackgroundColor: AppTheme.secondaryColor.withOpacity(0.5),
-          disabledForegroundColor: AppTheme.onSecondaryColor.withOpacity(0.7),
+          disabledBackgroundColor: AppTheme.secondaryColor.withValues(
+            alpha: 0.5,
+          ),
+          disabledForegroundColor: AppTheme.onSecondaryColor.withValues(
+            alpha: 0.7,
+          ),
         );
 
       case ButtonType.outlined:
@@ -220,7 +190,7 @@ class CustomButton extends StatelessWidget {
             color: backgroundColor ?? AppTheme.primaryColor,
             width: 1.5,
           ),
-          disabledForegroundColor: AppTheme.primaryColor.withOpacity(0.5),
+          disabledForegroundColor: AppTheme.primaryColor.withValues(alpha: 0.5),
         );
 
       case ButtonType.text:
@@ -230,7 +200,7 @@ class CustomButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(effectiveBorderRadius),
           ),
-          disabledForegroundColor: AppTheme.primaryColor.withOpacity(0.5),
+          disabledForegroundColor: AppTheme.primaryColor.withValues(alpha: 0.5),
         );
 
       case ButtonType.danger:
@@ -242,8 +212,8 @@ class CustomButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(effectiveBorderRadius),
           ),
-          disabledBackgroundColor: AppTheme.errorColor.withOpacity(0.5),
-          disabledForegroundColor: AppTheme.onErrorColor.withOpacity(0.7),
+          disabledBackgroundColor: AppTheme.errorColor.withValues(alpha: 0.5),
+          disabledForegroundColor: AppTheme.onErrorColor.withValues(alpha: 0.7),
         );
 
       case ButtonType.success:
@@ -255,8 +225,8 @@ class CustomButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(effectiveBorderRadius),
           ),
-          disabledBackgroundColor: AppTheme.successColor.withOpacity(0.5),
-          disabledForegroundColor: Colors.white.withOpacity(0.7),
+          disabledBackgroundColor: AppTheme.successColor.withValues(alpha: 0.5),
+          disabledForegroundColor: Colors.white.withValues(alpha: 0.7),
         );
     }
   }
@@ -319,15 +289,12 @@ class CustomButton extends StatelessWidget {
         break;
     }
 
-    return baseStyle.copyWith(
-      fontSize: fontSize,
-      color: _getContentColor(),
-    );
+    return baseStyle.copyWith(fontSize: fontSize, color: _getContentColor());
   }
 
   Color _getContentColor() {
     if (isDisabled) {
-      return _getBaseContentColor().withOpacity(0.7);
+      return _getBaseContentColor().withValues(alpha: 0.7);
     }
     return _getBaseContentColor();
   }

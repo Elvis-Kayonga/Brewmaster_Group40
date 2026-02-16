@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../config/theme.dart';
 
 /// Loading indicator size enumeration
-enum LoadingSize {
-  small,
-  medium,
-  large,
-}
+enum LoadingSize { small, medium, large }
 
 /// Loading indicator widget following Clean Architecture principles
 /// Requirements: 10.4, 10.5, 16.1
@@ -99,11 +95,7 @@ class InlineLoadingIndicator extends StatelessWidget {
   final Color? color;
   final double size;
 
-  const InlineLoadingIndicator({
-    super.key,
-    this.color,
-    this.size = 16.0,
-  });
+  const InlineLoadingIndicator({super.key, this.color, this.size = 16.0});
 
   @override
   Widget build(BuildContext context) {
@@ -156,7 +148,7 @@ class LoadingOverlay extends StatelessWidget {
             child: GestureDetector(
               onTap: barrierDismissible ? () {} : null,
               child: Container(
-                color: overlayColor ?? Colors.black.withOpacity(0.5),
+                color: overlayColor ?? Colors.black.withValues(alpha: 0.5),
                 child: LoadingIndicator(
                   message: message,
                   color: AppTheme.onPrimaryColor,
@@ -238,11 +230,7 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
             gradient: LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-              colors: [
-                baseColor,
-                highlightColor,
-                baseColor,
-              ],
+              colors: [baseColor, highlightColor, baseColor],
               stops: [
                 (_animation.value - 0.3).clamp(0.0, 1.0),
                 _animation.value.clamp(0.0, 1.0),
@@ -255,9 +243,6 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
     );
   }
 }
-
-/// Alias for AnimatedBuilder (Flutter's built-in)
-typedef AnimatedBuilder = AnimatedBuilder;
 
 /// Loading state wrapper that shows loading, error, or content
 class LoadingStateWidget<T> extends StatelessWidget {

@@ -58,7 +58,9 @@ class ErrorStateWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: EdgeInsets.all(compact ? AppTheme.padding16 : AppTheme.padding32),
+        padding: EdgeInsets.all(
+          compact ? AppTheme.padding16 : AppTheme.padding32,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -66,7 +68,9 @@ class ErrorStateWidget extends StatelessWidget {
             SizedBox(height: compact ? AppTheme.padding12 : AppTheme.padding24),
             if (title != null) ...[
               _buildTitle(),
-              SizedBox(height: compact ? AppTheme.padding8 : AppTheme.padding12),
+              SizedBox(
+                height: compact ? AppTheme.padding8 : AppTheme.padding12,
+              ),
             ],
             _buildMessage(),
             if (details != null && showExpandableDetails) ...[
@@ -74,7 +78,9 @@ class ErrorStateWidget extends StatelessWidget {
               _buildExpandableDetails(context),
             ],
             if (onRetry != null || secondaryActionText != null) ...[
-              SizedBox(height: compact ? AppTheme.padding16 : AppTheme.padding24),
+              SizedBox(
+                height: compact ? AppTheme.padding16 : AppTheme.padding24,
+              ),
               _buildActions(),
             ],
           ],
@@ -87,9 +93,11 @@ class ErrorStateWidget extends StatelessWidget {
     final effectiveIconColor = iconColor ?? AppTheme.errorColor;
 
     return Container(
-      padding: EdgeInsets.all(compact ? AppTheme.padding12 : AppTheme.padding24),
+      padding: EdgeInsets.all(
+        compact ? AppTheme.padding12 : AppTheme.padding24,
+      ),
       decoration: BoxDecoration(
-        color: effectiveIconColor.withOpacity(0.1),
+        color: effectiveIconColor.withValues(alpha: 0.1),
         shape: BoxShape.circle,
       ),
       child: Icon(
@@ -132,10 +140,10 @@ class ErrorStateWidget extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(AppTheme.padding12),
             decoration: BoxDecoration(
-              color: AppTheme.errorColor.withOpacity(0.05),
+              color: AppTheme.errorColor.withValues(alpha: 0.05),
               borderRadius: AppTheme.borderRadiusMediumAll,
               border: Border.all(
-                color: AppTheme.errorColor.withOpacity(0.2),
+                color: AppTheme.errorColor.withValues(alpha: 0.2),
               ),
             ),
             child: Text(
@@ -195,17 +203,14 @@ class NetworkErrorWidget extends StatelessWidget {
   final VoidCallback? onRetry;
   final bool compact;
 
-  const NetworkErrorWidget({
-    super.key,
-    this.onRetry,
-    this.compact = false,
-  });
+  const NetworkErrorWidget({super.key, this.onRetry, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
     return ErrorStateWidget(
       title: 'Connection error',
-      message: 'Unable to connect to the server. Please check your internet connection.',
+      message:
+          'Unable to connect to the server. Please check your internet connection.',
       icon: Icons.cloud_off_outlined,
       onRetry: onRetry,
       compact: compact,
@@ -274,11 +279,7 @@ class AuthErrorWidget extends StatelessWidget {
   final VoidCallback? onLogin;
   final bool compact;
 
-  const AuthErrorWidget({
-    super.key,
-    this.onLogin,
-    this.compact = false,
-  });
+  const AuthErrorWidget({super.key, this.onLogin, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -315,11 +316,9 @@ class ErrorBanner extends StatelessWidget {
         vertical: AppTheme.padding12,
       ),
       decoration: BoxDecoration(
-        color: AppTheme.errorColor.withOpacity(0.1),
+        color: AppTheme.errorColor.withValues(alpha: 0.1),
         borderRadius: AppTheme.borderRadiusMediumAll,
-        border: Border.all(
-          color: AppTheme.errorColor.withOpacity(0.3),
-        ),
+        border: Border.all(color: AppTheme.errorColor.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [

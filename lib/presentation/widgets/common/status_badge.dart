@@ -26,11 +26,7 @@ enum StatusBadgeType {
 }
 
 /// Status badge size enumeration
-enum StatusBadgeSize {
-  small,
-  medium,
-  large,
-}
+enum StatusBadgeSize { small, medium, large }
 
 /// Status badge widget following Clean Architecture principles
 /// Requirements: 10.4, 10.5, 16.1
@@ -82,9 +78,7 @@ class StatusBadge extends StatelessWidget {
       padding: _getPadding(),
       decoration: BoxDecoration(
         color: outlined ? Colors.transparent : bgColor,
-        border: outlined
-            ? Border.all(color: fgColor, width: 1.5)
-            : null,
+        border: outlined ? Border.all(color: fgColor, width: 1.5) : null,
         borderRadius: BorderRadius.circular(_getBorderRadius()),
       ),
       child: Row(
@@ -95,17 +89,10 @@ class StatusBadge extends StatelessWidget {
             SizedBox(width: _getSpacing()),
           ],
           if (icon != null) ...[
-            Icon(
-              icon,
-              size: _getIconSize(),
-              color: fgColor,
-            ),
+            Icon(icon, size: _getIconSize(), color: fgColor),
             SizedBox(width: _getSpacing()),
           ],
-          Text(
-            label,
-            style: _getTextStyle().copyWith(color: fgColor),
-          ),
+          Text(label, style: _getTextStyle().copyWith(color: fgColor)),
         ],
       ),
     );
@@ -117,10 +104,7 @@ class StatusBadge extends StatelessWidget {
     return Container(
       width: indicatorSize,
       height: indicatorSize,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 
@@ -138,29 +122,26 @@ class StatusBadge extends StatelessWidget {
         );
       case StatusBadgeType.success:
         return (
-          AppTheme.successColor.withOpacity(0.15),
+          AppTheme.successColor.withValues(alpha: 0.15),
           AppTheme.successColor,
         );
       case StatusBadgeType.warning:
         return (
-          AppTheme.warningColor.withOpacity(0.15),
+          AppTheme.warningColor.withValues(alpha: 0.15),
           const Color(0xFFF57F17), // Darker yellow for text
         );
       case StatusBadgeType.error:
         return (
-          AppTheme.errorColor.withOpacity(0.15),
+          AppTheme.errorColor.withValues(alpha: 0.15),
           AppTheme.errorColor,
         );
       case StatusBadgeType.info:
         return (
-          AppTheme.secondaryColor.withOpacity(0.15),
+          AppTheme.secondaryColor.withValues(alpha: 0.15),
           AppTheme.secondaryColor,
         );
       case StatusBadgeType.neutral:
-        return (
-          const Color(0xFFEEEEEE),
-          AppTheme.textSecondary,
-        );
+        return (const Color(0xFFEEEEEE), AppTheme.textSecondary);
     }
   }
 
@@ -220,20 +201,11 @@ class StatusBadge extends StatelessWidget {
   TextStyle _getTextStyle() {
     switch (size) {
       case StatusBadgeSize.small:
-        return const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        );
+        return const TextStyle(fontSize: 11, fontWeight: FontWeight.w600);
       case StatusBadgeSize.medium:
-        return const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        );
+        return const TextStyle(fontSize: 12, fontWeight: FontWeight.w600);
       case StatusBadgeSize.large:
-        return const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        );
+        return const TextStyle(fontSize: 14, fontWeight: FontWeight.w600);
     }
   }
 }
@@ -339,12 +311,7 @@ class PriorityBadge extends StatelessWidget {
     final type = _getTypeForPriority();
     final icon = _getIconForPriority();
 
-    return StatusBadge(
-      label: label,
-      type: type,
-      size: size,
-      icon: icon,
-    );
+    return StatusBadge(label: label, type: type, size: size, icon: icon);
   }
 
   String _getDefaultLabel() {
@@ -419,12 +386,7 @@ class OnlineStatusIndicator extends StatelessWidget {
       decoration: BoxDecoration(
         color: isOnline ? AppTheme.successColor : AppTheme.textHint,
         shape: BoxShape.circle,
-        border: showBorder
-            ? Border.all(
-                color: Colors.white,
-                width: 2,
-              )
-            : null,
+        border: showBorder ? Border.all(color: Colors.white, width: 2) : null,
       ),
     );
   }
@@ -457,11 +419,9 @@ class TagBadge extends StatelessWidget {
           vertical: AppTheme.padding4,
         ),
         decoration: BoxDecoration(
-          color: effectiveColor.withOpacity(0.15),
+          color: effectiveColor.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(AppTheme.borderRadiusRound),
-          border: Border.all(
-            color: effectiveColor.withOpacity(0.3),
-          ),
+          border: Border.all(color: effectiveColor.withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -478,11 +438,7 @@ class TagBadge extends StatelessWidget {
               const SizedBox(width: 4),
               GestureDetector(
                 onTap: onRemove,
-                child: Icon(
-                  Icons.close,
-                  size: 14,
-                  color: effectiveColor,
-                ),
+                child: Icon(Icons.close, size: 14, color: effectiveColor),
               ),
             ],
           ],

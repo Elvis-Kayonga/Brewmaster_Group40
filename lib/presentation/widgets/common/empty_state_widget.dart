@@ -58,7 +58,9 @@ class EmptyStateWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: EdgeInsets.all(compact ? AppTheme.padding16 : AppTheme.padding32),
+        padding: EdgeInsets.all(
+          compact ? AppTheme.padding16 : AppTheme.padding32,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -66,11 +68,15 @@ class EmptyStateWidget extends StatelessWidget {
             SizedBox(height: compact ? AppTheme.padding12 : AppTheme.padding24),
             _buildTitle(),
             if (description != null) ...[
-              SizedBox(height: compact ? AppTheme.padding8 : AppTheme.padding12),
+              SizedBox(
+                height: compact ? AppTheme.padding8 : AppTheme.padding12,
+              ),
               _buildDescription(),
             ],
             if (actionText != null || secondaryActionText != null) ...[
-              SizedBox(height: compact ? AppTheme.padding16 : AppTheme.padding24),
+              SizedBox(
+                height: compact ? AppTheme.padding16 : AppTheme.padding24,
+              ),
               _buildActions(),
             ],
           ],
@@ -83,14 +89,18 @@ class EmptyStateWidget extends StatelessWidget {
     if (image != null) return image!;
 
     return Container(
-      padding: EdgeInsets.all(compact ? AppTheme.padding12 : AppTheme.padding24),
+      padding: EdgeInsets.all(
+        compact ? AppTheme.padding12 : AppTheme.padding24,
+      ),
       decoration: BoxDecoration(
-        color: (iconColor ?? AppTheme.textSecondary).withOpacity(0.1),
+        color: (iconColor ?? AppTheme.textSecondary).withValues(alpha: 0.1),
         shape: BoxShape.circle,
       ),
       child: Icon(
         icon,
-        size: iconSize ?? (compact ? AppTheme.iconSizeLarge : AppTheme.iconSizeXLarge),
+        size:
+            iconSize ??
+            (compact ? AppTheme.iconSizeLarge : AppTheme.iconSizeXLarge),
         color: iconColor ?? AppTheme.textSecondary,
       ),
     );
@@ -183,18 +193,15 @@ class EmptySearchState extends StatelessWidget {
   final String query;
   final VoidCallback? onClearSearch;
 
-  const EmptySearchState({
-    super.key,
-    required this.query,
-    this.onClearSearch,
-  });
+  const EmptySearchState({super.key, required this.query, this.onClearSearch});
 
   @override
   Widget build(BuildContext context) {
     return EmptyStateWidget(
       icon: Icons.search_off_outlined,
       title: 'No results found',
-      description: 'We couldn\'t find anything matching "$query".\nTry adjusting your search.',
+      description:
+          'We couldn\'t find anything matching "$query".\nTry adjusting your search.',
       actionText: onClearSearch != null ? 'Clear search' : null,
       onAction: onClearSearch,
     );
@@ -205,10 +212,7 @@ class EmptySearchState extends StatelessWidget {
 class NoConnectionState extends StatelessWidget {
   final VoidCallback? onRetry;
 
-  const NoConnectionState({
-    super.key,
-    this.onRetry,
-  });
+  const NoConnectionState({super.key, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -228,12 +232,7 @@ class NoDataState extends StatelessWidget {
   final String? description;
   final IconData? icon;
 
-  const NoDataState({
-    super.key,
-    this.title,
-    this.description,
-    this.icon,
-  });
+  const NoDataState({super.key, this.title, this.description, this.icon});
 
   @override
   Widget build(BuildContext context) {

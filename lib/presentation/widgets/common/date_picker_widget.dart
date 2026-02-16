@@ -132,7 +132,9 @@ class DatePickerWidget extends StatelessWidget {
           ),
           disabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(effectiveBorderRadius),
-            borderSide: BorderSide(color: AppTheme.textHint.withOpacity(0.5)),
+            borderSide: BorderSide(
+              color: AppTheme.textHint.withValues(alpha: 0.5),
+            ),
           ),
           labelStyle: AppTheme.body.copyWith(color: AppTheme.textSecondary),
           hintStyle: AppTheme.body.copyWith(color: AppTheme.textHint),
@@ -152,11 +154,12 @@ class DatePickerWidget extends StatelessWidget {
   }
 
   Future<void> _showDatePicker(BuildContext context) async {
-    final now = DateTime.now();
     final effectiveFirstDate = firstDate ?? DateTime(1900);
     final effectiveLastDate = lastDate ?? DateTime(2100);
     final effectiveInitialDate =
-        initialDate ?? selectedDate ?? _clampDate(now, effectiveFirstDate, effectiveLastDate);
+        initialDate ??
+        selectedDate ??
+        _clampDate(DateTime.now(), effectiveFirstDate, effectiveLastDate);
 
     final pickedDate = await showDatePicker(
       context: context,
@@ -314,7 +317,6 @@ class DateRangePickerWidget extends StatelessWidget {
   }
 
   Future<void> _showDateRangePicker(BuildContext context) async {
-    final now = DateTime.now();
     final effectiveFirstDate = firstDate ?? DateTime(1900);
     final effectiveLastDate = lastDate ?? DateTime(2100);
 
@@ -480,9 +482,9 @@ class TimePickerWidget extends StatelessWidget {
             ),
           ),
           child: MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              alwaysUse24HourFormat: use24HourFormat,
-            ),
+            data: MediaQuery.of(
+              context,
+            ).copyWith(alwaysUse24HourFormat: use24HourFormat),
             child: child!,
           ),
         );
@@ -625,7 +627,11 @@ class DateTimePickerWidget extends StatelessWidget {
     // First, pick the date
     final pickedDate = await showDatePicker(
       context: context,
-      initialDate: _clampDate(initialDateTime, effectiveFirstDate, effectiveLastDate),
+      initialDate: _clampDate(
+        initialDateTime,
+        effectiveFirstDate,
+        effectiveLastDate,
+      ),
       firstDate: effectiveFirstDate,
       lastDate: effectiveLastDate,
       builder: (context, child) {
@@ -661,9 +667,9 @@ class DateTimePickerWidget extends StatelessWidget {
             ),
           ),
           child: MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              alwaysUse24HourFormat: use24HourFormat,
-            ),
+            data: MediaQuery.of(
+              context,
+            ).copyWith(alwaysUse24HourFormat: use24HourFormat),
             child: child!,
           ),
         );

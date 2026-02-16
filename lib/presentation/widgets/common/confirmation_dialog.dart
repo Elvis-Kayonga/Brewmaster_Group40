@@ -119,13 +119,12 @@ class ConfirmationDialog extends StatelessWidget {
   }
 
   /// Show a discard changes confirmation dialog
-  static Future<bool?> showDiscardChanges({
-    required BuildContext context,
-  }) {
+  static Future<bool?> showDiscardChanges({required BuildContext context}) {
     return show(
       context: context,
       title: 'Discard changes?',
-      message: 'You have unsaved changes. Are you sure you want to discard them?',
+      message:
+          'You have unsaved changes. Are you sure you want to discard them?',
       confirmText: 'Discard',
       cancelText: 'Keep editing',
       type: ConfirmationDialogType.warning,
@@ -134,9 +133,7 @@ class ConfirmationDialog extends StatelessWidget {
   }
 
   /// Show a logout confirmation dialog
-  static Future<bool?> showLogout({
-    required BuildContext context,
-  }) {
+  static Future<bool?> showLogout({required BuildContext context}) {
     return show(
       context: context,
       title: 'Sign out?',
@@ -162,11 +159,7 @@ class ConfirmationDialog extends StatelessWidget {
             _buildIcon(),
             const SizedBox(height: AppTheme.padding16),
           ],
-          Text(
-            title,
-            style: AppTheme.heading2,
-            textAlign: TextAlign.center,
-          ),
+          Text(title, style: AppTheme.heading2, textAlign: TextAlign.center),
           const SizedBox(height: AppTheme.padding12),
           Text(
             message,
@@ -191,7 +184,7 @@ class ConfirmationDialog extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppTheme.padding16),
       decoration: BoxDecoration(
-        color: iconColor.withOpacity(0.1),
+        color: iconColor.withValues(alpha: 0.1),
         shape: BoxShape.circle,
       ),
       child: Icon(
@@ -311,7 +304,7 @@ class InfoDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(AppTheme.padding16),
               decoration: BoxDecoration(
-                color: AppTheme.secondaryColor.withOpacity(0.1),
+                color: AppTheme.secondaryColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -322,11 +315,7 @@ class InfoDialog extends StatelessWidget {
             ),
             const SizedBox(height: AppTheme.padding16),
           ],
-          Text(
-            title,
-            style: AppTheme.heading2,
-            textAlign: TextAlign.center,
-          ),
+          Text(title, style: AppTheme.heading2, textAlign: TextAlign.center),
           const SizedBox(height: AppTheme.padding12),
           Text(
             message,
@@ -439,10 +428,7 @@ class _InputDialogState extends State<InputDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            widget.title,
-            style: AppTheme.heading2,
-          ),
+          Text(widget.title, style: AppTheme.heading2),
           if (widget.message != null) ...[
             const SizedBox(height: AppTheme.padding8),
             Text(

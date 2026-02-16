@@ -65,8 +65,8 @@ These tasks establish the foundation that all other developers depend on. Estima
   - _Developer: Developer 1_
   - **DELIVERABLE: Working Flutter project with Firebase configured that all developers can clone**
 
-- [ ] 0.2 Create app theme and common widgets (Developer 6) - **BLOCKING TASK**
-  - [ ] 0.2.1 Define app theme (Developer 6)
+- [x] 0.2 Create app theme and common widgets (Developer 6) - **BLOCKING TASK**
+  - [x] 0.2.1 Define app theme (Developer 6)
     - Create lib/config/theme.dart with AppTheme class
     - Define color scheme (primary: coffee brown/green, secondary, error: red, success: green, warning: yellow)
     - Define text styles (heading1: 24px bold, heading2: 20px bold, body: 16px regular, caption: 14px light)
@@ -76,7 +76,7 @@ These tasks establish the foundation that all other developers depend on. Estima
     - _Requirements: 10.1, 10.4, 16.1 (Clean Architecture)_
     - _Developer: Developer 6_
   
-  - [ ] 0.2.2 Create reusable form widgets (Developer 6)
+  - [x] 0.2.2 Create reusable form widgets (Developer 6)
     - Create lib/presentation/widgets/common/custom_text_field.dart - **CRITICAL - everyone needs this**
     - Create lib/presentation/widgets/common/custom_button.dart - **CRITICAL - everyone needs this**
     - Create lib/presentation/widgets/common/custom_dropdown.dart
@@ -84,7 +84,7 @@ These tasks establish the foundation that all other developers depend on. Estima
     - _Requirements: 1.5, 10.2, 16.1 (Clean Architecture)_
     - _Developer: Developer 6_
   
-  - [ ] 0.2.3 Create common UI widgets (Developer 6)
+  - [x] 0.2.3 Create common UI widgets (Developer 6)
     - Create lib/presentation/widgets/common/loading_indicator.dart
     - Create lib/presentation/widgets/common/empty_state_widget.dart
     - Create lib/presentation/widgets/common/error_state_widget.dart

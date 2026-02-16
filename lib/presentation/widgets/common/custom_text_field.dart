@@ -136,7 +136,6 @@ class CustomTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final effectiveBorderRadius = borderRadius ?? AppTheme.borderRadiusMedium;
 
     return TextFormField(
@@ -168,7 +167,8 @@ class CustomTextField extends StatelessWidget {
         errorText: errorText,
         filled: true,
         fillColor: fillColor ?? AppTheme.surfaceColor,
-        contentPadding: contentPadding ??
+        contentPadding:
+            contentPadding ??
             const EdgeInsets.symmetric(
               horizontal: AppTheme.padding16,
               vertical: AppTheme.padding12,
@@ -204,10 +204,7 @@ class CustomTextField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(effectiveBorderRadius),
-          borderSide: const BorderSide(
-            color: AppTheme.primaryColor,
-            width: 2,
-          ),
+          borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(effectiveBorderRadius),
@@ -215,14 +212,13 @@ class CustomTextField extends StatelessWidget {
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(effectiveBorderRadius),
-          borderSide: const BorderSide(
-            color: AppTheme.errorColor,
-            width: 2,
-          ),
+          borderSide: const BorderSide(color: AppTheme.errorColor, width: 2),
         ),
         disabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(effectiveBorderRadius),
-          borderSide: BorderSide(color: AppTheme.textHint.withOpacity(0.5)),
+          borderSide: BorderSide(
+            color: AppTheme.textHint.withValues(alpha: 0.5),
+          ),
         ),
         labelStyle: AppTheme.body.copyWith(color: AppTheme.textSecondary),
         hintStyle: AppTheme.body.copyWith(color: AppTheme.textHint),
