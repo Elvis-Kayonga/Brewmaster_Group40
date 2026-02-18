@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import '../../domain/models/transaction.dart' as models;
+import '../../domain/models/escrow_transaction.dart' as models;
 import '../../domain/models/enums.dart';
 import '../../domain/services/payment_service.dart';
 
@@ -8,7 +8,7 @@ class PaymentProvider extends ChangeNotifier {
   final PaymentService _paymentService;
 
   PaymentProvider({PaymentService? paymentService})
-      : _paymentService = paymentService ?? PaymentService();
+    : _paymentService = paymentService ?? PaymentService();
 
   // State variables
   bool _isLoading = false;
@@ -79,8 +79,7 @@ class PaymentProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      final transaction =
-          await _paymentService.confirmDelivery(transactionId);
+      final transaction = await _paymentService.confirmDelivery(transactionId);
       _currentTransaction = transaction;
       notifyListeners();
       return true;
@@ -98,8 +97,9 @@ class PaymentProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      final transaction =
-          await _paymentService.confirmReceiptAndReleaseFunds(transactionId);
+      final transaction = await _paymentService.confirmReceiptAndReleaseFunds(
+        transactionId,
+      );
       _currentTransaction = transaction;
       notifyListeners();
       return true;
@@ -117,8 +117,10 @@ class PaymentProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      final transaction =
-          await _paymentService.raiseDispute(transactionId, reason);
+      final transaction = await _paymentService.raiseDispute(
+        transactionId,
+        reason,
+      );
       _currentTransaction = transaction;
       notifyListeners();
       return true;
@@ -136,8 +138,9 @@ class PaymentProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      final transaction =
-          await _paymentService.cancelTransaction(transactionId);
+      final transaction = await _paymentService.cancelTransaction(
+        transactionId,
+      );
       _currentTransaction = transaction;
       notifyListeners();
       return true;
@@ -167,15 +170,17 @@ class PaymentProvider extends ChangeNotifier {
 
   /// Subscribe to user transactions
   void subscribeToUserTransactions(String userId) {
-    _paymentService.getUserTransactions(userId).listen(
-      (transactions) {
-        _transactions = transactions;
-        notifyListeners();
-      },
-      onError: (error) {
-        _setError('Failed to load transactions: ${error.toString()}');
-      },
-    );
+    _paymentService
+        .getUserTransactions(userId)
+        .listen(
+          (transactions) {
+            _transactions = transactions;
+            notifyListeners();
+          },
+          onError: (error) {
+            _setError('Failed to load transactions: ${error.toString()}');
+          },
+        );
   }
 
   /// Load user statistics
@@ -196,10 +201,12 @@ class PaymentProvider extends ChangeNotifier {
   /// Get pending transactions count
   int get pendingTransactionsCount {
     return _transactions
-        .where((t) =>
-            t.status == TransactionStatus.pending ||
-            t.status == TransactionStatus.fundsHeld ||
-            t.status == TransactionStatus.delivered)
+        .where(
+          (t) =>
+              t.status == TransactionStatus.pending ||
+              t.status == TransactionStatus.fundsHeld ||
+              t.status == TransactionStatus.delivered,
+        )
         .length;
   }
 

@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/transaction.dart' as models;
+import '../models/escrow_transaction.dart' as models;
 import '../models/enums.dart';
 
 /// Service for handling payment transactions with escrow logic
@@ -9,7 +9,7 @@ class PaymentService {
   final Random _random = Random();
 
   PaymentService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   /// Create a new escrow transaction
   Future<models.Transaction> createTransaction({
@@ -41,8 +41,10 @@ class PaymentService {
 
   /// Process payment from buyer (simulated with dummy data)
   Future<models.Transaction> processPayment(String transactionId) async {
-    final doc =
-        await _firestore.collection('transactions').doc(transactionId).get();
+    final doc = await _firestore
+        .collection('transactions')
+        .doc(transactionId)
+        .get();
 
     if (!doc.exists) {
       throw Exception('Transaction not found');
@@ -85,15 +87,19 @@ class PaymentService {
             .collection('transactions')
             .doc(transactionId)
             .update(updated.toFirestore());
-        throw Exception('Payment failed after ${transaction.retryCount} retries');
+        throw Exception(
+          'Payment failed after ${transaction.retryCount} retries',
+        );
       }
     }
   }
 
   /// Confirm delivery by farmer
   Future<models.Transaction> confirmDelivery(String transactionId) async {
-    final doc =
-        await _firestore.collection('transactions').doc(transactionId).get();
+    final doc = await _firestore
+        .collection('transactions')
+        .doc(transactionId)
+        .get();
 
     if (!doc.exists) {
       throw Exception('Transaction not found');
@@ -105,17 +111,17 @@ class PaymentService {
       throw Exception('Cannot confirm delivery - funds not held');
     }
 
-    return _updateTransactionStatus(
-      transaction,
-      TransactionStatus.delivered,
-    );
+    return _updateTransactionStatus(transaction, TransactionStatus.delivered);
   }
 
   /// Confirm receipt by buyer and release funds
   Future<models.Transaction> confirmReceiptAndReleaseFunds(
-      String transactionId) async {
-    final doc =
-        await _firestore.collection('transactions').doc(transactionId).get();
+    String transactionId,
+  ) async {
+    final doc = await _firestore
+        .collection('transactions')
+        .doc(transactionId)
+        .get();
 
     if (!doc.exists) {
       throw Exception('Transaction not found');
@@ -131,10 +137,7 @@ class PaymentService {
     final success = _random.nextDouble() > 0.05; // 95% success rate
 
     if (success) {
-      return _updateTransactionStatus(
-        transaction,
-        TransactionStatus.completed,
-      );
+      return _updateTransactionStatus(transaction, TransactionStatus.completed);
     } else {
       throw Exception('Fund transfer failed - please try again');
     }
@@ -142,9 +145,13 @@ class PaymentService {
 
   /// Raise a dispute for a transaction
   Future<models.Transaction> raiseDispute(
-      String transactionId, String reason) async {
-    final doc =
-        await _firestore.collection('transactions').doc(transactionId).get();
+    String transactionId,
+    String reason,
+  ) async {
+    final doc = await _firestore
+        .collection('transactions')
+        .doc(transactionId)
+        .get();
 
     if (!doc.exists) {
       throw Exception('Transaction not found');
@@ -175,8 +182,10 @@ class PaymentService {
 
   /// Cancel a transaction
   Future<models.Transaction> cancelTransaction(String transactionId) async {
-    final doc =
-        await _firestore.collection('transactions').doc(transactionId).get();
+    final doc = await _firestore
+        .collection('transactions')
+        .doc(transactionId)
+        .get();
 
     if (!doc.exists) {
       throw Exception('Transaction not found');
@@ -188,16 +197,15 @@ class PaymentService {
       throw Exception('Can only cancel pending transactions');
     }
 
-    return _updateTransactionStatus(
-      transaction,
-      TransactionStatus.cancelled,
-    );
+    return _updateTransactionStatus(transaction, TransactionStatus.cancelled);
   }
 
   /// Get transaction by ID
   Future<models.Transaction?> getTransaction(String transactionId) async {
-    final doc =
-        await _firestore.collection('transactions').doc(transactionId).get();
+    final doc = await _firestore
+        .collection('transactions')
+        .doc(transactionId)
+        .get();
 
     if (!doc.exists) return null;
     return models.Transaction.fromFirestore(doc);
@@ -210,25 +218,26 @@ class PaymentService {
         .where('buyerId', isEqualTo: userId)
         .snapshots()
         .asyncMap((snapshot) async {
-      final buyerTransactions =
-          snapshot.docs.map((doc) => models.Transaction.fromFirestore(doc)).toList();
+          final buyerTransactions = snapshot.docs
+              .map((doc) => models.Transaction.fromFirestore(doc))
+              .toList();
 
-      // Also get transactions where user is farmer
-      final farmerSnapshot = await _firestore
-          .collection('transactions')
-          .where('farmerId', isEqualTo: userId)
-          .get();
+          // Also get transactions where user is farmer
+          final farmerSnapshot = await _firestore
+              .collection('transactions')
+              .where('farmerId', isEqualTo: userId)
+              .get();
 
-      final farmerTransactions = farmerSnapshot.docs
-          .map((doc) => models.Transaction.fromFirestore(doc))
-          .toList();
+          final farmerTransactions = farmerSnapshot.docs
+              .map((doc) => models.Transaction.fromFirestore(doc))
+              .toList();
 
-      // Combine and sort by date
-      final allTransactions = [...buyerTransactions, ...farmerTransactions];
-      allTransactions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          // Combine and sort by date
+          final allTransactions = [...buyerTransactions, ...farmerTransactions];
+          allTransactions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-      return allTransactions;
-    });
+          return allTransactions;
+        });
   }
 
   /// Get transaction history for a listing
@@ -238,8 +247,11 @@ class PaymentService {
         .where('listingId', isEqualTo: listingId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => models.Transaction.fromFirestore(doc)).toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => models.Transaction.fromFirestore(doc))
+              .toList(),
+        );
   }
 
   /// Helper method to update transaction status
@@ -253,9 +265,15 @@ class PaymentService {
 
     final updated = transaction.copyWith(
       status: newStatus,
-      fundsHeldAt: newStatus == TransactionStatus.fundsHeld ? now : transaction.fundsHeldAt,
-      deliveredAt: newStatus == TransactionStatus.delivered ? now : transaction.deliveredAt,
-      completedAt: newStatus == TransactionStatus.completed ? now : transaction.completedAt,
+      fundsHeldAt: newStatus == TransactionStatus.fundsHeld
+          ? now
+          : transaction.fundsHeldAt,
+      deliveredAt: newStatus == TransactionStatus.delivered
+          ? now
+          : transaction.deliveredAt,
+      completedAt: newStatus == TransactionStatus.completed
+          ? now
+          : transaction.completedAt,
       statusHistory: statusHistory,
     );
 

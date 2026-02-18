@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:brewmaster/domain/models/transaction.dart' as models;
+import 'package:brewmaster/domain/models/escrow_transaction.dart' as models;
 import 'package:brewmaster/domain/models/enums.dart';
 import 'package:brewmaster/presentation/providers/payment_provider.dart';
 import 'package:brewmaster/presentation/screens/transaction_history_screen.dart';
@@ -56,16 +56,14 @@ void main() {
       return MaterialApp(
         home: ChangeNotifierProvider<PaymentProvider>.value(
           value: mockProvider,
-          child: TransactionHistoryScreen(
-            userId: 'farmer1',
-            isFarmer: true,
-          ),
+          child: TransactionHistoryScreen(userId: 'farmer1', isFarmer: true),
         ),
       );
     }
 
     testWidgets('Property: Screen should display all transactions', (
-        WidgetTester tester) async {
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pump();
 
@@ -73,8 +71,9 @@ void main() {
       expect(find.byType(TransactionHistoryScreen), findsOneWidget);
     });
 
-    testWidgets('Property: Tabs should filter transactions by status',
-        (WidgetTester tester) async {
+    testWidgets('Property: Tabs should filter transactions by status', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pump();
 
@@ -86,22 +85,36 @@ void main() {
     });
 
     test('Property: Filters should separate transactions correctly', () {
-      final completed =
-          testTransactions.where((t) => t.status == TransactionStatus.completed)
-              .toList();
-      final active = testTransactions.where((t) =>
-      t.status == TransactionStatus.fundsHeld ||
-          t.status == TransactionStatus.pending ||
-          t.status == TransactionStatus.delivered).toList();
-      final disputed =
-          testTransactions.where((t) => t.status == TransactionStatus.disputed)
-              .toList();
+      final completed = testTransactions
+          .where((t) => t.status == TransactionStatus.completed)
+          .toList();
+      final active = testTransactions
+          .where(
+            (t) =>
+                t.status == TransactionStatus.fundsHeld ||
+                t.status == TransactionStatus.pending ||
+                t.status == TransactionStatus.delivered,
+          )
+          .toList();
+      final disputed = testTransactions
+          .where((t) => t.status == TransactionStatus.disputed)
+          .toList();
 
-      expect(completed.length, 1,
-          reason: 'Should have exactly 1 completed transaction');
-      expect(active.length, 1, reason: 'Should have exactly 1 active transaction');
-      expect(disputed.length, 1,
-          reason: 'Should have exactly 1 disputed transaction');
+      expect(
+        completed.length,
+        1,
+        reason: 'Should have exactly 1 completed transaction',
+      );
+      expect(
+        active.length,
+        1,
+        reason: 'Should have exactly 1 active transaction',
+      );
+      expect(
+        disputed.length,
+        1,
+        reason: 'Should have exactly 1 disputed transaction',
+      );
     });
 
     test('Property: Transaction list should be ordered by date', () {
@@ -109,27 +122,43 @@ void main() {
       sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
       // First transaction should be the most recent
-      expect(sorted.first.id, 'trans2',
-          reason: 'Most recent transaction should be first');
-      expect(sorted.last.id, 'trans3',
-          reason: 'Oldest transaction should be last');
+      expect(
+        sorted.first.id,
+        'trans2',
+        reason: 'Most recent transaction should be first',
+      );
+      expect(
+        sorted.last.id,
+        'trans3',
+        reason: 'Oldest transaction should be last',
+      );
     });
 
     test('Property: Statistics should accurately reflect transaction data', () {
       final completed = testTransactions
           .where((t) => t.status == TransactionStatus.completed)
           .toList();
-      final pending = testTransactions.where((t) =>
-      t.status == TransactionStatus.pending ||
-          t.status == TransactionStatus.fundsHeld ||
-          t.status == TransactionStatus.delivered).toList();
+      final pending = testTransactions
+          .where(
+            (t) =>
+                t.status == TransactionStatus.pending ||
+                t.status == TransactionStatus.fundsHeld ||
+                t.status == TransactionStatus.delivered,
+          )
+          .toList();
 
-      final totalEarnings =
-          completed.fold(0.0, (sum, t) => sum + t.amount);
+      final totalEarnings = completed.fold(0.0, (sum, t) => sum + t.amount);
 
-      expect(totalEarnings, 100.0,
-          reason: 'Total earnings should equal completed transaction amounts');
-      expect(completed.length, 1, reason: 'Should have 1 completed transaction');
+      expect(
+        totalEarnings,
+        100.0,
+        reason: 'Total earnings should equal completed transaction amounts',
+      );
+      expect(
+        completed.length,
+        1,
+        reason: 'Should have 1 completed transaction',
+      );
       expect(pending.length, 1, reason: 'Should have 1 pending transaction');
     });
 
@@ -138,15 +167,24 @@ void main() {
         final formatted = '\$${transaction.amount.toStringAsFixed(2)}';
 
         // Verify format
-        expect(formatted.startsWith('\$'), true,
-            reason: 'Amount should have currency symbol');
-        expect(formatted.contains('.'), true,
-            reason: 'Amount should have decimal point');
+        expect(
+          formatted.startsWith('\$'),
+          true,
+          reason: 'Amount should have currency symbol',
+        );
+        expect(
+          formatted.contains('.'),
+          true,
+          reason: 'Amount should have decimal point',
+        );
 
         // Verify decimal places
         final parts = formatted.split('.');
-        expect(parts[1].length, 2,
-            reason: 'Amount should have exactly 2 decimal places');
+        expect(
+          parts[1].length,
+          2,
+          reason: 'Amount should have exactly 2 decimal places',
+        );
       }
     });
 
@@ -155,8 +193,11 @@ void main() {
         final method = transaction.paymentMethod;
 
         // Verify payment method is valid
-        expect(PaymentMethod.values.contains(method), true,
-            reason: 'Payment method should be valid');
+        expect(
+          PaymentMethod.values.contains(method),
+          true,
+          reason: 'Payment method should be valid',
+        );
 
         // Verify label mapping exists
         String label;
@@ -169,8 +210,11 @@ void main() {
             break;
         }
 
-        expect(label.isNotEmpty, true,
-            reason: 'Payment method should have a label');
+        expect(
+          label.isNotEmpty,
+          true,
+          reason: 'Payment method should have a label',
+        );
       }
     });
 
@@ -187,27 +231,36 @@ void main() {
       for (final entry in statusMappings.entries) {
         final label = entry.value;
 
-        expect(label.isNotEmpty, true,
-            reason: 'Each status should have a label');
+        expect(
+          label.isNotEmpty,
+          true,
+          reason: 'Each status should have a label',
+        );
       }
     });
 
-    test('Property: Retry count should be displayed when greater than zero', () {
-      final withRetries = models.Transaction(
-        id: 'trans_retry',
-        buyerId: 'buyer1',
-        farmerId: 'farmer1',
-        listingId: 'listing1',
-        amount: 100.0,
-        status: TransactionStatus.pending,
-        paymentMethod: PaymentMethod.mpesa,
-        createdAt: DateTime.now(),
-        retryCount: 2,
-      );
+    test(
+      'Property: Retry count should be displayed when greater than zero',
+      () {
+        final withRetries = models.Transaction(
+          id: 'trans_retry',
+          buyerId: 'buyer1',
+          farmerId: 'farmer1',
+          listingId: 'listing1',
+          amount: 100.0,
+          status: TransactionStatus.pending,
+          paymentMethod: PaymentMethod.mpesa,
+          createdAt: DateTime.now(),
+          retryCount: 2,
+        );
 
-      expect(withRetries.retryCount, greaterThan(0),
-          reason: 'Should show retry count when > 0');
-    });
+        expect(
+          withRetries.retryCount,
+          greaterThan(0),
+          reason: 'Should show retry count when > 0',
+        );
+      },
+    );
 
     test('Property: Disputed transactions should show dispute indicator', () {
       final disputed = testTransactions
@@ -216,8 +269,11 @@ void main() {
 
       for (final transaction in disputed) {
         expect(transaction.status, TransactionStatus.disputed);
-        expect(transaction.disputeReason, isNotNull,
-            reason: 'Disputed transactions should have a reason');
+        expect(
+          transaction.disputeReason,
+          isNotNull,
+          reason: 'Disputed transactions should have a reason',
+        );
       }
     });
 
@@ -244,8 +300,11 @@ void main() {
         final isBuyerTransaction = transaction.buyerId == 'farmer1';
 
         // At least one should be true for user's transactions
-        expect(isFarmerTransaction || isBuyerTransaction, true,
-            reason: 'Transaction should belong to the user');
+        expect(
+          isFarmerTransaction || isBuyerTransaction,
+          true,
+          reason: 'Transaction should belong to the user',
+        );
       }
     });
 
@@ -254,9 +313,12 @@ void main() {
         final date = transaction.createdAt;
 
         // Verify date is valid
-        expect(date.isBefore(DateTime.now()) ||
-            date.isAtSameMomentAs(DateTime.now()), true,
-            reason: 'Transaction date should not be in the future');
+        expect(
+          date.isBefore(DateTime.now()) ||
+              date.isAtSameMomentAs(DateTime.now()),
+          true,
+          reason: 'Transaction date should not be in the future',
+        );
       }
     });
 
@@ -264,8 +326,11 @@ void main() {
       final amounts = [100.0, 200.0, 150.0];
 
       for (int i = 0; i < testTransactions.length; i++) {
-        expect(testTransactions[i].amount, amounts[i],
-            reason: 'Amount should be preserved exactly');
+        expect(
+          testTransactions[i].amount,
+          amounts[i],
+          reason: 'Amount should be preserved exactly',
+        );
       }
     });
 
@@ -273,24 +338,31 @@ void main() {
       final originalCount = testTransactions.length;
 
       // Sum of all filtered categories should equal total
-      final completed =
-          testTransactions.where((t) => t.status == TransactionStatus.completed)
-              .length;
-      final active = testTransactions.where((t) =>
-      t.status == TransactionStatus.fundsHeld ||
-          t.status == TransactionStatus.pending ||
-          t.status == TransactionStatus.delivered).length;
-      final disputed =
-          testTransactions.where((t) => t.status == TransactionStatus.disputed)
-              .length;
-      final cancelled =
-          testTransactions.where((t) => t.status == TransactionStatus.cancelled)
-              .length;
+      final completed = testTransactions
+          .where((t) => t.status == TransactionStatus.completed)
+          .length;
+      final active = testTransactions
+          .where(
+            (t) =>
+                t.status == TransactionStatus.fundsHeld ||
+                t.status == TransactionStatus.pending ||
+                t.status == TransactionStatus.delivered,
+          )
+          .length;
+      final disputed = testTransactions
+          .where((t) => t.status == TransactionStatus.disputed)
+          .length;
+      final cancelled = testTransactions
+          .where((t) => t.status == TransactionStatus.cancelled)
+          .length;
 
       final sum = completed + active + disputed + cancelled;
 
-      expect(sum, originalCount,
-          reason: 'All transactions should be accounted for');
+      expect(
+        sum,
+        originalCount,
+        reason: 'All transactions should be accounted for',
+      );
     });
   });
 }
