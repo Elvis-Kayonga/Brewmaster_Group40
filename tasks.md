@@ -187,8 +187,8 @@ These tasks establish the foundation that all other developers depend on. Estima
 - [ ] 1. Implement authentication system (Developer 1)
   - [ ] 1.1 Create AuthService
     - Create lib/data/services/auth_service.dart
-    - Implement signUpWithEmail() and signUpWithPhone()
-    - Implement signInWithEmail() and signInWithPhone()
+    - Implement signUpWithEmail() and signInWithGoogle()
+    - Implement signInWithEmail() and signInWithGoogle()
     - Implement signOut() and password reset
     - Expose authStateChanges stream
     - _Requirements: 1.2, 1.7, 16.1 (Clean Architecture)_
@@ -215,7 +215,8 @@ These tasks establish the foundation that all other developers depend on. Estima
 - [ ] 2. Build authentication UI screens (Developer 1)
   - [ ] 2.1 Create LoginScreen
     - Create lib/presentation/screens/auth/login_screen.dart
-    - Build email/phone input forms with validation using CustomTextField from Phase 0
+    - Build email input form with validation using CustomTextField from Phase 0
+    - Add Google sign-in button
     - Add sign-in button with loading state using CustomButton from Phase 0
     - Add navigation to SignupScreen
     - Implement error message display using ErrorStateWidget from Phase 0

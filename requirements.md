@@ -30,7 +30,7 @@ The system must support offline-first operations, low-literacy users through voi
 #### Acceptance Criteria
 
 1. WHEN a new user opens the app THEN THE Authentication_System SHALL display a simple 3-step registration process with icon-driven navigation
-2. WHEN a user registers THEN THE Authentication_System SHALL support both email/password and phone number authentication via Firebase
+2. WHEN a user registers THEN THE Authentication_System SHALL support both email/password and Google sign-in authentication via Firebase
 3. WHEN a farmer creates a profile THEN THE Profile_System SHALL collect farm size, location, coffee varieties grown, and contact information
 4. WHEN a buyer creates a profile THEN THE Profile_System SHALL collect business name, business type, location, and purchasing volume
 5. WHERE voice input is enabled THEN THE Profile_System SHALL allow users to dictate text fields using device speech recognition

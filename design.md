@@ -265,7 +265,7 @@ This ensures all developers can immediately place their files in the correct loc
 **Components:**
 - `AuthService`: Handles Firebase Authentication operations
 - `AuthProvider`: Manages authentication state
-- `LoginScreen`: Email/phone login interface
+- `LoginScreen`: Email/Google login interface
 - `SignupScreen`: User registration with role selection
 - `ProfileSetupScreen`: Post-registration profile completion
 
@@ -274,9 +274,8 @@ This ensures all developers can immediately place their files in the correct loc
 ```dart
 class AuthService {
   Future<User?> signUpWithEmail(String email, String password, UserRole role);
-  Future<User?> signUpWithPhone(String phoneNumber);
   Future<User?> signInWithEmail(String email, String password);
-  Future<User?> signInWithPhone(String phoneNumber, String verificationCode);
+  Future<User?> signInWithGoogle();
   Future<void> signOut();
   Stream<User?> get authStateChanges;
   Future<void> sendPasswordResetEmail(String email);
@@ -289,6 +288,7 @@ class AuthProvider extends ChangeNotifier {
   
   Future<void> signUp(String email, String password, UserRole role);
   Future<void> signIn(String email, String password);
+  Future<void> signInWithGoogle();
   Future<void> signOut();
 }
 ```
@@ -973,7 +973,7 @@ A property is a characteristic or behavior that should hold true across all vali
 
 ### Property 1: Authentication Method Support
 
-*For any* user registration attempt, the system should successfully create an account using either email/password or phone number authentication methods.
+*For any* user registration attempt, the system should successfully create an account using either email/password or Google sign-in authentication methods.
 
 **Validates: Requirements 1.2**
 
