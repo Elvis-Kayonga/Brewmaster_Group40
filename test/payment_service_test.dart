@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:brewmaster/domain/models/escrow_transaction.dart' as models;
 import 'package:brewmaster/domain/models/enums.dart';
-import 'package:brewmaster/domain/services/payment_service.dart';
+import 'package:brewmaster/data/services/payment_service.dart';
 
 void main() {
   group('PaymentService Property Tests', () {

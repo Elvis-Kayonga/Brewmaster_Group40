@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../domain/models/escrow_transaction.dart' as models;
 import '../../domain/models/enums.dart';
-import '../../domain/services/payment_service.dart';
+import '../../data/services/payment_service.dart';
 
 /// Provider for managing payment state
 class PaymentProvider extends ChangeNotifier {

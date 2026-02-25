@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../domain/models/escrow_transaction.dart' as models;
-import '../../domain/models/enums.dart';
-import '../../domain/validators/payment_validator.dart';
-import '../providers/payment_provider.dart';
-import '../widgets/common/status_badge.dart';
-import '../widgets/common/custom_button.dart';
-import '../widgets/common/confirmation_dialog.dart';
-import '../widgets/common/custom_text_field.dart';
+import '../../../domain/models/escrow_transaction.dart' as models;
+import '../../../domain/models/enums.dart';
+import '../../../domain/validators/payment_validator.dart';
+import '../../providers/payment_provider.dart';
+import '../../widgets/common/status_badge.dart';
+import '../../widgets/common/custom_button.dart';
+import '../../widgets/common/confirmation_dialog.dart';
+import '../../widgets/common/custom_text_field.dart';
 
 /// Screen displaying detailed information about a transaction
 /// Requirements: 6.3, 6.4, 6.5

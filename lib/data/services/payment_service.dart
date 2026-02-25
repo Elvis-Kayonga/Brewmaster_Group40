@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/escrow_transaction.dart' as models;
-import '../models/enums.dart';
+import '../../domain/models/escrow_transaction.dart' as models;
+import '../../domain/models/enums.dart';
 
 /// Service for handling payment transactions with escrow logic
 class PaymentService {

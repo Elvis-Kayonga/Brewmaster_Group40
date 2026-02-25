@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:brewmaster/domain/models/escrow_transaction.dart' as models;
 import 'package:brewmaster/domain/models/enums.dart';
 import 'package:brewmaster/presentation/providers/payment_provider.dart';
-import 'package:brewmaster/presentation/screens/transaction_history_screen.dart';
+import 'package:brewmaster/presentation/screens/payments/transaction_history_screen.dart';
 
 void main() {
   group('TransactionHistoryScreen Property Tests', () {
