@@ -16,12 +16,12 @@ class PaymentScreen extends StatefulWidget {
   final double amount;
 
   const PaymentScreen({
-    Key? key,
+    super.key,
     required this.listingId,
     required this.farmerId,
     required this.buyerId,
     required this.amount,
-  }) : super(key: key);
+  });
 
   @override
   State<PaymentScreen> createState() => _PaymentScreenState();
@@ -103,10 +103,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Make Payment'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Make Payment'), centerTitle: true),
       body: Consumer<PaymentProvider>(
         builder: (context, provider, child) {
           return SingleChildScrollView(
@@ -132,7 +129,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          _buildSummaryRow('Amount:', '\$${widget.amount.toStringAsFixed(2)}'),
+                          _buildSummaryRow(
+                            'Amount:',
+                            '\$${widget.amount.toStringAsFixed(2)}',
+                          ),
                           _buildSummaryRow('Transaction Fee:', '\$0.00'),
                           const Divider(height: 20),
                           _buildSummaryRow(
@@ -149,19 +149,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   // Payment method selection
                   const Text(
                     'Select Payment Method',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 12),
                   CustomDropdown<PaymentMethod>(
                     value: _selectedMethod,
                     items: PaymentMethod.values
-                        .map((method) => DropdownItem(
-                              value: method,
-                              label: _getPaymentMethodLabel(method),
-                            ))
+                        .map(
+                          (method) => DropdownItem(
+                            value: method,
+                            label: _getPaymentMethodLabel(method),
+                          ),
+                        )
                         .toList(),
                     onChanged: (value) {
                       if (value != null) {
@@ -180,8 +179,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     hintText: _getPhoneHint(_selectedMethod),
                     prefixIcon: Icons.phone,
                     keyboardType: TextInputType.phone,
-                    validator: (value) =>
-                        PaymentValidator.validatePhoneNumber(value, _selectedMethod),
+                    validator: (value) => PaymentValidator.validatePhoneNumber(
+                      value,
+                      _selectedMethod,
+                    ),
                   ),
                   const SizedBox(height: 16),
 

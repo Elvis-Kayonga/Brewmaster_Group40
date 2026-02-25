@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../domain/models/transaction.dart' as models;
+import '../../domain/models/escrow_transaction.dart' as models;
 import '../../domain/models/enums.dart';
 import '../../domain/validators/payment_validator.dart';
 import '../providers/payment_provider.dart';
@@ -18,11 +18,11 @@ class TransactionDetailScreen extends StatefulWidget {
   final bool isFarmer;
 
   const TransactionDetailScreen({
-    Key? key,
+    super.key,
     required this.transactionId,
     required this.userId,
     required this.isFarmer,
-  }) : super(key: key);
+  });
 
   @override
   State<TransactionDetailScreen> createState() =>
@@ -61,6 +61,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
     if (confirmed != true) return;
 
+    if (!mounted) return;
     final provider = context.read<PaymentProvider>();
     final success = await provider.confirmDelivery(transaction.id);
 
@@ -98,8 +99,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
     if (confirmed != true) return;
 
+    if (!mounted) return;
     final provider = context.read<PaymentProvider>();
-    final success = await provider.confirmReceiptAndReleaseFunds(transaction.id);
+    final success = await provider.confirmReceiptAndReleaseFunds(
+      transaction.id,
+    );
 
     if (!mounted) return;
 
@@ -152,8 +156,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           CustomButton(
             text: 'Submit Dispute',
             onPressed: () {
-              final error =
-                  PaymentValidator.validateDisputeReason(_disputeController.text);
+              final error = PaymentValidator.validateDisputeReason(
+                _disputeController.text,
+              );
               if (error != null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text(error), backgroundColor: Colors.red),
@@ -171,6 +176,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
     if (result == null) return;
 
+    if (!mounted) return;
     final provider = context.read<PaymentProvider>();
     final success = await provider.raiseDispute(transaction.id, result);
 
@@ -268,12 +274,20 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             ),
             const Divider(height: 24),
             _buildInfoRow('Transaction ID', transaction.id),
-            _buildInfoRow('Amount', '\$${transaction.amount.toStringAsFixed(2)}'),
             _buildInfoRow(
-                'Payment Method', _getPaymentMethodLabel(transaction.paymentMethod)),
+              'Amount',
+              '\$${transaction.amount.toStringAsFixed(2)}',
+            ),
+            _buildInfoRow(
+              'Payment Method',
+              _getPaymentMethodLabel(transaction.paymentMethod),
+            ),
             _buildInfoRow('Created', dateFormat.format(transaction.createdAt)),
             if (transaction.retryCount > 0)
-              _buildInfoRow('Retry Attempts', transaction.retryCount.toString()),
+              _buildInfoRow(
+                'Retry Attempts',
+                transaction.retryCount.toString(),
+              ),
           ],
         ),
       ),
@@ -298,7 +312,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 entry.key,
                 DateFormat('MMM dd, HH:mm').format(entry.value),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),
@@ -379,10 +393,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
           ),
-          Text(
-            time,
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
-          ),
+          Text(time, style: const TextStyle(fontSize: 12, color: Colors.grey)),
         ],
       ),
     );

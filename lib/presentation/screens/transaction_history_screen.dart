@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../domain/models/transaction.dart' as models;
+import '../../domain/models/escrow_transaction.dart' as models;
 import '../../domain/models/enums.dart';
 import '../providers/payment_provider.dart';
 import '../widgets/common/status_badge.dart';
@@ -15,10 +15,10 @@ class TransactionHistoryScreen extends StatefulWidget {
   final bool isFarmer;
 
   const TransactionHistoryScreen({
-    Key? key,
+    super.key,
     required this.userId,
     required this.isFarmer,
-  }) : super(key: key);
+  });
 
   @override
   State<TransactionHistoryScreen> createState() =>
@@ -34,7 +34,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<PaymentProvider>().subscribeToUserTransactions(widget.userId);
+      context.read<PaymentProvider>().subscribeToUserTransactions(
+        widget.userId,
+      );
       context.read<PaymentProvider>().loadUserStatistics(widget.userId);
     });
   }
@@ -84,9 +86,13 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                       ],
                     ),
                     _buildTransactionList(
-                        provider.transactions, TransactionStatus.completed),
+                      provider.transactions,
+                      TransactionStatus.completed,
+                    ),
                     _buildTransactionList(
-                        provider.transactions, TransactionStatus.disputed),
+                      provider.transactions,
+                      TransactionStatus.disputed,
+                    ),
                   ],
                 ),
               ),
@@ -145,7 +151,12 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     );
   }
 
-  Widget _buildStatItem(String label, String value, IconData icon, Color color) {
+  Widget _buildStatItem(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Column(
       children: [
         Icon(icon, color: color, size: 32),
@@ -158,13 +169,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
             color: color,
           ),
         ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
-          ),
-        ),
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
       ],
     );
   }
@@ -274,7 +279,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
               // Date and payment method
               Row(
                 children: [
-                  const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                  const Icon(
+                    Icons.calendar_today,
+                    size: 14,
+                    color: Colors.grey,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     dateFormat.format(transaction.createdAt),
@@ -304,8 +313,10 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                       const SizedBox(width: 4),
                       Text(
                         'Retried ${transaction.retryCount} time(s)',
-                        style:
-                            const TextStyle(fontSize: 12, color: Colors.orange),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.orange,
+                        ),
                       ),
                     ],
                   ),

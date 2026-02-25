@@ -1,5 +1,136 @@
 # BrewMaster Entity-Relationship Diagram (ERD)
 
+## Visual Diagram
+
+```mermaid
+erDiagram
+    users ||--o{ listings : "creates"
+    users ||--o{ transactions : "buys/sells"
+    users ||--o{ notifications : "receives"
+    users ||--|| verifications : "has"
+    users }o--o{ conversations : "participates"
+    
+    listings ||--o| transactions : "sold via"
+    listings ||--o{ messages : "referenced in"
+    
+    conversations ||--|{ messages : "contains"
+    
+    users {
+        string id PK "Firebase Auth UID"
+        string email
+        string phoneNumber
+        string role "farmer|buyer"
+        string displayName
+        string photoUrl
+        boolean isVerified
+        timestamp createdAt
+        timestamp updatedAt
+        number farmSize "farmers only"
+        string farmLocation "farmers only"
+        array coffeeVarieties "farmers only"
+        string farmRegistrationNumber "farmers only"
+        string businessName "buyers only"
+        string businessType "buyers only"
+        number monthlyVolume "buyers only"
+        string fcmToken
+        string verificationStatus "unverified|pending|verified|rejected"
+    }
+    
+    listings {
+        string id PK
+        string farmerId FK
+        string farmerName
+        string coffeeVariety
+        number quantityKg
+        number altitude "1000-2500m"
+        string processingMethod "washed|natural|honey"
+        timestamp harvestDate
+        number askingPricePerKg
+        array imageUrls "max 5"
+        number cuppingScore "0-100"
+        string flavorNotes
+        string status "draft|active|sold|expired"
+        number viewCount
+        timestamp createdAt
+        timestamp updatedAt
+    }
+    
+    conversations {
+        string id PK
+        array participantIds "2 users"
+        map participantNames
+        string listingId FK
+        string lastMessageContent
+        timestamp lastMessageAt
+        map unreadCounts
+        timestamp createdAt
+        timestamp updatedAt
+    }
+    
+    messages {
+        string id PK
+        string senderId FK
+        string senderName
+        string content
+        string type "text|listingReference|system"
+        string listingId FK
+        boolean isRead
+        timestamp createdAt
+    }
+    
+    transactions {
+        string id PK
+        string buyerId FK
+        string farmerId FK
+        string listingId FK
+        number amount
+        string currency "USD|KES"
+        string status "pending|fundsHeld|delivered|completed|disputed|cancelled"
+        string paymentMethod "mpesa|mtnMobileMoney"
+        string paymentReference
+        timestamp fundsHeldAt
+        timestamp deliveredAt
+        timestamp completedAt
+        string disputeReason
+        number retryCount
+        string failureReason
+        map statusHistory
+        timestamp createdAt
+        timestamp updatedAt
+    }
+    
+    verifications {
+        string userId PK_FK
+        string state "unverified|pending|verified|rejected"
+        array documentUrls
+        string rejectionReason
+        timestamp verifiedAt
+        timestamp updatedAt
+    }
+    
+    notifications {
+        string id PK
+        string userId FK
+        string title
+        string body
+        string type "newMessage|purchaseInitiated|paymentReceived|deliveryConfirmed|verificationUpdated|listingInterest"
+        map data
+        boolean isRead
+        timestamp createdAt
+    }
+    
+    marketPrices {
+        string id PK
+        string variety
+        string grade "specialty|premium|standard"
+        number lowPrice
+        number avgPrice
+        number highPrice
+        string currency
+        timestamp updatedAt
+    }
+```
+
 ## Overview
 
 This document describes the Firestore database structure for the BrewMaster Coffee Marketplace application. All field names, types, and relationships are documented here and MUST match the actual Firestore implementation exactly.
@@ -147,10 +278,13 @@ This document describes the Firestore database structure for the BrewMaster Coff
 | status | String | Yes | Status: "pending", "fundsHeld", "delivered", "completed", "disputed", "cancelled" |
 | paymentMethod | String | Yes | Payment method: "mpesa", "mtnMobileMoney" |
 | paymentReference | String | No | Payment reference from provider |
-| deliveryConfirmedAt | Timestamp | No | Delivery confirmation timestamp |
-| receiptConfirmedAt | Timestamp | No | Receipt confirmation timestamp |
-| completedAt | Timestamp | No | Completion timestamp |
+| fundsHeldAt | Timestamp | No | Timestamp when funds were held in escrow |
+| deliveredAt | Timestamp | No | Timestamp when delivery was confirmed |
+| completedAt | Timestamp | No | Timestamp when transaction was completed |
 | disputeReason | String | No | Reason for dispute (if status is disputed) |
+| retryCount | Number | Yes | Number of payment retry attempts (default 0) |
+| failureReason | String | No | Reason for payment failure |
+| statusHistory | Map<String, Timestamp> | Yes | Complete audit trail of status transitions |
 | createdAt | Timestamp | Yes | Creation timestamp |
 | updatedAt | Timestamp | Yes | Last update timestamp |
 
@@ -297,6 +431,6 @@ This document describes the Firestore database structure for the BrewMaster Coff
 
 ---
 
-**Last Updated**: Phase 0 - Foundation
+**Last Updated**: Phase 4 - Payment System (Developer 4 implementation sync)
 **Status**: Ready for Implementation
 **Approved By**: All Developers (pending Task 0.4.2 review)
