@@ -260,9 +260,6 @@ class AuthProvider extends ChangeNotifier {
         return 'Verification link is invalid or malformed.';
       case 'expired-action-code':
         return 'Verification link has expired. Request a new email.';
-      case 'user-not-found':
-        // already covered earlier but kept for clarity
-        return 'No account found with this email.';
       default:
         return e.message ?? 'An authentication error occurred.';
     }

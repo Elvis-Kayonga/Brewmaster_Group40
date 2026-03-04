@@ -75,8 +75,7 @@ class AuthService {
       );
 
       final userCredential = await _auth.signInWithCredential(credential);
-      // ignore: avoid_print
-      print('✅ Signed in: ${userCredential.user?.email}'); // add this
+      print('✅ Signed in: ${userCredential.user?.email}');
       return userCredential.user;
     } on FirebaseAuthException {
       rethrow;
@@ -128,18 +127,15 @@ class AuthService {
       final user = _auth.currentUser;
       if (user == null) {
         // nothing to do
-        // ignore: avoid_print
         print('⚠️ sendEmailVerification called with no current user');
         return false;
       }
       if (user.emailVerified) {
         // already verified, Firebase will not send another link
-        // ignore: avoid_print
         print('⚠️ sendEmailVerification: user already verified');
         return false;
       }
       await user.sendEmailVerification();
-      // ignore: avoid_print
       print('📧 Verification email requested for ${user.email}');
       return true;
     } on FirebaseAuthException {

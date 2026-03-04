@@ -2,13 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:brewmaster/config/theme.dart';
 import 'package:brewmaster/data/providers/auth_provider.dart';
-import 'package:brewmaster/domain/models/enums.dart';
 import 'package:brewmaster/presentation/widgets/common/custom_text_field.dart';
 import 'package:brewmaster/presentation/widgets/common/custom_button.dart';
-import 'package:brewmaster/presentation/widgets/common/custom_dropdown.dart';
 import 'package:brewmaster/presentation/widgets/common/error_state_widget.dart';
 import 'package:brewmaster/presentation/screens/auth/profile_setup_screen.dart';
-import 'package:brewmaster/presentation/screens/auth/verify_email_screen.dart';
 
 /// Sign-up screen collecting email, password and display name in a single step.
 class SignupScreen extends StatefulWidget {

@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:brewmaster/data/providers/auth_provider.dart';
 import 'package:brewmaster/data/providers/user_provider.dart';
-import 'package:brewmaster/data/services/user_service.dart';
 import 'package:brewmaster/presentation/screens/auth/login_screen.dart';
 import 'package:brewmaster/presentation/screens/auth/profile_setup_screen.dart';
 import 'firebase_options.dart';

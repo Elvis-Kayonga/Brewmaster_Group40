@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:brewmaster/config/theme.dart';
 import 'package:brewmaster/data/providers/auth_provider.dart';
-import 'package:brewmaster/presentation/screens/auth/profile_setup_screen.dart';
+import 'package:brewmaster/presentation/screens/profile/profile_screen.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
@@ -16,6 +16,15 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   final _codeController = TextEditingController();
   bool _isProcessing = false;
   String? _message;
+  
+  // Resend cooldown to prevent Firebase rate limiting
+  DateTime? _lastResendTime;
+  static const _resendCooldownSeconds = 60;
+  
+  // Resend cooldown to prevent Firebase rate limiting
+  DateTime? _lastResendTime;
+  static const _resendCooldownSeconds = 60;
+  int _secondsUntilNextResend = 0;
 
   @override
   void dispose() {
@@ -28,30 +37,34 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     super.initState();
     // if the user somehow navigated here but their email is already
     // verified (e.g. they signed in with Google or clicked the link
-    // externally) then we can skip the screen and proceed to profile
-    // setup immediately.
+    // externally) then we can skip this screen and proceed to profile page.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final auth = context.read<AuthProvider>();
       final verified = await auth.checkEmailVerified();
       if (verified && mounted) {
-        final user = auth.currentUser;
-        if (user != null) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => ProfileSetupScreen(
-                userId: user.uid,
-                email: user.email ?? widget.email,
-                displayName: user.displayName ?? '',
-                role: null,
-              ),
-            ),
-          );
-        }
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const ProfileScreen()),
+        );
       }
     });
   }
 
   Future<void> _resend() async {
+    // Prevent rapid resends to avoid Firebase rate limiting
+    if (_lastResendTime != null) {
+      final secondsSinceLastResend =
+          DateTime.now().difference(_lastResendTime!).inSeconds;
+      if (secondsSinceLastResend < _resendCooldownSeconds) {
+        final secondsRemaining =
+            _resendCooldownSeconds - secondsSinceLastResend;
+        setState(() {
+          _message =
+              'Please wait ${secondsRemaining}s before resending. Firebase rate-limits email sends.';
+        });
+        return;
+      }
+    }
+
     setState(() {
       _isProcessing = true;
       _message = null;
@@ -60,8 +73,10 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     final ok = await auth.sendEmailVerification();
     setState(() {
       _isProcessing = false;
+      _lastResendTime = DateTime.now();
       if (ok) {
-        _message = 'Verification email sent.';
+        _message =
+            'Verification email sent. Check your inbox (cooldown: 60 seconds).';
       } else {
         // show any error message or default info
         _message =
@@ -87,19 +102,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       _isProcessing = false;
     });
     if (verified && mounted) {
-      final user = auth.currentUser;
-      if (user != null) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => ProfileSetupScreen(
-              userId: user.uid,
-              email: user.email ?? widget.email,
-              displayName: user.displayName ?? '',
-              role: null,
-            ),
-          ),
-        );
-      }
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+      );
     } else {
       setState(() {
         _message =
@@ -143,20 +148,10 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       // time we reach here, so check again and navigate.
       final verified = await auth.checkEmailVerified();
       if (verified && mounted) {
-        final user = auth.currentUser;
-        if (user != null) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => ProfileSetupScreen(
-                userId: user.uid,
-                email: user.email ?? widget.email,
-                displayName: user.displayName ?? '',
-                role: null,
-              ),
-            ),
-          );
-          return;
-        }
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const ProfileScreen()),
+        );
+        return;
       }
 
       // Otherwise show the underlying message (mapped through AuthProvider).
@@ -206,11 +201,18 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                   const SizedBox(width: AppTheme.padding16),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _isProcessing ? null : _resend,
+                      onPressed:
+                          (_isProcessing ||
+                                  (_lastResendTime != null &&
+                                      DateTime.now()
+                                              .difference(_lastResendTime!)
+                                              .inSeconds <
+                                          _resendCooldownSeconds))
+                              ? null
+                              : _resend,
                       child: const Text('Resend'),
                     ),
-                  ),
-                ],
+                  ),\n                ],
               ),
               const SizedBox(height: AppTheme.padding16),
               ElevatedButton(
