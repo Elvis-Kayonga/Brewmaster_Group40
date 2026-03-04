@@ -30,15 +30,21 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleSignIn() async {
     if (!_formKey.currentState!.validate()) return;
     final authProvider = context.read<AuthProvider>();
-    await authProvider.signIn(
+    final success = await authProvider.signIn(
       _emailController.text.trim(),
       _passwordController.text,
     );
+    if (success && mounted) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
   }
 
   Future<void> _handleGoogleSignIn() async {
     final authProvider = context.read<AuthProvider>();
-    await authProvider.signInWithGoogle();
+    final success = await authProvider.signInWithGoogle();
+    if (success && mounted) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
   }
 
   Future<void> _handleForgotPassword() async {

@@ -7,10 +7,23 @@ import 'package:brewmaster/presentation/widgets/common/custom_button.dart';
 import 'package:brewmaster/presentation/widgets/common/loading_indicator.dart';
 import 'package:brewmaster/presentation/widgets/common/error_state_widget.dart';
 import 'package:brewmaster/presentation/widgets/common/status_badge.dart';
+import 'package:brewmaster/presentation/screens/profile/edit_profile_screen.dart';
+import 'package:brewmaster/presentation/screens/auth/login_screen.dart';
+import 'package:brewmaster/data/providers/auth_provider.dart';
+import 'package:brewmaster/presentation/screens/dashboard/dashboard_screen.dart';
+import 'package:brewmaster/presentation/screens/auth/verify_email_screen.dart';
 
 /// Profile screen displaying user information.
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool _hasPrompted = false;
+  UserProvider? _userProvider;
 
   StatusBadgeType _verificationBadgeType(VerificationStatus status) {
     switch (status) {
@@ -25,10 +38,68 @@ class ProfileScreen extends StatelessWidget {
     }
   }
 
+  void _onUserProviderChanged() {
+    if (!_hasPrompted) _maybePromptResend();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final up = Provider.of<UserProvider>(context);
+    if (_userProvider != up) {
+      _userProvider?.removeListener(_onUserProviderChanged);
+      _userProvider = up;
+      _userProvider?.addListener(_onUserProviderChanged);
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybePromptResend());
+  }
+
+  @override
+  void dispose() {
+    _userProvider?.removeListener(_onUserProviderChanged);
+    super.dispose();
+  }
+
+  Future<void> _maybePromptResend() async {
+    final profile = _userProvider?.userProfile;
+    if (profile == null) return;
+    if (profile.verificationStatus != VerificationStatus.unverified) return;
+    if (_hasPrompted) return;
+    _hasPrompted = true;
+
+    // Auto-resend once (no prompt)
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final ok = await auth.sendEmailVerification();
+    if (!mounted) return;
+    if (ok) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => VerifyEmailScreen(email: profile.email),
+        ),
+      );
+    } else {
+      final msg = auth.errorMessage ?? 'Failed to send verification email.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(
+        title: const Text('Profile'),
+        actions: [
+          IconButton(
+            tooltip: 'Dashboard',
+            icon: const Icon(Icons.dashboard),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const DashboardScreen()),
+              );
+            },
+          ),
+        ],
+      ),
       body: Consumer<UserProvider>(
         builder: (context, userProvider, _) {
           if (userProvider.isLoading) {
@@ -106,6 +177,37 @@ class ProfileScreen extends StatelessWidget {
                             ),
                             showIndicator: true,
                           ),
+                          const SizedBox(width: AppTheme.padding8),
+                          // If user is unverified, offer a button to resend verification
+                          if (profile.verificationStatus ==
+                              VerificationStatus.unverified)
+                            TextButton.icon(
+                              icon: const Icon(Icons.verified_user_outlined),
+                              label: const Text('Verify Email'),
+                              onPressed: () async {
+                                final auth = Provider.of<AuthProvider>(
+                                  context,
+                                  listen: false,
+                                );
+                                final ok = await auth.sendEmailVerification();
+                                if (ok && context.mounted) {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => VerifyEmailScreen(
+                                        email: profile.email,
+                                      ),
+                                    ),
+                                  );
+                                } else if (context.mounted) {
+                                  final msg =
+                                      auth.errorMessage ??
+                                      'Failed to send verification email.';
+                                  ScaffoldMessenger.of(
+                                    context,
+                                  ).showSnackBar(SnackBar(content: Text(msg)));
+                                }
+                              },
+                            ),
                         ],
                       ),
                     ],
@@ -174,8 +276,36 @@ class ProfileScreen extends StatelessWidget {
                   isFullWidth: true,
                   leadingIcon: Icons.edit,
                   onPressed: () {
-                    // TODO: Navigate to edit profile screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => EditProfileScreen(userProfile: profile),
+                      ),
+                    );
                   },
+                ),
+                const SizedBox(height: AppTheme.padding16),
+                // Sign out link
+                Center(
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.logout),
+                    label: const Text('Sign out'),
+                    onPressed: () async {
+                      final auth = Provider.of<AuthProvider>(
+                        context,
+                        listen: false,
+                      );
+                      // capture navigator before the async gap
+                      final navigator = Navigator.of(context);
+                      await auth.signOut();
+                      if (!mounted) return;
+                      // after logout, send user to login page and clear stack
+                      navigator.pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        (r) => false,
+                      );
+                    },
+                  ),
                 ),
               ],
             ),

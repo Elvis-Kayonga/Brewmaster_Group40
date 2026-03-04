@@ -194,7 +194,7 @@ These tasks establish the foundation that all other developers depend on. Estima
     - _Requirements: 1.2, 1.7, 16.1 (Clean Architecture)_
     - _Developer: Developer 1_
   
-  - [ ]* 1.2 Write property test for authentication methods
+  - [x]* 1.2 Write property test for authentication methods
     - **Property 1: Authentication Method Support**
     - **Validates: Requirements 1.2**
     - _Developer: Developer 1_
@@ -207,7 +207,7 @@ These tasks establish the foundation that all other developers depend on. Estima
     - _Requirements: 1.2, 1.7, 16.1 (Clean Architecture), 16.2 (Provider state management)_
     - _Developer: Developer 1_
   
-  - [ ]* 1.4 Write property test for session persistence
+  - [x]* 1.4 Write property test for session persistence
     - **Property 3: Session State Persistence**
     - **Validates: Requirements 1.7**
     - _Developer: Developer 1_
@@ -252,7 +252,7 @@ These tasks establish the foundation that all other developers depend on. Estima
     - _Requirements: 1.6, 1.8, 7.2, 16.1 (Clean Architecture)_
     - _Developer: Developer 1_
   
-  - [ ]* 3.2 Write property test for profile updates
+  - [x]* 3.2 Write property test for profile updates
     - **Property 4: Profile Update Synchronization**
     - **Validates: Requirements 1.8**
     - _Developer: Developer 1_
@@ -274,12 +274,12 @@ These tasks establish the foundation that all other developers depend on. Estima
     - _Requirements: 7.1, 7.2, 16.1 (Clean Architecture)_
     - _Developer: Developer 1_
 
-  - [ ]* 3.5 Write property test for UserProfile serialization
+  - [x]* 3.5 Write property test for UserProfile serialization
     - **Property 2: Profile Data Persistence Round-Trip**
     - **Validates: Requirements 1.3, 1.4, 1.6**
     - _Developer: Developer 1_
 
-- [ ] 4. Checkpoint - Authentication and profiles complete (Developer 1 + Developer 6)
+- [x] 4. Checkpoint - Authentication and profiles complete (Developer 1 + Developer 6)
   - Ensure all authentication and profile tests pass
   - Verify offline profile caching works
   - Test on emulator/device

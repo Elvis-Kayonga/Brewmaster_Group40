@@ -35,6 +35,15 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  /// Fetch a profile without updating provider state (useful during initialization).
+  Future<UserProfile?> fetchProfileQuietly(String userId) async {
+    try {
+      return await _userService.getUserProfile(userId);
+    } catch (e) {
+      return null;
+    }
+  }
+
   /// Create a new user profile.
   Future<bool> createProfile(UserProfile profile) async {
     _setLoading(true);

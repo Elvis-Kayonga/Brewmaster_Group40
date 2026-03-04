@@ -30,7 +30,43 @@ class AuthProvider extends ChangeNotifier {
       _currentUser = user;
       notifyListeners();
     });
+    // perform an initial reload to ensure the local user is still valid
+    // particularly useful when the user record may have been removed from
+    // Firebase console while the app is running (e.g. during debugging).
+    _refreshCurrentUser();
   }
+
+  /// Reloads the underlying Firebase user and updates state accordingly.
+  ///
+  /// If the user has been deleted on the server the reload call will throw
+  /// and we treat that as a sign-out (currentUser becomes null).
+  Future<void> _refreshCurrentUser() async {
+    try {
+      final u = _authService.currentUser;
+      if (u != null) {
+        await u.reload();
+        _currentUser = _authService.currentUser;
+        notifyListeners();
+      }
+    } catch (e) {
+      // Only clear state if the error indicates the user was deleted on the
+      // server.  Other failures (network glitches, etc.) should not log the
+      // user out immediately; we simply ignore them and leave the current
+      // user intact.
+      if (e is FirebaseAuthException && e.code == 'user-not-found') {
+        _currentUser = null;
+        notifyListeners();
+      } else {
+        // non-fatal reload error; just log for debugging
+        // ignore: avoid_print
+        print('AuthProvider.refresh: reload error (ignored): $e');
+      }
+    }
+  }
+
+  /// Public wrapper which can be called by external widgets to refresh the
+  /// authentication state (e.g. before routing decisions).
+  Future<void> refresh() => _refreshCurrentUser();
 
   /// Sign up with email and password.
   Future<bool> signUp(String email, String password) async {
@@ -122,6 +158,65 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Send an email verification to the currently signed-in user.
+  Future<bool> sendEmailVerification() async {
+    _setLoading(true);
+    _clearError();
+    try {
+      final sent = await _authService.sendEmailVerification();
+      if (!sent) {
+        // either there was no user or the email was already verified
+        _setError(
+          'No verification email sent (already verified or not signed in)',
+        );
+      }
+      return sent;
+    } on FirebaseAuthException catch (e) {
+      _setError(_mapFirebaseError(e));
+      return false;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Check if the current user's email is verified (reloads user state).
+  Future<bool> checkEmailVerified() async {
+    _setLoading(true);
+    _clearError();
+    try {
+      final verified = await _authService.isEmailVerified();
+      await _refreshCurrentUser();
+      return verified;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Apply an email action code (for example an oobCode from an email link).
+  Future<bool> applyEmailActionCode(String code) async {
+    _setLoading(true);
+    _clearError();
+    try {
+      await _authService.applyActionCode(code);
+      await _refreshCurrentUser();
+      return true;
+    } on FirebaseAuthException catch (e) {
+      _setError(_mapFirebaseError(e));
+      return false;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// Clear error message.
   void clearError() {
     _clearError();
@@ -161,6 +256,13 @@ class AuthProvider extends ChangeNotifier {
         return 'Too many attempts. Please try again later.';
       case 'invalid-credential':
         return 'Invalid email or password.';
+      case 'invalid-action-code':
+        return 'Verification link is invalid or malformed.';
+      case 'expired-action-code':
+        return 'Verification link has expired. Request a new email.';
+      case 'user-not-found':
+        // already covered earlier but kept for clarity
+        return 'No account found with this email.';
       default:
         return e.message ?? 'An authentication error occurred.';
     }
