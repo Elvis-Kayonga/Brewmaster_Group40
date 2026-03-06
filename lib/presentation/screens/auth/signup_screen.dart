@@ -6,6 +6,7 @@ import 'package:brewmaster/presentation/widgets/common/custom_text_field.dart';
 import 'package:brewmaster/presentation/widgets/common/custom_button.dart';
 import 'package:brewmaster/presentation/widgets/common/error_state_widget.dart';
 import 'package:brewmaster/presentation/screens/auth/profile_setup_screen.dart';
+import 'package:brewmaster/utils/password_validator.dart';
 
 /// Sign-up screen collecting email, password and display name in a single step.
 class SignupScreen extends StatefulWidget {
@@ -21,6 +22,17 @@ class _SignupScreenState extends State<SignupScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _displayNameController = TextEditingController();
+  PasswordStrength _passwordStrength = PasswordStrength.none;
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordController.addListener(() {
+      setState(() {
+        _passwordStrength = PasswordValidator.getStrength(_passwordController.text);
+      });
+    });
+  }
 
   @override
   void dispose() {
@@ -37,6 +49,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Future<void> _handleSignUp() async {
     if (!_validateInputs()) return;
+    final nav = Navigator.of(context);
     final authProvider = context.read<AuthProvider>();
     final success = await authProvider.signUp(
       _emailController.text.trim(),
@@ -45,11 +58,8 @@ class _SignupScreenState extends State<SignupScreen> {
     if (success && mounted) {
       final user = authProvider.currentUser;
       if (user != null) {
-        // Send verification email in background, but navigate directly to
-        // profile setup so the UX matches Google sign-up.
-        await authProvider.sendEmailVerification();
-        if (!mounted) return;
-        Navigator.of(context).pushReplacement(
+        // Go directly to profile setup (verification email will be sent after profile creation)
+        nav.pushReplacement(
           MaterialPageRoute(
             builder: (_) => ProfileSetupScreen(
               userId: user.uid,
@@ -205,22 +215,19 @@ class _SignupScreenState extends State<SignupScreen> {
         controller: _passwordController,
         labelText: 'Password',
         textInputAction: TextInputAction.next,
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Password is required';
-          }
-          if (value.length < 6) {
-            return 'Password must be at least 6 characters';
-          }
-          return null;
-        },
+        validator: (value) => PasswordValidator.validate(value),
       ),
+      const SizedBox(height: AppTheme.padding8),
+      _buildPasswordStrengthIndicator(),
       const SizedBox(height: AppTheme.padding16),
       PasswordTextField(
         controller: _confirmPasswordController,
         labelText: 'Confirm Password',
         textInputAction: TextInputAction.done,
         validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please confirm your password';
+          }
           if (value != _passwordController.text) {
             return 'Passwords do not match';
           }
@@ -229,4 +236,75 @@ class _SignupScreenState extends State<SignupScreen> {
       ),
     ];
   }
+
+  Widget _buildPasswordStrengthIndicator() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: _passwordStrength.index / PasswordStrength.values.length,
+                  minHeight: 8,
+                  backgroundColor: Colors.grey[300],
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    _passwordStrength.color,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: AppTheme.padding8),
+            Text(
+              _passwordStrength.label,
+              style: AppTheme.caption.copyWith(
+                color: _passwordStrength.color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppTheme.padding8),
+        Text(
+          'Requirements:',
+          style: AppTheme.caption.copyWith(fontWeight: FontWeight.w600),
+        ),
+        _buildRequirement('At least 8 characters', _passwordController.text.length >= 8),
+        _buildRequirement('Uppercase letter (A-Z)', _passwordController.text.contains(RegExp(r'[A-Z]'))),
+        _buildRequirement('Lowercase letter (a-z)', _passwordController.text.contains(RegExp(r'[a-z]'))),
+        _buildRequirement('Number (0-9)', _passwordController.text.contains(RegExp(r'[0-9]'))),
+        _buildRequirement('Special character (!@#\$%^&*)', _hasSpecialCharacter()),
+      ],
+    );
+  }
+
+  bool _hasSpecialCharacter() {
+    const specialChars = '!@#\$%^&*()_+-=[]{}:;\'",.<>?/\\|`~';
+    return _passwordController.text.split('').any((char) => specialChars.contains(char));
+  }
+
+  Widget _buildRequirement(String text, bool met) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppTheme.padding4),
+      child: Row(
+        children: [
+          Icon(
+            met ? Icons.check_circle : Icons.radio_button_unchecked,
+            size: 16,
+            color: met ? Colors.green : Colors.grey,
+          ),
+          const SizedBox(width: AppTheme.padding8),
+          Text(
+            text,
+            style: AppTheme.body.copyWith(
+              color: met ? Colors.green : Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 }

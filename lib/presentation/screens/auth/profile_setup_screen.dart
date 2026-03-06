@@ -8,6 +8,7 @@ import 'package:brewmaster/presentation/widgets/common/custom_text_field.dart';
 import 'package:brewmaster/presentation/widgets/common/custom_button.dart';
 import 'package:brewmaster/presentation/widgets/common/error_state_widget.dart';
 import 'package:brewmaster/presentation/screens/profile/profile_screen.dart';
+import 'package:brewmaster/presentation/screens/auth/verify_email_screen.dart';
 import 'package:brewmaster/data/providers/auth_provider.dart';
 
 /// Profile setup screen shown after registration.
@@ -142,12 +143,30 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     final userProvider = context.read<UserProvider>();
     final success = await userProvider.createProfile(profile);
     if (success && mounted) {
-      // Redirect user to their profile screen once the profile is created.
-      // Clear the back stack so onboarding cannot be revisited.
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const ProfileScreen()),
-        (route) => false,
-      );
+      final auth = context.read<AuthProvider>();
+      final firebaseUser = auth.currentUser;
+      final isGoogleSignIn = firebaseUser?.providerData.any((p) => p.providerId == 'google.com') ?? false;
+      
+      if (isGoogleSignIn) {
+        // Google users are already verified, go directly to profile
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const ProfileScreen()),
+          (route) => false,
+        );
+      } else {
+        // Email/password users need to verify their email
+        // Send verification email
+        await auth.sendEmailVerification();
+        
+        if (mounted) {
+          // Navigate to verification screen
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => VerifyEmailScreen(email: widget.email),
+            ),
+          );
+        }
+      }
     }
   }
 

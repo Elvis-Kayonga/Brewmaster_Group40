@@ -11,6 +11,7 @@ import 'package:brewmaster/data/services/auth_service.dart';
 import 'package:brewmaster/data/services/user_service.dart';
 import 'package:brewmaster/domain/models/user_profile.dart';
 import 'package:brewmaster/presentation/screens/auth/signup_screen.dart';
+import 'package:brewmaster/presentation/screens/auth/login_screen.dart';
 import 'package:brewmaster/presentation/screens/auth/profile_setup_screen.dart';
 
 // same supporting test classes as profile test
@@ -99,7 +100,11 @@ void main() {
   testWidgets(
     'Email signup jumps to profile setup with provided display name',
     (WidgetTester tester) async {
-      final fakeUser = TestUser(uid: 'uid123', email: 'test@example.com');
+      final fakeUser = TestUser(
+        uid: 'uid123',
+        email: 'test@example.com',
+        emailVerified: true, // make sure we skip the verification screen in this basic flow
+      );
 
       final authProvider = app.AuthProvider(
         authService: FakeAuthService(fakeUser: fakeUser),
@@ -149,4 +154,75 @@ void main() {
       expect(fakeService.lastCreated!.displayName, equals('My Name'));
     },
   );
+
+  testWidgets('Email signup with unverified email shows verify screen',
+      (WidgetTester tester) async {
+    final fakeUser = TestUser(
+      uid: 'uid123',
+      email: 'test@example.com',
+      emailVerified: false,
+    );
+
+    final authProvider = app.AuthProvider(
+      authService: FakeAuthService(fakeUser: fakeUser),
+    )..init();
+    final fakeService = CapturingUserService();
+    final userProvider = UserProvider(userService: fakeService);
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<app.AuthProvider>.value(value: authProvider),
+          ChangeNotifierProvider<UserProvider>.value(value: userProvider),
+        ],
+        child: const MaterialApp(home: SignupScreen()),
+      ),
+    );
+
+    await tester.enterText(
+      find.byType(TextFormField).at(0),
+      'test@example.com',
+    );
+    await tester.enterText(find.byType(TextFormField).at(1), 'password');
+    await tester.enterText(find.byType(TextFormField).at(2), 'password');
+    await tester.enterText(find.byType(TextFormField).at(3), 'My Name');
+
+    await tester.tap(find.text('Sign Up'));
+    await tester.pumpAndSettle();
+
+    // should be on verify screen instead of profile setup
+    expect(find.text('Verify Your Email'), findsOneWidget);
+  });
+
+  testWidgets('Login with unverified email redirects to verify screen',
+      (WidgetTester tester) async {
+    final fakeUser = TestUser(
+      uid: 'login-id',
+      email: 'login@example.com',
+      emailVerified: false,
+    );
+    final authProvider = app.AuthProvider(
+      authService: FakeAuthService(fakeUser: fakeUser),
+    )..init();
+    final fakeService = CapturingUserService();
+    final userProvider = UserProvider(userService: fakeService);
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<app.AuthProvider>.value(value: authProvider),
+          ChangeNotifierProvider<UserProvider>.value(value: userProvider),
+        ],
+        child: const MaterialApp(home: LoginScreen()),
+      ),
+    );
+
+    // enter credentials and sign in
+    await tester.enterText(find.byType(TextFormField).at(0), 'login@example.com');
+    await tester.enterText(find.byType(TextFormField).at(1), 'password');
+    await tester.tap(find.text('Sign In'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Verify Your Email'), findsOneWidget);
+  });
 }

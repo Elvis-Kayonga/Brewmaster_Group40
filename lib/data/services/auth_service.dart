@@ -26,9 +26,16 @@ class AuthService {
         password: password,
       );
       return credential.user;
-    } on FirebaseAuthException {
+    } on FirebaseAuthException catch (e, st) {
+      // Log FirebaseAuthException details for debugging
+      print('⚠️ signInWithEmail FirebaseAuthException: code=${e.code}, message=${e.message}');
+      print(st);
       rethrow;
-    } catch (e) {
+    } catch (e, st) {
+      // Log full exception & stack for debugging unexpected cast/errors
+      // so we can see actual Firebase codes returned on device.
+      print('⚠️ signInWithEmail caught non-Firebase exception: $e');
+      print(st);
       // Rare platform channel casts (Pigeon) can occur even when auth
       // operation actually succeeded (observed in some plugin versions).
       // If that happens, check the current Firebase user as a fallback.
@@ -55,9 +62,25 @@ class AuthService {
         password: password,
       );
       return credential.user;
-    } on FirebaseAuthException {
+    } on FirebaseAuthException catch (e, st) {
+      // Log FirebaseAuthException details for debugging
+      print('⚠️ signInWithEmail FirebaseAuthException: code=${e.code}, message=${e.message}');
+      print(st);
       rethrow;
-    } catch (e) {
+    } catch (e, st) {
+      // Log details for debugging
+      print('⚠️ signInWithEmail caught non-Firebase exception: $e');
+      print(st);
+      // Some platform/channel versions occasionally throw Pigeon casting
+      // errors where the plugin's platform code returns an unexpected
+      // value (e.g. a List<Object?>) which results in a cast error. In
+      // that case the auth operation may have actually succeeded — check
+      // the current Firebase user as a fallback before failing.
+      final err = e.toString();
+      if (err.contains('PigeonUserDetails') || err.contains('List<Object?>')) {
+        final user = _auth.currentUser;
+        if (user != null) return user;
+      }
       throw Exception('Sign in failed: $e');
     }
   }
@@ -77,9 +100,15 @@ class AuthService {
       final userCredential = await _auth.signInWithCredential(credential);
       print('✅ Signed in: ${userCredential.user?.email}');
       return userCredential.user;
-    } on FirebaseAuthException {
+    } on FirebaseAuthException catch (e, st) {
+      // Log FirebaseAuthException for debugging
+      print('⚠️ signInWithGoogle FirebaseAuthException: code=${e.code}, message=${e.message}');
+      print(st);
       rethrow;
-    } catch (e) {
+    } catch (e, st) {
+      // Log other exceptions too
+      print('⚠️ signInWithGoogle caught non-Firebase exception: $e');
+      print(st);
       // Known google_sign_in Pigeon bug - auth succeeds but return cast fails
       // Firebase auth already completed so check currentUser directly
       if (e.toString().contains('PigeonUserDetails') ||
@@ -94,7 +123,6 @@ class AuthService {
       throw Exception('Google sign-in failed: $e');
     }
   }
-
   /// Sign out from all providers.
   Future<void> signOut() async {
     try {
@@ -157,13 +185,41 @@ class AuthService {
     }
   }
 
+  /// Check an email action code to get information about it.
+  Future<String?> checkActionCode(String code) async {
+    try {
+      print('[AUTH_SERVICE] Checking action code...');
+      final info = await _auth.checkActionCode(code);
+      print('[AUTH_SERVICE] Action code operation: ${info.operation}');
+      print('[AUTH_SERVICE] Action code data keys: ${info.data.keys}');
+      // Only handle email verification actions
+      if (info.operation == ActionCodeInfoOperation.verifyEmail) {
+        final email = info.data['email'] as String?;
+        print('[AUTH_SERVICE] ✅ Email from action code: $email');
+        return email;
+      }
+      print('[AUTH_SERVICE] ❌ Not a verification action, operation: ${info.operation}');
+      return null;
+    } on FirebaseAuthException catch (e) {
+      print('[AUTH_SERVICE] ❌ FirebaseAuthException checking action code: code=${e.code}, message=${e.message}');
+      rethrow;
+    } catch (e) {
+      print('[AUTH_SERVICE] ❌ Exception checking action code: $e');
+      throw Exception('Check action code failed: $e');
+    }
+  }
+
   /// Apply an email action code (e.g. an email verification oobCode).
   Future<void> applyActionCode(String code) async {
     try {
+      print('[AUTH_SERVICE] Applying action code...');
       await _auth.applyActionCode(code);
-    } on FirebaseAuthException {
+      print('[AUTH_SERVICE] ✅ Action code applied successfully');
+    } on FirebaseAuthException catch (e) {
+      print('[AUTH_SERVICE] ❌ FirebaseAuthException applying action code: code=${e.code}, message=${e.message}');
       rethrow;
     } catch (e) {
+      print('[AUTH_SERVICE] ❌ Exception applying action code: $e');
       throw Exception('Apply action code failed: $e');
     }
   }

@@ -198,6 +198,23 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Check an email action code to get the associated email.
+  Future<String?> checkEmailActionCode(String code) async {
+    _setLoading(true);
+    _clearError();
+    try {
+      return await _authService.checkActionCode(code);
+    } on FirebaseAuthException catch (e) {
+      _setError(_mapFirebaseError(e));
+      return null;
+    } catch (e) {
+      _setError(e.toString());
+      return null;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// Apply an email action code (for example an oobCode from an email link).
   Future<bool> applyEmailActionCode(String code) async {
     _setLoading(true);

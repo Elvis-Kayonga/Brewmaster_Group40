@@ -51,6 +51,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _userProvider = up;
       _userProvider?.addListener(_onUserProviderChanged);
     }
+    // Load profile if not loaded
+    if (_userProvider?.userProfile == null) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final userId = auth.currentUser?.uid;
+      if (userId != null) {
+        _userProvider?.loadProfile(userId);
+      }
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybePromptResend());
   }
 

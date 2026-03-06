@@ -44,9 +44,10 @@ dependencies:
   cloud_firestore: ^4.14.0
   firebase_storage: ^11.6.0
   firebase_messaging: ^14.7.10
+  firebase_dynamic_links: ^5.4.8
+  app_links: ^7.0.0
   google_sign_in: ^6.1.6
-  firebase_app_check: ^0.2.1+8
-
+  firebase_app_check: ^0.2.2
   # Image Handling
   image_picker: ^1.0.7
   

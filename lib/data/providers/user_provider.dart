@@ -21,6 +21,15 @@ class UserProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  /// Fetch a profile by email without updating provider state.
+  Future<UserProfile?> fetchProfileByEmail(String email) async {
+    try {
+      return await _userService.getUserProfileByEmail(email);
+    } catch (e) {
+      return null;
+    }
+  }
+
   /// Load a user profile by ID.
   Future<void> loadProfile(String userId) async {
     _setLoading(true);

@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:brewmaster/config/theme.dart';
 import 'package:brewmaster/data/providers/auth_provider.dart';
+import 'package:brewmaster/data/providers/user_provider.dart';
 import 'package:brewmaster/presentation/widgets/common/custom_text_field.dart';
 import 'package:brewmaster/presentation/widgets/common/custom_button.dart';
 import 'package:brewmaster/presentation/widgets/common/error_state_widget.dart';
 import 'signup_screen.dart';
+import 'profile_setup_screen.dart';
+import '../dashboard/dashboard_screen.dart';
 
 /// Login screen with email/password and Google sign-in.
 class LoginScreen extends StatefulWidget {
@@ -30,20 +33,98 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleSignIn() async {
     if (!_formKey.currentState!.validate()) return;
     final authProvider = context.read<AuthProvider>();
+    final nav = Navigator.of(context);
     final success = await authProvider.signIn(
       _emailController.text.trim(),
       _passwordController.text,
     );
     if (success && mounted) {
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      final user = authProvider.currentUser;
+      // capture providers/navigator before any awaits to satisfy lint
+      final userProvider = context.read<UserProvider>();
+      if (user != null) {
+        // Check if profile exists
+        try {
+          final profile = await userProvider.fetchProfileQuietly(user.uid);
+          if (profile != null) {
+            // Profile exists - go to dashboard
+            nav.pushReplacement(
+              MaterialPageRoute(builder: (_) => const DashboardScreen()),
+            );
+          } else {
+            // Profile doesn't exist - go to profile setup
+            nav.pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => ProfileSetupScreen(
+                  userId: user.uid,
+                  email: user.email ?? '',
+                  displayName: user.displayName ?? 'User',
+                  role: null,
+                ),
+              ),
+            );
+          }
+        } catch (e) {
+          // On error, assume new user and go to profile setup
+          nav.pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => ProfileSetupScreen(
+                userId: user.uid,
+                email: user.email ?? '',
+                displayName: user.displayName ?? 'User',
+                role: null,
+              ),
+            ),
+          );
+        }
+      }
     }
   }
 
   Future<void> _handleGoogleSignIn() async {
     final authProvider = context.read<AuthProvider>();
+    final nav = Navigator.of(context);
     final success = await authProvider.signInWithGoogle();
     if (success && mounted) {
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      final user = authProvider.currentUser;
+      if (user != null) {
+        // Google accounts are treated as verified, no email check needed.
+        // Check if profile exists
+        final userProvider = context.read<UserProvider>();
+        try {
+          final profile = await userProvider.fetchProfileQuietly(user.uid);
+          if (profile != null) {
+            // Profile exists - go to dashboard
+            nav.pushReplacement(
+              MaterialPageRoute(builder: (_) => const DashboardScreen()),
+            );
+          } else {
+            // Profile doesn't exist - go to profile setup
+            nav.pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => ProfileSetupScreen(
+                  userId: user.uid,
+                  email: user.email ?? '',
+                  displayName: user.displayName ?? 'User',
+                  role: null,
+                ),
+              ),
+            );
+          }
+        } catch (e) {
+          // On error, assume new user and go to profile setup
+          nav.pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => ProfileSetupScreen(
+                userId: user.uid,
+                email: user.email ?? '',
+                displayName: user.displayName ?? 'User',
+                role: null,
+              ),
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -56,9 +137,10 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
     final authProvider = context.read<AuthProvider>();
+    final messenger = ScaffoldMessenger.of(context);
     final sent = await authProvider.sendPasswordResetEmail(email);
     if (sent && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Password reset email sent.')),
       );
     }
