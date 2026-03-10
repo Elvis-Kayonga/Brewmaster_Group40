@@ -94,7 +94,7 @@ These tasks establish the foundation that all other developers depend on. Estima
     - _Developer: Developer 6_
   - **DELIVERABLE: Complete widget library that all UI developers will use**
 
-- [ ] 0.3 Define ALL core data models (All Developers) - **BLOCKING TASK**
+- [x] 0.3 Define ALL core data models (All Developers) - **BLOCKING TASK**
   - [x] 0.3.1 Create UserProfile model with validation (Developer 1)
     - Create lib/domain/models/user_profile.dart with UserProfile class
     - Fields: userId, email, phone, role, farmName, farmSize, location, varieties (farmer), businessName, businessType, purchaseVolume (buyer), verificationStatus, createdAt, updatedAt
@@ -103,7 +103,7 @@ These tasks establish the foundation that all other developers depend on. Estima
     - _Requirements: 1.3, 1.4, 15.4, 16.1 (Clean Architecture)_
     - _Developer: Developer 1_
   
-  - [ ] 0.3.2 Create CoffeeListing model with validation (Developer 2)
+  - [x] 0.3.2 Create CoffeeListing model with validation (Developer 2)
     - Create lib/domain/models/coffee_listing.dart with CoffeeListing class
     - Fields: listingId, farmerId, variety, quantity, pricePerKg, processingMethod, altitude, harvestDate, qualityScore, description, images, location, status, createdAt, updatedAt
     - Define ProcessingMethod enum (washed, natural, honey)
@@ -113,7 +113,7 @@ These tasks establish the foundation that all other developers depend on. Estima
     - _Requirements: 2.1, 2.6, 8.4, 15.1, 16.1 (Clean Architecture)_
     - _Developer: Developer 2_
   
-  - [ ] 0.3.3 Create Message and Conversation models (Developer 3)
+  - [x] 0.3.3 Create Message and Conversation models (Developer 3)
     - Create lib/domain/models/message.dart with Message class
     - Fields: messageId, conversationId, senderId, receiverId, content, messageType, listingId (optional), isRead, createdAt
     - Define MessageType enum (text, listing_reference)
@@ -123,7 +123,7 @@ These tasks establish the foundation that all other developers depend on. Estima
     - _Requirements: 5.2, 5.5, 16.1 (Clean Architecture)_
     - _Developer: Developer 3_
   
-  - [ ] 0.3.4 Create EscrowTransaction model (Developer 4)
+  - [x] 0.3.4 Create EscrowTransaction model (Developer 4)
     - Create lib/domain/models/escrow_transaction.dart with EscrowTransaction class
     - Fields: transactionId, listingId, buyerId, farmerId, amount, paymentMethod, status, deliveryConfirmed, receiptConfirmed, disputeReason, createdAt, updatedAt
     - Define TransactionStatus enum (pending, paid, delivered, completed, disputed)
@@ -132,7 +132,7 @@ These tasks establish the foundation that all other developers depend on. Estima
     - _Requirements: 6.1, 15.2, 16.1 (Clean Architecture)_
     - _Developer: Developer 4_
   
-  - [ ] 0.3.5 Create supporting models (Developer 5)
+  - [x] 0.3.5 Create supporting models (Developer 5)
     - Create lib/domain/models/market_price.dart (variety, lowPrice, avgPrice, highPrice, date)
     - Create lib/domain/models/enums.dart with VerificationStatus enum (unverified, pending, verified, rejected)
     - Create lib/domain/models/notification_payload.dart (type, title, body, data)
@@ -357,23 +357,23 @@ These tasks establish the foundation that all other developers depend on. Estima
 
 #### Payments & Escrow (Developer 4)
 
-- [ ] 13. Implement payment integration (Developer 4)
-  - [ ] 13.1 Create PaymentService with escrow, M-Pesa/MTN integration, retry logic
+- [x] 13. Implement payment integration (Developer 4)
+  - [x] 13.1 Create PaymentService with escrow, M-Pesa/MTN integration, retry logic
   - [ ]* 13.2 Write property tests for transactions, status transitions, fund release, disputes, retry
-  - [ ] 13.3 Create PaymentProvider for state management
+  - [x] 13.3 Create PaymentProvider for state management
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8_
   - _Developer: Developer 4_
 
-- [ ] 14. Build payment UI (Developer 4)
-  - [ ] 14.1 Create PaymentScreen using CustomTextField, CustomButton from Phase 0
-  - [ ] 14.2 Create TransactionDetailScreen with StatusBadge, ConfirmationDialog from Phase 0
-  - [ ] 14.3 Create TransactionHistoryScreen
+- [x] 14. Build payment UI (Developer 4)
+  - [x] 14.1 Create PaymentScreen using CustomTextField, CustomButton from Phase 0
+  - [x] 14.2 Create TransactionDetailScreen with StatusBadge, ConfirmationDialog from Phase 0
+  - [x] 14.3 Create TransactionHistoryScreen
   - [ ]* 14.4 Write property test for transaction history
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 15.3_
   - _Developer: Developer 4_
 
-- [ ] 15. Implement payment security measures (Developer 4)
-  - [ ] 15.1 Add payment data validation
+- [x] 15. Implement payment security measures (Developer 4)
+  - [x] 15.1 Add payment data validation
   - [ ]* 15.2 Write property test for payment data security
   - _Requirements: 13.4_
   - _Developer: Developer 4_
