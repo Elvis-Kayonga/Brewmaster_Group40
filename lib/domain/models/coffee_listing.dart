@@ -1,31 +1,24 @@
 // lib/domain/models/coffee_listing.dart
 
-enum ProcessingMethod {
-  washed,
-  natural,
-  honey,
-}
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum ListingStatus {
-  draft,
-  active,
-  sold,
-  expired,
-}
+enum ProcessingMethod { washed, natural, honey }
+
+enum ListingStatus { draft, active, sold, expired }
 
 class CoffeeListing {
   final String listingId;
   final String farmerId;
   final String variety;
-  final double quantity; // in KG
+  final double quantity;
   final double pricePerKg;
   final ProcessingMethod processingMethod;
-  final double altitude; // meters above sea level
+  final double altitude;
   final DateTime harvestDate;
-  final double qualityScore; // 0 - 100
+  final double qualityScore;
   final String description;
   final List<String> images;
-  final String location;
+  final Map<String, double> location;
   final ListingStatus status;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -48,7 +41,6 @@ class CoffeeListing {
     required this.updatedAt,
   });
 
-  /// Convert object to JSON (for Firebase / API)
   Map<String, dynamic> toJson() {
     return {
       'listingId': listingId,
@@ -58,39 +50,38 @@ class CoffeeListing {
       'pricePerKg': pricePerKg,
       'processingMethod': processingMethod.name,
       'altitude': altitude,
-      'harvestDate': harvestDate.toIso8601String(),
+      'harvestDate': Timestamp.fromDate(harvestDate),
       'qualityScore': qualityScore,
       'description': description,
       'images': images,
       'location': location,
       'status': status.name,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
     };
   }
 
-  /// Create object from JSON
   factory CoffeeListing.fromJson(Map<String, dynamic> json) {
     return CoffeeListing(
-      listingId: json['listingId'],
-      farmerId: json['farmerId'],
-      variety: json['variety'],
+      listingId: json['listingId'] as String,
+      farmerId: json['farmerId'] as String,
+      variety: json['variety'] as String,
       quantity: (json['quantity'] as num).toDouble(),
       pricePerKg: (json['pricePerKg'] as num).toDouble(),
       processingMethod: ProcessingMethod.values.firstWhere(
         (e) => e.name == json['processingMethod'],
       ),
       altitude: (json['altitude'] as num).toDouble(),
-      harvestDate: DateTime.parse(json['harvestDate']),
+      harvestDate: (json['harvestDate'] as Timestamp).toDate(),
       qualityScore: (json['qualityScore'] as num).toDouble(),
-      description: json['description'],
-      images: List<String>.from(json['images']),
-      location: json['location'],
+      description: json['description'] as String,
+      images: List<String>.from(json['images'] as List),
+      location: Map<String, double>.from(json['location'] as Map),
       status: ListingStatus.values.firstWhere(
         (e) => e.name == json['status'],
       ),
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      createdAt: (json['createdAt'] as Timestamp).toDate(),
+      updatedAt: (json['updatedAt'] as Timestamp).toDate(),
     );
   }
 
@@ -106,7 +97,7 @@ class CoffeeListing {
     double? qualityScore,
     String? description,
     List<String>? images,
-    String? location,
+    Map<String, double>? location,
     ListingStatus? status,
     DateTime? createdAt,
     DateTime? updatedAt,
