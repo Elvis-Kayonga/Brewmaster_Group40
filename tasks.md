@@ -323,36 +323,36 @@ These tasks establish the foundation that all other developers depend on. Estima
 
 #### Listings & Search (Developer 2)
 
-- [ ] 5. Implement listing management system (Developer 2)
-  - [ ] 5.1 Create ListingRepository interface and FirebaseListingRepository implementation
+- [x] 5. Implement listing management system (Developer 2)
+  - [x] 5.1 Create ListingRepository interface and FirebaseListingRepository implementation
     - Create lib/domain/repositories/listing_repository.dart (abstract interface)
       - Define: `createListing()`, `updateListing()`, `deleteListing()`, `getListing()`, `getListings()`, `searchListings()`, `uploadListingImage()`, `watchListings()` stream
     - Create lib/data/repositories/firebase_listing_repository.dart (implements ListingRepository)
       - All Firestore/Storage imports stay here — never in UI or BLoC
-  - [ ]* 5.2 Write property tests for listing creation, offline queue, updates
-  - [ ] 5.3 Create ListingBloc (listing_bloc.dart, listing_event.dart, listing_state.dart)
-    - Create lib/presentation/blocs/listings/listing_bloc.dart
+  - [x]* 5.2 Write property tests for listing creation, offline queue, updates
+  - [x] 5.3 Create ListingBloc (listing_bloc.dart, listing_event.dart, listing_state.dart)
+    - Create lib/presentation/blocs/listing/listing_bloc.dart
     - Constructor receives `ListingRepository` (not Firebase directly)
-    - Events: `ListingLoadRequested`, `ListingCreateRequested`, `ListingUpdateRequested`, `ListingDeleteRequested`, `ListingSearchRequested`
-    - States: `ListingInitial`, `ListingLoading`, `ListingLoaded(listings)`, `ListingOperationSuccess`, `ListingFailure(message)`
+    - Events: `ActiveListingsLoadRequested`, `FarmerListingsLoadRequested`, `ListingLoadRequested`, `ListingCreateRequested`, `ListingUpdateRequested`, `ListingDeleteRequested`, `ListingsSearchRequested`
+    - States: `ListingInitial`, `ListingLoading`, `ActiveListingsLoaded`, `FarmerListingsLoaded`, `ListingDetailLoaded`, `ListingActionSuccess`, `ListingFailure(message)`
   - _Requirements: 2.1, 2.2, 2.5, 2.7, 2.8, 4.2, 4.8, 16.1 (Clean Architecture), 16.3 (BLoC state management)_
   - _Developer: Developer 2_
 
-- [ ] 6. Build listing management UI (Developer 2)
-  - [ ] 6.1 Create ListingFormScreen using CustomTextField, CustomDropdown, CustomButton from Phase 0
+- [x] 6. Build listing management UI (Developer 2)
+  - [x] 6.1 Create ListingFormScreen using CustomTextField, CustomDropdown, CustomButton from Phase 0
     - Create lib/presentation/screens/listings/listing_form_screen.dart
-  - [ ] 6.2 Create ListingDetailScreen
+  - [x] 6.2 Create ListingDetailScreen
     - Create lib/presentation/screens/listings/listing_detail_screen.dart
-  - [ ] 6.3 Create MyListingsScreen
+  - [x] 6.3 Create MyListingsScreen
     - Create lib/presentation/screens/listings/my_listings_screen.dart
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.7, 4.6, 8.1, 8.3, 16.1 (Clean Architecture)_
   - _Developer: Developer 2_
 
-- [ ] 7. Implement search and discovery system (Developer 2)
-  - [ ] 7.1 Create SearchScreen with filters, sort options, using common widgets from Phase 0
+- [x] 7. Implement search and discovery system (Developer 2)
+  - [x] 7.1 Create SearchScreen with filters, sort options, using common widgets from Phase 0
     - Create lib/presentation/screens/search/search_screen.dart
-  - [ ]* 7.2 Write property tests for search filters, text search, quality filtering
-  - [ ] 7.3 Create listing card widget using StatusBadge from Phase 0
+  - [x]* 7.2 Write property tests for search filters, text search, quality filtering
+  - [x] 7.3 Create listing card widget using StatusBadge from Phase 0
     - Create lib/presentation/widgets/listing/listing_card.dart
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.7, 4.8, 8.6, 16.1 (Clean Architecture)_
   - _Developer: Developer 2_

@@ -6,9 +6,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brewmaster/data/repositories/firebase_auth_repository.dart';
 import 'package:brewmaster/data/repositories/firebase_user_repository.dart';
 import 'package:brewmaster/data/repositories/firebase_payment_repository.dart';
+import 'package:brewmaster/data/repositories/firebase_listing_repository.dart';
 import 'package:brewmaster/data/repositories/firebase_message_repository.dart';
 import 'package:brewmaster/data/repositories/firebase_notification_repository.dart';
 import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
+import 'package:brewmaster/presentation/blocs/listing/listing_bloc.dart';
 import 'package:brewmaster/presentation/blocs/profile/profile_bloc.dart';
 import 'package:brewmaster/presentation/blocs/payment/payment_bloc.dart';
 import 'package:brewmaster/presentation/blocs/messaging/messaging_bloc.dart';
@@ -30,6 +32,7 @@ Future<void> main() async {
   final authRepository = FirebaseAuthRepository();
   final userRepository = FirebaseUserRepository();
   final paymentRepository = FirebasePaymentRepository();
+  final listingRepository = FirebaseListingRepository();
   final messageRepository = FirebaseMessageRepository();
   final notificationRepository = FirebaseNotificationRepository();
 
@@ -47,6 +50,9 @@ Future<void> main() async {
         ),
         BlocProvider<PaymentBloc>(
           create: (_) => PaymentBloc(paymentRepository: paymentRepository),
+        ),
+        BlocProvider<ListingBloc>(
+          create: (_) => ListingBloc(repository: listingRepository),
         ),
         BlocProvider<MessagingBloc>(
           create: (_) => MessagingBloc(repository: messageRepository),
