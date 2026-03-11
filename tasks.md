@@ -445,13 +445,13 @@ These tasks establish the foundation that all other developers depend on. Estima
 
 #### Dashboard & Market Prices (Developer 5)
 
-- [ ] 17. Implement market price system (Developer 5)
-  - [ ] 17.1 Create MarketPriceRepository interface and FirebaseMarketPriceRepository implementation
+- [x] 17. Implement market price system (Developer 5)
+  - [x] 17.1 Create MarketPriceRepository interface and FirebaseMarketPriceRepository implementation
     - Create lib/domain/repositories/market_price_repository.dart (abstract interface)
       - Define: `getMarketPrices()`, `syncDailyPrices()`, `watchMarketPrices()` stream
     - Create lib/data/repositories/firebase_market_price_repository.dart with daily sync and offline caching
-  - [ ]* 17.2 Write property tests for market price structure, offline caching
-  - [ ] 17.3 Create MarketPriceBloc (market_price_bloc.dart, market_price_event.dart, market_price_state.dart)
+  - [x]* 17.2 Write property tests for market price structure, offline caching
+  - [x] 17.3 Create MarketPriceBloc (market_price_bloc.dart, market_price_event.dart, market_price_state.dart)
     - Create lib/presentation/blocs/market_price/market_price_bloc.dart
     - Constructor receives `MarketPriceRepository` (not Firebase directly)
     - Events: `MarketPricesLoadRequested`, `MarketPricesSyncRequested`
@@ -462,17 +462,17 @@ These tasks establish the foundation that all other developers depend on. Estima
 - [x] 18. Build market price UI (Developer 5)
   - [x] 18.1 Create MarketPricesScreen using common widgets from Phase 0
   - [x] 18.2 Create PriceGuidanceWidget
-  - [ ]* 18.3 Write property test for price deviation warning
+  - [x]* 18.3 Write property test for price deviation warning
   - _Requirements: 3.1, 3.2, 3.3, 3.5, 3.6_
   - _Developer: Developer 5_
 
-- [ ] 19. Implement dashboard system (Developer 5)
-  - [ ] 19.1 Create DashboardRepository interface and FirebaseDashboardRepository implementation
+- [x] 19. Implement dashboard system (Developer 5)
+  - [x] 19.1 Create DashboardRepository interface and FirebaseDashboardRepository implementation
     - Create lib/domain/repositories/dashboard_repository.dart (abstract interface)
       - Define: `getFarmerDashboard()`, `getBuyerDashboard()`, `watchDashboard()` stream
     - Create lib/data/repositories/firebase_dashboard_repository.dart with metrics aggregation, trends, analytics
-  - [ ]* 19.2 Write property tests for dashboard calculations, trends, caching
-  - [ ] 19.3 Create DashboardBloc (dashboard_bloc.dart, dashboard_event.dart, dashboard_state.dart)
+  - [x]* 19.2 Write property tests for dashboard calculations, trends, caching
+  - [x] 19.3 Create DashboardBloc (dashboard_bloc.dart, dashboard_event.dart, dashboard_state.dart)
     - Create lib/presentation/blocs/dashboard/dashboard_bloc.dart
     - Constructor receives `DashboardRepository` (not Firebase directly)
     - Events: `DashboardLoadRequested`
