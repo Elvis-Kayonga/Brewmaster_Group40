@@ -2,8 +2,10 @@
 
 import 'package:flutter/material.dart';
 import '../common/status_badge.dart';
+import '../common/verification_badge.dart';
 import '../../../config/theme.dart';
 import '../../../domain/models/coffee_listing.dart';
+import '../../../domain/models/enums.dart';
 
 class ListingCard extends StatelessWidget {
   final CoffeeListing listing;
@@ -11,12 +13,16 @@ class ListingCard extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
+  /// Optional farmer verification status — shows VerificationBadge when set.
+  final VerificationStatus? farmerVerificationStatus;
+
   const ListingCard({
     super.key,
     required this.listing,
     required this.onTap,
     this.onEdit,
     this.onDelete,
+    this.farmerVerificationStatus,
   });
 
   @override
@@ -50,10 +56,23 @@ class ListingCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
-                        child: Text(
-                          listing.variety,
-                          style: AppTheme.heading2,
-                          overflow: TextOverflow.ellipsis,
+                        child: Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                listing.variety,
+                                style: AppTheme.heading2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (farmerVerificationStatus != null) ...[
+                              const SizedBox(width: AppTheme.margin4),
+                              VerificationBadge(
+                                status: farmerVerificationStatus!,
+                                compact: true,
+                              ),
+                            ],
+                          ],
                         ),
                       ),
                       StatusBadge(
