@@ -2,16 +2,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:brewmaster/domain/models/escrow_transaction.dart' as models;
 import 'package:brewmaster/domain/models/enums.dart';
-import 'package:brewmaster/data/services/payment_service.dart';
+import 'package:brewmaster/data/repositories/firebase_payment_repository.dart';
 
 void main() {
-  group('PaymentService Property Tests', () {
+  group('FirebasePaymentRepository Property Tests', () {
     late FakeFirebaseFirestore fakeFirestore;
-    late PaymentService paymentService;
+    late FirebasePaymentRepository repository;
 
     setUp(() {
       fakeFirestore = FakeFirebaseFirestore();
-      paymentService = PaymentService(firestore: fakeFirestore);
+      repository = FirebasePaymentRepository(firestore: fakeFirestore);
     });
 
     group('Transaction Creation', () {
@@ -21,7 +21,7 @@ void main() {
           final ids = <String>{};
 
           for (int i = 0; i < 10; i++) {
-            final transaction = await paymentService.createTransaction(
+            final transaction = await repository.createTransaction(
               buyerId: 'buyer_$i',
               farmerId: 'farmer_$i',
               listingId: 'listing_$i',
@@ -48,7 +48,7 @@ void main() {
       test(
         'Property: Created transaction should have pending status',
         () async {
-          final transaction = await paymentService.createTransaction(
+          final transaction = await repository.createTransaction(
             buyerId: 'buyer1',
             farmerId: 'farmer1',
             listingId: 'listing1',
@@ -68,7 +68,7 @@ void main() {
         final amounts = [10.5, 100.0, 1000.99, 50000.0];
 
         for (final amount in amounts) {
-          final transaction = await paymentService.createTransaction(
+          final transaction = await repository.createTransaction(
             buyerId: 'buyer1',
             farmerId: 'farmer1',
             listingId: 'listing1',
@@ -85,7 +85,7 @@ void main() {
       });
 
       test('Property: Transaction should initialize status history', () async {
-        final transaction = await paymentService.createTransaction(
+        final transaction = await repository.createTransaction(
           buyerId: 'buyer1',
           farmerId: 'farmer1',
           listingId: 'listing1',
@@ -108,7 +108,7 @@ void main() {
 
     group('Status Transitions', () {
       test('Property: Status transitions should be unidirectional', () async {
-        final transaction = await paymentService.createTransaction(
+        final transaction = await repository.createTransaction(
           buyerId: 'buyer1',
           farmerId: 'farmer1',
           listingId: 'listing1',
@@ -127,7 +127,7 @@ void main() {
             .update(withFunds.toFirestore());
 
         // Confirm delivery
-        final delivered = await paymentService.confirmDelivery(transaction.id);
+        final delivered = await repository.confirmDelivery(transaction.id);
         expect(
           delivered.status,
           TransactionStatus.delivered,
@@ -148,7 +148,7 @@ void main() {
       test(
         'Property: Each status transition should update status history',
         () async {
-          final transaction = await paymentService.createTransaction(
+          final transaction = await repository.createTransaction(
             buyerId: 'buyer1',
             farmerId: 'farmer1',
             listingId: 'listing1',
@@ -170,9 +170,7 @@ void main() {
               .update(withFunds.toFirestore());
 
           // Confirm delivery
-          final delivered = await paymentService.confirmDelivery(
-            transaction.id,
-          );
+          final delivered = await repository.confirmDelivery(transaction.id);
           expect(
             delivered.statusHistory.length,
             greaterThan(1),
@@ -182,7 +180,7 @@ void main() {
       );
 
       test('Property: Completed status should be terminal', () async {
-        final transaction = await paymentService.createTransaction(
+        final transaction = await repository.createTransaction(
           buyerId: 'buyer1',
           farmerId: 'farmer1',
           listingId: 'listing1',
@@ -195,16 +193,15 @@ void main() {
             .collection('transactions')
             .doc(transaction.id)
             .update({
-              'status': TransactionStatus.fundsHeld.toJson(),
-              'fundsHeldAt': DateTime.now(),
-            });
+          'status': TransactionStatus.fundsHeld.toJson(),
+          'fundsHeldAt': DateTime.now(),
+        });
 
-        await paymentService.confirmDelivery(transaction.id);
+        await repository.confirmDelivery(transaction.id);
 
         // Complete the transaction
-        final completed = await paymentService.confirmReceiptAndReleaseFunds(
-          transaction.id,
-        );
+        final completed =
+            await repository.confirmReceiptAndReleaseFunds(transaction.id);
         expect(completed.status, TransactionStatus.completed);
 
         // Verify it's terminal
@@ -220,7 +217,7 @@ void main() {
       test(
         'Property: Funds can only be released from delivered status',
         () async {
-          final transaction = await paymentService.createTransaction(
+          final transaction = await repository.createTransaction(
             buyerId: 'buyer1',
             farmerId: 'farmer1',
             listingId: 'listing1',
@@ -230,7 +227,7 @@ void main() {
 
           // Try to release from pending (should fail)
           expect(
-            () => paymentService.confirmReceiptAndReleaseFunds(transaction.id),
+            () => repository.confirmReceiptAndReleaseFunds(transaction.id),
             throwsException,
             reason: 'Cannot release funds from pending status',
           );
@@ -240,7 +237,7 @@ void main() {
       test(
         'Property: Fund release requires both fundsHeldAt and delivered status',
         () async {
-          final transaction = await paymentService.createTransaction(
+          final transaction = await repository.createTransaction(
             buyerId: 'buyer1',
             farmerId: 'farmer1',
             listingId: 'listing1',
@@ -253,16 +250,17 @@ void main() {
               .collection('transactions')
               .doc(transaction.id)
               .update({
-                'status': TransactionStatus.delivered.toJson(),
-                'fundsHeldAt': DateTime.now(),
-                'deliveredAt': DateTime.now(),
-              });
+            'status': TransactionStatus.delivered.toJson(),
+            'fundsHeldAt': DateTime.now(),
+            'deliveredAt': DateTime.now(),
+          });
 
-          final updated = await paymentService.getTransaction(transaction.id);
+          final updated = await repository.getTransaction(transaction.id);
           expect(
             updated?.canReleaseFunds(),
             true,
-            reason: 'Should be able to release funds when conditions are met',
+            reason:
+                'Should be able to release funds when conditions are met',
           );
         },
       );
@@ -278,7 +276,7 @@ void main() {
             final amount = 100.0 * (i + 1);
             expectedTotal += amount;
 
-            final transaction = await paymentService.createTransaction(
+            final transaction = await repository.createTransaction(
               buyerId: 'buyer1',
               farmerId: 'farmer1',
               listingId: 'listing_$i',
@@ -291,19 +289,20 @@ void main() {
                 .collection('transactions')
                 .doc(transaction.id)
                 .update({
-                  'status': TransactionStatus.completed.toJson(),
-                  'completedAt': DateTime.now(),
-                });
+              'status': TransactionStatus.completed.toJson(),
+              'completedAt': DateTime.now(),
+            });
 
             transactions.add(transaction);
           }
 
           // Get statistics
-          final stats = await paymentService.getUserStatistics('farmer1');
+          final stats = await repository.getUserStatistics('farmer1');
           expect(
             stats['totalEarnings'],
             expectedTotal,
-            reason: 'Total earnings should equal sum of completed amounts',
+            reason:
+                'Total earnings should equal sum of completed amounts',
           );
         },
       );
@@ -318,7 +317,7 @@ void main() {
         ];
 
         for (final status in statuses) {
-          final transaction = await paymentService.createTransaction(
+          final transaction = await repository.createTransaction(
             buyerId: 'buyer1',
             farmerId: 'farmer1',
             listingId: 'listing_$status',
@@ -333,7 +332,7 @@ void main() {
               .update({'status': status.toJson()});
 
           // Should be able to raise dispute
-          final disputed = await paymentService.raiseDispute(
+          final disputed = await repository.raiseDispute(
             transaction.id,
             'Test dispute',
           );
@@ -348,7 +347,7 @@ void main() {
       test(
         'Property: Disputes cannot be raised on completed/cancelled transactions',
         () async {
-          final transaction = await paymentService.createTransaction(
+          final transaction = await repository.createTransaction(
             buyerId: 'buyer1',
             farmerId: 'farmer1',
             listingId: 'listing1',
@@ -364,7 +363,7 @@ void main() {
 
           // Try to dispute
           expect(
-            () => paymentService.raiseDispute(transaction.id, 'Test dispute'),
+            () => repository.raiseDispute(transaction.id, 'Test dispute'),
             throwsException,
             reason: 'Cannot dispute completed transactions',
           );
@@ -375,7 +374,7 @@ void main() {
         'Property: Disputed transactions should preserve original amount',
         () async {
           final originalAmount = 150.75;
-          final transaction = await paymentService.createTransaction(
+          final transaction = await repository.createTransaction(
             buyerId: 'buyer1',
             farmerId: 'farmer1',
             listingId: 'listing1',
@@ -383,7 +382,7 @@ void main() {
             paymentMethod: PaymentMethod.mpesa,
           );
 
-          final disputed = await paymentService.raiseDispute(
+          final disputed = await repository.raiseDispute(
             transaction.id,
             'Test dispute',
           );
@@ -398,7 +397,7 @@ void main() {
 
     group('Retry Logic Properties', () {
       test('Property: Transactions can retry up to 3 times', () async {
-        final transaction = await paymentService.createTransaction(
+        final transaction = await repository.createTransaction(
           buyerId: 'buyer1',
           farmerId: 'farmer1',
           listingId: 'listing1',
@@ -429,7 +428,7 @@ void main() {
       });
 
       test('Property: Retry count should never decrease', () async {
-        final transaction = await paymentService.createTransaction(
+        final transaction = await repository.createTransaction(
           buyerId: 'buyer1',
           farmerId: 'farmer1',
           listingId: 'listing1',
@@ -446,7 +445,7 @@ void main() {
               .doc(transaction.id)
               .update({'retryCount': currentCount + 1});
 
-          final updated = await paymentService.getTransaction(transaction.id);
+          final updated = await repository.getTransaction(transaction.id);
           expect(
             updated!.retryCount,
             greaterThanOrEqualTo(currentCount),
@@ -457,7 +456,7 @@ void main() {
       });
 
       test('Property: Only pending transactions can be retried', () async {
-        final transaction = await paymentService.createTransaction(
+        final transaction = await repository.createTransaction(
           buyerId: 'buyer1',
           farmerId: 'farmer1',
           listingId: 'listing1',
@@ -491,7 +490,7 @@ void main() {
       test(
         'Property: Transaction serialization should be reversible',
         () async {
-          final original = await paymentService.createTransaction(
+          final original = await repository.createTransaction(
             buyerId: 'buyer1',
             farmerId: 'farmer1',
             listingId: 'listing1',
@@ -500,11 +499,11 @@ void main() {
           );
 
           // Serialize and deserialize
-          final firestore = original.toFirestore();
+          final firestoreMap = original.toFirestore();
           await fakeFirestore
               .collection('transactions')
               .doc(original.id)
-              .set(firestore);
+              .set(firestoreMap);
 
           final doc = await fakeFirestore
               .collection('transactions')
@@ -522,8 +521,9 @@ void main() {
         },
       );
 
-      test('Property: Timestamps should be ordered chronologically', () async {
-        final transaction = await paymentService.createTransaction(
+      test('Property: Timestamps should be ordered chronologically',
+          () async {
+        final transaction = await repository.createTransaction(
           buyerId: 'buyer1',
           farmerId: 'farmer1',
           listingId: 'listing1',
@@ -532,40 +532,44 @@ void main() {
         );
 
         // Progress through states
-        await Future.delayed(Duration(milliseconds: 10));
+        await Future.delayed(const Duration(milliseconds: 10));
         await fakeFirestore
             .collection('transactions')
             .doc(transaction.id)
             .update({
-              'status': TransactionStatus.fundsHeld.toJson(),
-              'fundsHeldAt': DateTime.now(),
-            });
+          'status': TransactionStatus.fundsHeld.toJson(),
+          'fundsHeldAt': DateTime.now(),
+        });
 
-        await Future.delayed(Duration(milliseconds: 10));
-        final delivered = await paymentService.confirmDelivery(transaction.id);
+        await Future.delayed(const Duration(milliseconds: 10));
+        final delivered = await repository.confirmDelivery(transaction.id);
 
         // Verify timestamp ordering
         expect(
           delivered.fundsHeldAt!.isAfter(delivered.createdAt) ||
-              delivered.fundsHeldAt!.isAtSameMomentAs(delivered.createdAt),
+              delivered.fundsHeldAt!
+                  .isAtSameMomentAs(delivered.createdAt),
           true,
           reason: 'fundsHeldAt should be after or equal to createdAt',
         );
         expect(
           delivered.deliveredAt!.isAfter(delivered.fundsHeldAt!) ||
-              delivered.deliveredAt!.isAtSameMomentAs(delivered.fundsHeldAt!),
+              delivered.deliveredAt!
+                  .isAtSameMomentAs(delivered.fundsHeldAt!),
           true,
-          reason: 'deliveredAt should be after or equal to fundsHeldAt',
+          reason:
+              'deliveredAt should be after or equal to fundsHeldAt',
         );
       });
 
-      test('Property: User statistics should match transaction data', () async {
+      test('Property: User statistics should match transaction data',
+          () async {
         // Create farmer transactions
         final amounts = [100.0, 200.0, 300.0];
         int expectedCompleted = 0;
 
         for (int i = 0; i < amounts.length; i++) {
-          final transaction = await paymentService.createTransaction(
+          final transaction = await repository.createTransaction(
             buyerId: 'buyer1',
             farmerId: 'farmer_test',
             listingId: 'listing_$i',
@@ -579,32 +583,33 @@ void main() {
                 .collection('transactions')
                 .doc(transaction.id)
                 .update({
-                  'status': TransactionStatus.completed.toJson(),
-                  'completedAt': DateTime.now(),
-                });
+              'status': TransactionStatus.completed.toJson(),
+              'completedAt': DateTime.now(),
+            });
             expectedCompleted++;
           }
         }
 
-        final stats = await paymentService.getUserStatistics('farmer_test');
+        final stats = await repository.getUserStatistics('farmer_test');
         expect(
           stats['completedTransactions'],
           expectedCompleted,
-          reason: 'Statistics should reflect actual completed count',
+          reason:
+              'Statistics should reflect actual completed count',
         );
         expect(
           stats['totalEarnings'],
           300.0,
-          reason: 'Total earnings should match sum of completed transactions',
+          reason:
+              'Total earnings should match sum of completed transactions',
         );
       });
     });
 
     group('Edge Cases', () {
-      test('Property: getcannot find non-existent transaction', () async {
-        final transaction = await paymentService.getTransaction(
-          'nonexistent_id',
-        );
+      test('Property: get cannot find non-existent transaction', () async {
+        final transaction =
+            await repository.getTransaction('nonexistent_id');
         expect(
           transaction,
           isNull,
@@ -613,7 +618,7 @@ void main() {
       });
 
       test('Property: Zero amount transactions are handled', () async {
-        final transaction = await paymentService.createTransaction(
+        final transaction = await repository.createTransaction(
           buyerId: 'buyer1',
           farmerId: 'farmer1',
           listingId: 'listing1',
@@ -630,7 +635,7 @@ void main() {
 
       test('Property: Multiple payment methods are supported', () async {
         for (final method in PaymentMethod.values) {
-          final transaction = await paymentService.createTransaction(
+          final transaction = await repository.createTransaction(
             buyerId: 'buyer1',
             farmerId: 'farmer1',
             listingId: 'listing_${method.name}',

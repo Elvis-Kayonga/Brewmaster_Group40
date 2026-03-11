@@ -1,0 +1,201 @@
+// Integration tests for auth-screen-routing-fix
+// Task 7.1: Full unauthenticated launch → LoginScreen flow
+// Task 7.2: Full authenticated launch → main content flow
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:brewmaster/domain/models/user_profile.dart';
+import 'package:brewmaster/domain/models/enums.dart';
+import 'package:brewmaster/domain/repositories/auth_repository.dart';
+import 'package:brewmaster/domain/repositories/user_repository.dart';
+import 'package:brewmaster/domain/repositories/payment_repository.dart';
+import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
+import 'package:brewmaster/presentation/blocs/profile/profile_bloc.dart';
+import 'package:brewmaster/presentation/blocs/payment/payment_bloc.dart';
+import 'package:brewmaster/presentation/screens/auth/auth_gate.dart';
+import 'package:brewmaster/presentation/screens/auth/login_screen.dart';
+import 'package:brewmaster/main.dart';
+
+// ---------------------------------------------------------------------------
+// Fake Firebase User
+// ---------------------------------------------------------------------------
+
+class _FakeUser implements fb.User {
+  @override final String uid;
+  @override final String? email;
+  @override final bool emailVerified;
+  @override final List<fb.UserInfo> providerData = const [];
+  _FakeUser({required this.uid, this.email, this.emailVerified = false});
+  @override Future<void> reload() async {}
+  @override dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+UserProfile _fakeProfile({required String uid, required String email}) {
+  final now = DateTime.now();
+  return UserProfile(
+    id: uid,
+    email: email,
+    phoneNumber: '',
+    role: UserRole.buyer,
+    displayName: 'Test User',
+    createdAt: now,
+    updatedAt: now,
+    isVerified: true,
+    verificationStatus: VerificationStatus.verified,
+  );
+}
+
+class _FakeAuthRepository implements AuthRepository {
+  final fb.User? _user;
+  _FakeAuthRepository(this._user);
+  @override fb.User? get currentUser => _user;
+  @override Stream<fb.User?> get authStateChanges => Stream.value(_user);
+  @override Future<fb.User?> register(String e, String p) async => _user;
+  @override Future<fb.User?> signIn(String e, String p) async => _user;
+  @override Future<fb.User?> signInWithGoogle() async => _user;
+  @override Future<void> signOut() async {}
+  @override Future<void> sendPasswordResetEmail(String e) async {}
+  @override Future<bool> sendEmailVerification() async => true;
+  @override Future<bool> isEmailVerified() async => _user?.emailVerified ?? false;
+}
+
+class _FakeUserRepository implements UserRepository {
+  final UserProfile? _profile;
+  _FakeUserRepository(this._profile);
+  @override Future<UserProfile?> getUserProfile(String id) async => _profile;
+  @override Future<UserProfile?> getUserProfileByEmail(String e) async => null;
+  @override Future<void> createUserProfile(UserProfile p) async {}
+  @override Future<void> updateUserProfile(String id, Map<String, dynamic> u) async {}
+  @override Stream<UserProfile?> watchUserProfile(String id) => const Stream.empty();
+}
+
+class _FakePaymentRepository implements PaymentRepository {
+  @override dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
+}
+
+Widget _buildApp({fb.User? user, UserProfile? profile}) {
+  final authRepo = _FakeAuthRepository(user);
+  final userRepo = _FakeUserRepository(profile);
+  final paymentRepo = _FakePaymentRepository();
+  return MultiBlocProvider(
+    providers: [
+      BlocProvider(
+          create: (_) => AuthBloc(
+                authRepository: authRepo,
+                userRepository: userRepo,
+              )),
+      BlocProvider(create: (_) => ProfileBloc(userRepository: userRepo)),
+      BlocProvider(
+          create: (_) => PaymentBloc(paymentRepository: paymentRepo)),
+    ],
+    child: const BrewMasterApp(),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+void main() {
+  group('Integration 7.1 – Unauthenticated launch → LoginScreen', () {
+    testWidgets('AuthGate is present in the widget tree', (tester) async {
+      await tester.pumpWidget(_buildApp(user: null, profile: null));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AuthGate), findsOneWidget);
+    });
+
+    testWidgets('LoginScreen is shown when no user is signed in', (tester) async {
+      await tester.pumpWidget(_buildApp(user: null, profile: null));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LoginScreen), findsOneWidget);
+    });
+
+    testWidgets('LoginScreen shows "Welcome to BrewMaster" heading',
+        (tester) async {
+      await tester.pumpWidget(_buildApp(user: null, profile: null));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Welcome to BrewMaster'), findsOneWidget);
+    });
+
+    testWidgets('LoginScreen shows "Sign In" button', (tester) async {
+      await tester.pumpWidget(_buildApp(user: null, profile: null));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sign In'), findsOneWidget);
+    });
+
+    testWidgets('LoginScreen shows "Sign in with Google" button', (tester) async {
+      await tester.pumpWidget(_buildApp(user: null, profile: null));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sign in with Google'), findsOneWidget);
+    });
+
+    testWidgets('LoginScreen shows coffee icon', (tester) async {
+      await tester.pumpWidget(_buildApp(user: null, profile: null));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.coffee), findsOneWidget);
+    });
+  });
+
+  group('Integration 7.2 – Authenticated launch → DashboardScreen', () {
+    late _FakeUser fakeUser;
+    late UserProfile fakeProfile;
+
+    setUp(() {
+      fakeUser = _FakeUser(
+        uid: 'user-integration-001',
+        email: 'test@brewmaster.com',
+        emailVerified: true,
+      );
+      fakeProfile = _fakeProfile(
+        uid: fakeUser.uid,
+        email: fakeUser.email!,
+      );
+    });
+
+    testWidgets('AuthGate is present in the widget tree', (tester) async {
+      await tester.pumpWidget(_buildApp(user: fakeUser, profile: fakeProfile));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AuthGate), findsOneWidget);
+    });
+
+    testWidgets('DashboardScreen AppBar shows "Dashboard" title',
+        (tester) async {
+      await tester.pumpWidget(_buildApp(user: fakeUser, profile: fakeProfile));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dashboard'), findsOneWidget);
+    });
+
+    testWidgets('DashboardScreen body shows dashboard content text',
+        (tester) async {
+      await tester.pumpWidget(_buildApp(user: fakeUser, profile: fakeProfile));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dashboard content coming soon'), findsOneWidget);
+    });
+
+    testWidgets('Authenticated launch does not show login UI elements',
+        (tester) async {
+      await tester.pumpWidget(_buildApp(user: fakeUser, profile: fakeProfile));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LoginScreen), findsNothing);
+      expect(find.text('Welcome to BrewMaster'), findsNothing);
+      expect(find.text('Sign In'), findsNothing);
+      expect(find.text('Sign in with Google'), findsNothing);
+    });
+  });
+}
