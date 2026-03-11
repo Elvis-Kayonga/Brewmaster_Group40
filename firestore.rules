@@ -1,77 +1,134 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
+    // -------------------------------------------------------------------------
     // Helper functions
+    // -------------------------------------------------------------------------
+
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
-    
+
     function isParticipant(participantIds) {
       return isAuthenticated() && request.auth.uid in participantIds;
     }
-    
+
+    /// Prevent users from changing immutable identity fields on their profile.
+    function noRoleEscalation() {
+      return !('role' in request.resource.data.diff(resource.data).affectedKeys());
+    }
+
+    // -------------------------------------------------------------------------
     // Users collection
+    // -------------------------------------------------------------------------
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasAll(['id', 'email', 'role', 'displayName']);
+      allow update: if isOwner(userId) && noRoleEscalation();
       allow delete: if isOwner(userId);
     }
-    
+
+    // -------------------------------------------------------------------------
     // Listings collection
+    // -------------------------------------------------------------------------
     match /listings/{listingId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.farmerId == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.farmerId == request.auth.uid;
+      allow create: if isAuthenticated()
+        && request.resource.data.farmerId == request.auth.uid
+        && request.resource.data.keys().hasAll(['farmerId', 'variety', 'quantity', 'pricePerKg', 'status']);
+      allow update: if isAuthenticated()
+        && resource.data.farmerId == request.auth.uid
+        && request.resource.data.farmerId == request.auth.uid; // farmerId immutable
       allow delete: if isAuthenticated() && resource.data.farmerId == request.auth.uid;
     }
-    
-    // Conversations collection
+
+    // -------------------------------------------------------------------------
+    // Conversations + messages
+    // -------------------------------------------------------------------------
     match /conversations/{conversationId} {
-      allow read: if isAuthenticated() && request.auth.uid in resource.data.participantIds;
-      allow create: if isAuthenticated() && request.auth.uid in request.resource.data.participantIds;
-      allow update: if isAuthenticated() && request.auth.uid in resource.data.participantIds;
-      
+      allow read: if isParticipant(resource.data.participantIds);
+      allow create: if isAuthenticated()
+        && request.auth.uid in request.resource.data.participantIds
+        && request.resource.data.participantIds.size() == 2;
+      allow update: if isParticipant(resource.data.participantIds);
+
       match /messages/{messageId} {
-        allow read: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds;
-        allow create: if isAuthenticated() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds;
+        allow read: if isAuthenticated()
+          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds;
+        allow create: if isAuthenticated()
+          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds
+          && request.resource.data.senderId == request.auth.uid;
       }
     }
-    
-    // Transactions collection
+
+    // -------------------------------------------------------------------------
+    // Transactions
+    // -------------------------------------------------------------------------
     match /transactions/{transactionId} {
       allow read: if isAuthenticated() && (
         request.auth.uid == resource.data.buyerId ||
         request.auth.uid == resource.data.farmerId
       );
-      allow create: if isAuthenticated();
+      allow create: if isAuthenticated()
+        && request.resource.data.buyerId == request.auth.uid
+        && request.resource.data.keys().hasAll(['buyerId', 'farmerId', 'listingId', 'amount', 'status']);
       allow update: if isAuthenticated() && (
         request.auth.uid == resource.data.buyerId ||
         request.auth.uid == resource.data.farmerId
       );
+      // Transactions are never deleted — use status changes instead
     }
-    
-    // Market prices (read-only for users)
+
+    // -------------------------------------------------------------------------
+    // Market prices (admin-written, read-only for users)
+    // -------------------------------------------------------------------------
     match /marketPrices/{priceId} {
       allow read: if isAuthenticated();
     }
-    
-    // Verifications
+
+    // -------------------------------------------------------------------------
+    // Verification requests (our actual collection name)
+    // -------------------------------------------------------------------------
+    match /verification_requests/{requestId} {
+      allow read: if isAuthenticated()
+        && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasAll(['userId', 'status', 'documentUrls', 'submittedAt']);
+      // Status updates are admin-only; users cannot self-approve
+    }
+
+    // -------------------------------------------------------------------------
+    // Offline sync queue (per-device; owner only)
+    // -------------------------------------------------------------------------
+    match /offline_sync_queue/{operationId} {
+      allow read:   if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // -------------------------------------------------------------------------
+    // Notifications
+    // -------------------------------------------------------------------------
+    match /notifications/{notificationId} {
+      allow read:   if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // -------------------------------------------------------------------------
+    // Legacy verifications path (kept for backwards compatibility)
+    // -------------------------------------------------------------------------
     match /verifications/{userId} {
-      allow read: if isOwner(userId);
+      allow read:   if isOwner(userId);
       allow create: if isOwner(userId);
       allow update: if isOwner(userId);
-    }
-    
-    // Notifications
-    match /notifications/{notificationId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
   }
 }

@@ -22,6 +22,10 @@ class CoffeeListing {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  // Traceability fields (Requirements: 15.1, 15.2)
+  final String? batchNumber;
+  final List<String>? certifications; // e.g. ['Organic', 'Fair Trade']
+
   const CoffeeListing({
     required this.listingId,
     required this.farmerId,
@@ -38,6 +42,8 @@ class CoffeeListing {
     required this.status,
     required this.createdAt,
     required this.updatedAt,
+    this.batchNumber,
+    this.certifications,
   });
 
   /// Convert object to JSON (for Firebase / API)
@@ -58,6 +64,8 @@ class CoffeeListing {
       'status': status.name,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'batchNumber': batchNumber,
+      'certifications': certifications,
     };
   }
 
@@ -81,6 +89,10 @@ class CoffeeListing {
       status: ListingStatusExtension.fromJson(json['status'] as String),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
+      batchNumber: json['batchNumber'] as String?,
+      certifications: (json['certifications'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
     );
   }
 
@@ -100,6 +112,8 @@ class CoffeeListing {
     ListingStatus? status,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? batchNumber,
+    List<String>? certifications,
   }) {
     return CoffeeListing(
       listingId: listingId ?? this.listingId,
@@ -117,6 +131,8 @@ class CoffeeListing {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      batchNumber: batchNumber ?? this.batchNumber,
+      certifications: certifications ?? this.certifications,
     );
   }
 

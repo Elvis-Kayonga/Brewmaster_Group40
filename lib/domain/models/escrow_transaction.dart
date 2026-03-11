@@ -19,6 +19,10 @@ class Transaction {
   final String? failureReason;
   final Map<String, DateTime> statusHistory;
 
+  // Compliance / traceability fields (Requirements: 15.1, 15.3)
+  final String? receiptNumber;
+  final Map<String, String>? traceabilityData; // e.g. certificationIds, exportRef
+
   Transaction({
     required this.id,
     required this.buyerId,
@@ -35,6 +39,8 @@ class Transaction {
     this.retryCount = 0,
     this.failureReason,
     Map<String, DateTime>? statusHistory,
+    this.receiptNumber,
+    this.traceabilityData,
   }) : statusHistory = statusHistory ?? {};
 
   /// Create Transaction from Firestore document
@@ -63,6 +69,9 @@ class Transaction {
       retryCount: data['retryCount'] as int? ?? 0,
       failureReason: data['failureReason'] as String?,
       statusHistory: _parseStatusHistory(data['statusHistory'] as Map?),
+      receiptNumber: data['receiptNumber'] as String?,
+      traceabilityData: (data['traceabilityData'] as Map<String, dynamic>?)
+          ?.map((k, v) => MapEntry(k, v as String)),
     );
   }
 
@@ -86,6 +95,8 @@ class Transaction {
       'retryCount': retryCount,
       'failureReason': failureReason,
       'statusHistory': _serializeStatusHistory(statusHistory),
+      'receiptNumber': receiptNumber,
+      'traceabilityData': traceabilityData,
     };
   }
 
@@ -120,6 +131,8 @@ class Transaction {
     int? retryCount,
     String? failureReason,
     Map<String, DateTime>? statusHistory,
+    String? receiptNumber,
+    Map<String, String>? traceabilityData,
   }) {
     return Transaction(
       id: id ?? this.id,
@@ -137,6 +150,8 @@ class Transaction {
       retryCount: retryCount ?? this.retryCount,
       failureReason: failureReason ?? this.failureReason,
       statusHistory: statusHistory ?? this.statusHistory,
+      receiptNumber: receiptNumber ?? this.receiptNumber,
+      traceabilityData: traceabilityData ?? this.traceabilityData,
     );
   }
 
