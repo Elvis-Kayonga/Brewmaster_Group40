@@ -1,16 +1,23 @@
-// lib/presentation/screens/listings/listing_form_screen.dart
+// Feature: brewmaster-marketplace
+// Form screen for creating and editing coffee listings.
+// location field uses "lat,lng" string format matching the canonical model.
+//
+// Requirements: 2.1, 2.2, 2.7, 16.1 (Clean Architecture)
+// Developer: Developer 2
 
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../widgets/common/custom_text_field.dart';
+
+import '../../../config/theme.dart';
+import '../../../domain/models/coffee_listing.dart';
+import '../../../domain/models/enums.dart';
+import '../../blocs/listing/listing_bloc.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_dropdown.dart';
+import '../../widgets/common/custom_text_field.dart';
 import '../../widgets/common/date_picker_widget.dart';
-import '../../../config/theme.dart';
-import '../../../data/providers/listing_provider.dart';
-import '../../../domain/models/coffee_listing.dart';
 
 class ListingFormScreen extends StatefulWidget {
   final CoffeeListing? listing;
@@ -28,8 +35,7 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
   late TextEditingController _altitudeController;
   late TextEditingController _qualityScoreController;
   late TextEditingController _descriptionController;
-  late TextEditingController _latitudeController;
-  late TextEditingController _longitudeController;
+  late TextEditingController _locationController;
 
   ProcessingMethod? _selectedMethod;
   DateTime? _harvestDate;
@@ -39,16 +45,22 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
   @override
   void initState() {
     super.initState();
-    _varietyController = TextEditingController(text: widget.listing?.variety ?? '');
-    _quantityController = TextEditingController(text: widget.listing?.quantity.toString() ?? '');
-    _priceController = TextEditingController(text: widget.listing?.pricePerKg.toString() ?? '');
-    _altitudeController = TextEditingController(text: widget.listing?.altitude.toString() ?? '');
-    _qualityScoreController = TextEditingController(text: widget.listing?.qualityScore.toString() ?? '');
-    _descriptionController = TextEditingController(text: widget.listing?.description ?? '');
-    _latitudeController = TextEditingController(text: widget.listing?.location['latitude'].toString() ?? '');
-    _longitudeController = TextEditingController(text: widget.listing?.location['longitude'].toString() ?? '');
-    _selectedMethod = widget.listing?.processingMethod;
-    _harvestDate = widget.listing?.harvestDate;
+    final l = widget.listing;
+    _varietyController = TextEditingController(text: l?.variety ?? '');
+    _quantityController =
+        TextEditingController(text: l?.quantity.toString() ?? '');
+    _priceController =
+        TextEditingController(text: l?.pricePerKg.toString() ?? '');
+    _altitudeController =
+        TextEditingController(text: l?.altitude.toString() ?? '');
+    _qualityScoreController =
+        TextEditingController(text: l?.qualityScore.toString() ?? '');
+    _descriptionController =
+        TextEditingController(text: l?.description ?? '');
+    _locationController =
+        TextEditingController(text: l?.location ?? '');
+    _selectedMethod = l?.processingMethod;
+    _harvestDate = l?.harvestDate;
   }
 
   @override
@@ -59,8 +71,7 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
     _altitudeController.dispose();
     _qualityScoreController.dispose();
     _descriptionController.dispose();
-    _latitudeController.dispose();
-    _longitudeController.dispose();
+    _locationController.dispose();
     super.dispose();
   }
 
@@ -71,7 +82,7 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
     });
   }
 
-  Future<void> _submitForm() async {
+  void _submitForm() {
     if (_varietyController.text.isEmpty ||
         _quantityController.text.isEmpty ||
         _priceController.text.isEmpty ||
@@ -85,6 +96,7 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
       return;
     }
 
+    final now = DateTime.now();
     final listing = CoffeeListing(
       listingId: widget.listing?.listingId ?? '',
       farmerId: widget.listing?.farmerId ?? '',
@@ -97,31 +109,36 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
       qualityScore: double.parse(_qualityScoreController.text),
       description: _descriptionController.text,
       images: widget.listing?.images ?? [],
-      location: {
-        'latitude': double.parse(_latitudeController.text),
-        'longitude': double.parse(_longitudeController.text),
-      },
+      location: _locationController.text,
       status: widget.listing?.status ?? ListingStatus.draft,
-      createdAt: widget.listing?.createdAt ?? DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: widget.listing?.createdAt ?? now,
+      updatedAt: now,
     );
 
-    final provider = context.read<ListingProvider>();
     if (widget.listing == null) {
-      await provider.createListing(listing, _selectedImages.isNotEmpty ? _selectedImages : null);
+      context.read<ListingBloc>().add(ListingCreateRequested(
+            listing: listing,
+            images: _selectedImages.isNotEmpty ? _selectedImages : null,
+          ));
     } else {
-      await provider.updateListing(listing, _selectedImages.isNotEmpty ? _selectedImages : null);
+      context.read<ListingBloc>().add(ListingUpdateRequested(
+            listing: listing,
+            newImages: _selectedImages.isNotEmpty ? _selectedImages : null,
+          ));
     }
 
-    if (mounted) {
-      Navigator.pop(context);
-    }
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
+    final isEdit = widget.listing != null;
+
     return Scaffold(
-      appBar: AppBar(title: Text(widget.listing == null ? 'Create Listing' : 'Edit Listing')),
+      appBar: AppBar(
+        title: Text(isEdit ? 'Edit Listing' : 'Create Listing'),
+        elevation: 0,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppTheme.padding16),
         child: Column(
@@ -151,11 +168,10 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
               labelText: 'Processing Method',
               value: _selectedMethod?.name,
               items: ProcessingMethod.values.map((m) => m.name).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedMethod = ProcessingMethod.values.firstWhere((m) => m.name == value);
-                });
-              },
+              onChanged: (value) => setState(() {
+                _selectedMethod = ProcessingMethod.values
+                    .firstWhere((m) => m.name == value);
+              }),
             ),
             const SizedBox(height: AppTheme.margin16),
             CustomTextField(
@@ -168,11 +184,8 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
             DatePickerWidget(
               labelText: 'Harvest Date',
               selectedDate: _harvestDate,
-              onDateChanged: (date) {
-                setState(() {
-                  _harvestDate = date;
-                });
-              },
+              onDateChanged: (date) =>
+                  setState(() => _harvestDate = date),
             ),
             const SizedBox(height: AppTheme.margin16),
             CustomTextField(
@@ -190,17 +203,9 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
             ),
             const SizedBox(height: AppTheme.margin16),
             CustomTextField(
-              labelText: 'Latitude',
-              controller: _latitudeController,
-              hintText: 'Enter latitude',
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: AppTheme.margin16),
-            CustomTextField(
-              labelText: 'Longitude',
-              controller: _longitudeController,
-              hintText: 'Enter longitude',
-              keyboardType: TextInputType.number,
+              labelText: 'Location (lat,lng)',
+              controller: _locationController,
+              hintText: 'e.g., -1.9441,29.8739',
             ),
             const SizedBox(height: AppTheme.margin16),
             CustomButton(
@@ -210,18 +215,17 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
             ),
             if (_selectedImages.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.only(top: AppTheme.padding16),
-                child: Text('${_selectedImages.length} images selected'),
+                padding: const EdgeInsets.only(top: AppTheme.padding8),
+                child: Text(
+                    '${_selectedImages.length} image(s) selected'),
               ),
             const SizedBox(height: AppTheme.margin24),
-            Consumer<ListingProvider>(
-              builder: (context, provider, _) {
-                return CustomButton(
-                  text: widget.listing == null ? 'Create Listing' : 'Update Listing',
-                  onPressed: provider.isLoading ? null : _submitForm,
-                  isLoading: provider.isLoading,
-                );
-              },
+            BlocBuilder<ListingBloc, ListingState>(
+              builder: (context, state) => CustomButton(
+                text: isEdit ? 'Update Listing' : 'Create Listing',
+                onPressed: state is ListingLoading ? null : _submitForm,
+                isLoading: state is ListingLoading,
+              ),
             ),
           ],
         ),

@@ -1,8 +1,8 @@
 // test/unit/listing_service_test.dart
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:brewmaster/domain/models/coffee_listing.dart';
+import 'package:brewmaster/domain/models/enums.dart';
 
 void main() {
   group('CoffeeListing Model Tests', () {
@@ -19,7 +19,7 @@ void main() {
         qualityScore: 85.0,
         description: 'High quality coffee',
         images: ['image1.jpg'],
-        location: {'latitude': -1.9, 'longitude': 29.8},
+        location: '-1.9,29.8',
         status: ListingStatus.active,
         createdAt: DateTime(2024, 1, 1),
         updatedAt: DateTime(2024, 1, 2),
@@ -47,14 +47,14 @@ void main() {
         'pricePerKg': 5.5,
         'processingMethod': 'washed',
         'altitude': 1500.0,
-        'harvestDate': Timestamp.fromDate(DateTime(2024, 1, 15)),
+        'harvestDate': DateTime(2024, 1, 15).toIso8601String(),
         'qualityScore': 85.0,
         'description': 'High quality coffee',
         'images': ['image1.jpg'],
-        'location': {'latitude': -1.9, 'longitude': 29.8},
+        'location': '-1.9,29.8',
         'status': 'active',
-        'createdAt': Timestamp.fromDate(DateTime(2024, 1, 1)),
-        'updatedAt': Timestamp.fromDate(DateTime(2024, 1, 2)),
+        'createdAt': DateTime(2024, 1, 1).toIso8601String(),
+        'updatedAt': DateTime(2024, 1, 2).toIso8601String(),
       };
 
       final listing = CoffeeListing.fromJson(json);
@@ -70,7 +70,8 @@ void main() {
       expect(listing.status, ListingStatus.active);
     });
 
-    test('CoffeeListing.copyWith() creates new instance with updated fields', () {
+    test('CoffeeListing.copyWith() creates new instance with updated fields',
+        () {
       final original = CoffeeListing(
         listingId: 'list1',
         farmerId: 'farm1',
@@ -83,7 +84,7 @@ void main() {
         qualityScore: 85.0,
         description: 'High quality coffee',
         images: ['image1.jpg'],
-        location: {'latitude': -1.9, 'longitude': 29.8},
+        location: '-1.9,29.8',
         status: ListingStatus.active,
         createdAt: DateTime(2024, 1, 1),
         updatedAt: DateTime(2024, 1, 2),

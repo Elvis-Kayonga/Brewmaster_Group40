@@ -1,15 +1,21 @@
-// lib/presentation/screens/search/search_screen.dart
+// Feature: brewmaster-marketplace
+// Search and discovery screen with filters, using BLoC for state management.
+//
+// Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.7, 4.8, 16.1 (Clean Architecture)
+// Developer: Developer 2
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../widgets/common/custom_text_field.dart';
-import '../../widgets/common/custom_button.dart';
-import '../../widgets/common/loading_indicator.dart';
-import '../../widgets/common/empty_state_widget.dart';
-import '../../widgets/listing/listing_card.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../config/theme.dart';
-import '../../../data/providers/listing_provider.dart';
 import '../../../domain/models/search_filters.dart';
+import '../../blocs/listing/listing_bloc.dart';
+import '../../widgets/common/custom_button.dart';
+import '../../widgets/common/custom_text_field.dart';
+import '../../widgets/common/empty_state_widget.dart';
+import '../../widgets/common/loading_indicator.dart';
+import '../../widgets/listing/listing_card.dart';
+import '../listings/listing_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -35,9 +41,7 @@ class _SearchScreenState extends State<SearchScreen> {
     _maxPriceController = TextEditingController();
     _minAltitudeController = TextEditingController();
     _maxAltitudeController = TextEditingController();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ListingProvider>().loadActiveListings();
-    });
+    context.read<ListingBloc>().add(const ActiveListingsLoadRequested());
   }
 
   @override
@@ -52,13 +56,21 @@ class _SearchScreenState extends State<SearchScreen> {
   void _applyFilters() {
     final filters = SearchFilters(
       variety: _selectedVariety,
-      processingMethod: _selectedMethod,
-      minPrice: _minPriceController.text.isEmpty ? null : double.tryParse(_minPriceController.text),
-      maxPrice: _maxPriceController.text.isEmpty ? null : double.tryParse(_maxPriceController.text),
-      minAltitude: _minAltitudeController.text.isEmpty ? null : double.tryParse(_minAltitudeController.text),
-      maxAltitude: _maxAltitudeController.text.isEmpty ? null : double.tryParse(_maxAltitudeController.text),
+      method: _selectedMethod,
+      minPrice: _minPriceController.text.isEmpty
+          ? null
+          : double.tryParse(_minPriceController.text),
+      maxPrice: _maxPriceController.text.isEmpty
+          ? null
+          : double.tryParse(_maxPriceController.text),
+      minAltitude: _minAltitudeController.text.isEmpty
+          ? null
+          : double.tryParse(_minAltitudeController.text),
+      maxAltitude: _maxAltitudeController.text.isEmpty
+          ? null
+          : double.tryParse(_maxAltitudeController.text),
     );
-    context.read<ListingProvider>().searchListings(filters);
+    context.read<ListingBloc>().add(ListingsSearchRequested(filters));
   }
 
   void _clearFilters() {
@@ -70,13 +82,13 @@ class _SearchScreenState extends State<SearchScreen> {
       _minAltitudeController.clear();
       _maxAltitudeController.clear();
     });
-    context.read<ListingProvider>().loadActiveListings();
+    context.read<ListingBloc>().add(const ActiveListingsLoadRequested());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Search Listings')),
+      appBar: AppBar(title: const Text('Search Listings'), elevation: 0),
       body: Column(
         children: [
           Padding(
@@ -88,11 +100,8 @@ class _SearchScreenState extends State<SearchScreen> {
                     Expanded(
                       child: CustomButton(
                         text: _showFilters ? 'Hide Filters' : 'Show Filters',
-                        onPressed: () {
-                          setState(() {
-                            _showFilters = !_showFilters;
-                          });
-                        },
+                        onPressed: () =>
+                            setState(() => _showFilters = !_showFilters),
                         type: ButtonType.outlined,
                       ),
                     ),
@@ -145,29 +154,41 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           Expanded(
-            child: Consumer<ListingProvider>(
-              builder: (context, provider, _) {
-                if (provider.isLoading) {
-                  return const Center(child: LoadingIndicator());
+            child: BlocBuilder<ListingBloc, ListingState>(
+              builder: (context, state) {
+                if (state is ListingLoading || state is ListingInitial) {
+                  return const LoadingIndicator();
                 }
 
-                if (provider.listings.isEmpty) {
-                  return EmptyStateWidget(
+                final listings = state is ActiveListingsLoaded
+                    ? state.listings
+                    : const [];
+
+                if (listings.isEmpty) {
+                  return const EmptyStateWidget(
                     title: 'No listings found',
                     description: 'Try adjusting your filters',
+                    icon: Icons.search_off,
                   );
                 }
 
                 return ListView.builder(
                   padding: const EdgeInsets.all(AppTheme.padding16),
-                  itemCount: provider.listings.length,
+                  itemCount: listings.length,
                   itemBuilder: (context, index) {
-                    final listing = provider.listings[index];
+                    final listing = listings[index];
                     return ListingCard(
                       listing: listing,
-                      onTap: () {
-                        Navigator.pushNamed(context, '/listing-detail', arguments: listing.listingId);
-                      },
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => BlocProvider.value(
+                            value: context.read<ListingBloc>(),
+                            child: ListingDetailScreen(
+                                listingId: listing.listingId),
+                          ),
+                        ),
+                      ),
                     );
                   },
                 );

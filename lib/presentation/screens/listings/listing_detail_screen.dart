@@ -1,12 +1,17 @@
-// lib/presentation/screens/listings/listing_detail_screen.dart
+// Feature: brewmaster-marketplace
+// Screen displaying full details of a single coffee listing.
+//
+// Requirements: 2.1, 4.6, 8.1, 8.3, 16.1 (Clean Architecture)
+// Developer: Developer 2
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../widgets/common/loading_indicator.dart';
-import '../../widgets/common/error_state_widget.dart';
-import '../../widgets/common/custom_button.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../config/theme.dart';
-import '../../../data/providers/listing_provider.dart';
+import '../../blocs/listing/listing_bloc.dart';
+import '../../widgets/common/custom_button.dart';
+import '../../widgets/common/error_state_widget.dart';
+import '../../widgets/common/loading_indicator.dart';
 
 class ListingDetailScreen extends StatefulWidget {
   final String listingId;
@@ -21,33 +26,33 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ListingProvider>().loadListing(widget.listingId);
-    });
+    context.read<ListingBloc>().add(ListingLoadRequested(widget.listingId));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Listing Details')),
-      body: Consumer<ListingProvider>(
-        builder: (context, provider, _) {
-          if (provider.isLoading) {
-            return const Center(child: LoadingIndicator());
+      appBar: AppBar(title: const Text('Listing Details'), elevation: 0),
+      body: BlocBuilder<ListingBloc, ListingState>(
+        builder: (context, state) {
+          if (state is ListingLoading || state is ListingInitial) {
+            return const LoadingIndicator();
           }
 
-          if (provider.error != null) {
+          if (state is ListingFailure) {
             return ErrorStateWidget(
-              title: 'Error',
-              message: provider.error ?? 'Error loading listing',
-              onRetry: () => provider.loadListing(widget.listingId),
+              message: state.message,
+              onRetry: () => context
+                  .read<ListingBloc>()
+                  .add(ListingLoadRequested(widget.listingId)),
             );
           }
 
-          final listing = provider.currentListing;
-          if (listing == null) {
-            return const Center(child: Text('Listing not found'));
+          if (state is! ListingDetailLoaded) {
+            return const SizedBox.shrink();
           }
+
+          final listing = state.listing;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(AppTheme.padding16),
@@ -60,32 +65,36 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       itemCount: listing.images.length,
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: AppTheme.padding8),
-                          child: ClipRRect(
-                            borderRadius: AppTheme.borderRadiusMediumAll,
-                            child: Image.network(
-                              listing.images[index],
-                              fit: BoxFit.cover,
-                              width: 200,
-                            ),
+                      itemBuilder: (context, index) => Padding(
+                        padding:
+                            const EdgeInsets.only(right: AppTheme.padding8),
+                        child: ClipRRect(
+                          borderRadius: AppTheme.borderRadiusMediumAll,
+                          child: Image.network(
+                            listing.images[index],
+                            fit: BoxFit.cover,
+                            width: 200,
                           ),
-                        );
-                      },
+                        ),
+                      ),
                     ),
                   ),
                 const SizedBox(height: AppTheme.margin16),
                 Text(listing.variety, style: AppTheme.heading1),
                 const SizedBox(height: AppTheme.margin8),
-                Text('${listing.quantity} kg available', style: AppTheme.body),
+                Text('${listing.quantity} kg available',
+                    style: AppTheme.body),
                 const SizedBox(height: AppTheme.margin16),
-                _buildDetailRow('Price per kg', '\$${listing.pricePerKg}'),
-                _buildDetailRow('Processing Method', listing.processingMethod.name),
-                _buildDetailRow('Altitude', '${listing.altitude}m'),
-                _buildDetailRow('Harvest Date', listing.harvestDate.toString().split(' ')[0]),
-                _buildDetailRow('Quality Score', '${listing.qualityScore}/100'),
-                _buildDetailRow('Status', listing.status.name),
+                _DetailRow('Price per kg', '\$${listing.pricePerKg}'),
+                _DetailRow('Processing Method',
+                    listing.processingMethod.name),
+                _DetailRow('Altitude', '${listing.altitude}m'),
+                _DetailRow('Harvest Date',
+                    listing.harvestDate.toIso8601String().split('T')[0]),
+                _DetailRow(
+                    'Quality Score', '${listing.qualityScore}/100'),
+                _DetailRow('Status', listing.status.name),
+                _DetailRow('Location', listing.location),
                 const SizedBox(height: AppTheme.margin16),
                 Text('Description', style: AppTheme.heading2),
                 const SizedBox(height: AppTheme.margin8),
@@ -102,15 +111,27 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
       ),
     );
   }
+}
 
-  Widget _buildDetailRow(String label, String value) {
+class _DetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _DetailRow(this.label, this.value);
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppTheme.padding8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: AppTheme.body.copyWith(color: AppTheme.textSecondary)),
-          Text(value, style: AppTheme.body.copyWith(fontWeight: FontWeight.w600)),
+          Text(label,
+              style: AppTheme.body
+                  .copyWith(color: AppTheme.textSecondary)),
+          Text(value,
+              style:
+                  AppTheme.body.copyWith(fontWeight: FontWeight.w600)),
         ],
       ),
     );
