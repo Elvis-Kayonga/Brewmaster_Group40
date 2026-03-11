@@ -525,13 +525,13 @@ These tasks establish the foundation that all other developers depend on. Estima
 
 #### Verification System
 
-- [ ] 25. Implement verification system (Developer 1)
-  - [ ] 25.1 Create VerificationRepository interface and FirebaseVerificationRepository implementation
+- [x] 25. Implement verification system (Developer 1)
+  - [x] 25.1 Create VerificationRepository interface and FirebaseVerificationRepository implementation
     - Create lib/domain/repositories/verification_repository.dart (abstract interface)
       - Define: `submitVerificationRequest()`, `uploadDocument()`, `getVerificationStatus()`, `watchVerificationStatus()` stream
     - Create lib/data/repositories/firebase_verification_repository.dart with document upload logic
-  - [ ]* 25.2 Write property tests for verification status, document collection
-  - [ ] 25.3 Create VerificationBloc (verification_bloc.dart, verification_event.dart, verification_state.dart)
+  - [x]* 25.2 Write property tests for verification status, document collection
+  - [x] 25.3 Create VerificationBloc (verification_bloc.dart, verification_event.dart, verification_state.dart)
     - Create lib/presentation/blocs/auth/verification_bloc.dart
     - Constructor receives `VerificationRepository` (not Firebase directly)
     - Events: `VerificationStatusLoadRequested`, `VerificationDocumentSubmitted`
