@@ -548,19 +548,19 @@ These tasks establish the foundation that all other developers depend on. Estima
 
 #### Security & Compliance
 
-- [ ] 27. Implement security measures (Developer 1)
-  - [ ] 27.1 Configure Firestore security rules and deploy
-  - [ ]* 27.2 Write property test for security rules
-  - [ ] 27.3 Implement account deletion with cascading deletes
-  - [ ]* 27.4 Write property test for data deletion
+- [x] 27. Implement security measures (Developer 1)
+  - [x] 27.1 Configure Firestore security rules and deploy
+  - [x]* 27.2 Write property test for security rules
+  - [x] 27.3 Implement account deletion with cascading deletes
+  - [x]* 27.4 Write property test for data deletion
   - _Requirements: 13.3, 13.5_
   - _Developer: Developer 1_
 
-- [ ] 28. Implement compliance features (Developer 4 + Developer 2)
-  - [ ] 28.1 Add traceability data to models (Developer 2: listings, Developer 4: transactions, Developer 1: profiles)
-  - [ ]* 28.2 Write property test for compliance data (Developer 4)
-  - [ ] 28.3 Implement PDF export for transactions (Developer 4)
-  - [ ]* 28.4 Write property test for PDF export (Developer 4)
+- [x] 28. Implement compliance features (Developer 4 + Developer 2)
+  - [x] 28.1 Add traceability data to models (Developer 2: listings, Developer 4: transactions, Developer 1: profiles)
+  - [x]* 28.2 Write property test for compliance data (Developer 4)
+  - [x] 28.3 Implement PDF export for transactions (Developer 4)
+  - [x]* 28.4 Write property test for PDF export (Developer 4)
   - _Requirements: 15.1, 15.2, 15.3, 15.4_
   - _Developer: Developer 4 (lead), Developer 2, Developer 1_
 
