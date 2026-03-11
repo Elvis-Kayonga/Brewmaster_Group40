@@ -459,9 +459,9 @@ These tasks establish the foundation that all other developers depend on. Estima
   - _Requirements: 3.1, 3.2, 3.4, 3.5_
   - _Developer: Developer 5_
 
-- [ ] 18. Build market price UI (Developer 5)
-  - [ ] 18.1 Create MarketPricesScreen using common widgets from Phase 0
-  - [ ] 18.2 Create PriceGuidanceWidget
+- [x] 18. Build market price UI (Developer 5)
+  - [x] 18.1 Create MarketPricesScreen using common widgets from Phase 0
+  - [x] 18.2 Create PriceGuidanceWidget
   - [ ]* 18.3 Write property test for price deviation warning
   - _Requirements: 3.1, 3.2, 3.3, 3.5, 3.6_
   - _Developer: Developer 5_
@@ -480,9 +480,9 @@ These tasks establish the foundation that all other developers depend on. Estima
   - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
   - _Developer: Developer 5_
 
-- [ ] 20. Build dashboard UI (Developer 5)
-  - [ ] 20.1 Create FarmerDashboardScreen using StatusBadge, LoadingIndicator from Phase 0
-  - [ ] 20.2 Create BuyerDashboardScreen
+- [x] 20. Build dashboard UI (Developer 5)
+  - [x] 20.1 Create FarmerDashboardScreen using StatusBadge, LoadingIndicator from Phase 0
+  - [x] 20.2 Create BuyerDashboardScreen
   - _Requirements: 11.1, 11.2, 11.3, 11.4_
   - _Developer: Developer 5_
 
