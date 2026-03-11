@@ -9,7 +9,6 @@ import 'package:brewmaster/presentation/screens/messaging/conversations_screen.d
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:brewmaster/main.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
