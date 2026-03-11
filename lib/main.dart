@@ -10,6 +10,7 @@ import 'package:brewmaster/data/repositories/firebase_listing_repository.dart';
 import 'package:brewmaster/data/repositories/firebase_message_repository.dart';
 import 'package:brewmaster/data/repositories/firebase_notification_repository.dart';
 import 'package:brewmaster/data/repositories/firebase_offline_sync_repository.dart';
+import 'package:brewmaster/data/repositories/firebase_verification_repository.dart';
 import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
 import 'package:brewmaster/presentation/blocs/connectivity/connectivity_bloc.dart';
 import 'package:brewmaster/presentation/blocs/listing/listing_bloc.dart';
@@ -17,6 +18,7 @@ import 'package:brewmaster/presentation/blocs/profile/profile_bloc.dart';
 import 'package:brewmaster/presentation/blocs/payment/payment_bloc.dart';
 import 'package:brewmaster/presentation/blocs/messaging/messaging_bloc.dart';
 import 'package:brewmaster/presentation/blocs/messaging/notification_bloc.dart';
+import 'package:brewmaster/presentation/blocs/verification/verification_bloc.dart';
 import 'package:brewmaster/presentation/screens/auth/auth_gate.dart';
 
 Future<void> main() async {
@@ -38,6 +40,7 @@ Future<void> main() async {
   final messageRepository = FirebaseMessageRepository();
   final notificationRepository = FirebaseNotificationRepository();
   final offlineSyncRepository = FirebaseOfflineSyncRepository();
+  final verificationRepository = FirebaseVerificationRepository();
 
   runApp(
     MultiBlocProvider(
@@ -67,6 +70,10 @@ Future<void> main() async {
         BlocProvider<ConnectivityBloc>(
           create: (_) =>
               ConnectivityBloc(repository: offlineSyncRepository),
+        ),
+        BlocProvider<VerificationBloc>(
+          create: (_) =>
+              VerificationBloc(repository: verificationRepository),
         ),
       ],
       child: const BrewMasterApp(),
