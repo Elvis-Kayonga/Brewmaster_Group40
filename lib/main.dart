@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:brewmaster/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,9 +10,8 @@ import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
 import 'package:brewmaster/presentation/blocs/profile/profile_bloc.dart';
 import 'package:brewmaster/presentation/blocs/payment/payment_bloc.dart';
 import 'package:brewmaster/presentation/screens/auth/auth_gate.dart';
-import 'firebase_options.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
