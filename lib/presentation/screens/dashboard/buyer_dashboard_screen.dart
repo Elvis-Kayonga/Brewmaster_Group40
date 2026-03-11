@@ -1,28 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../config/theme.dart';
-import '../../../data/providers/dashboard_provider.dart';
 import '../../../domain/models/buyer_dashboard.dart';
-import '../../../domain/models/enums.dart';
+import '../../blocs/dashboard/dashboard_bloc.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/loading_indicator.dart';
 
 /// Dashboard screen for buyers.
 ///
-/// Displays key metrics: total completed purchases, active conversations,
-/// and saved listings.  Tapping a metric navigates to the corresponding
-/// detail screen (Requirement 11.6).
-///
 /// Requirements: 11.2, 11.5, 16.1 (Clean Architecture)
 /// Developer: Developer 5
 class BuyerDashboardScreen extends StatefulWidget {
-  const BuyerDashboardScreen({
-    super.key,
-    required this.userId,
-  });
+  const BuyerDashboardScreen({super.key, required this.userId});
 
-  /// The Firebase Auth UID of the logged-in buyer.
   final String userId;
 
   @override
@@ -33,11 +24,9 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context
-          .read<DashboardProvider>()
-          .loadDashboard(widget.userId, UserRole.buyer);
-    });
+    context
+        .read<DashboardBloc>()
+        .add(BuyerDashboardLoadRequested(widget.userId));
   }
 
   @override
@@ -49,38 +38,34 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
-            onPressed: () =>
-                context.read<DashboardProvider>().refresh(),
+            onPressed: () => context
+                .read<DashboardBloc>()
+                .add(BuyerDashboardLoadRequested(widget.userId)),
           ),
         ],
       ),
-      body: Consumer<DashboardProvider>(
-        builder: (context, provider, _) {
-          if (provider.isLoading) {
-            return const LoadingIndicator(
-              message: 'Loading your dashboard…',
-            );
+      body: BlocBuilder<DashboardBloc, DashboardState>(
+        builder: (context, state) {
+          if (state is DashboardLoading || state is DashboardInitial) {
+            return const LoadingIndicator(message: 'Loading your dashboard…');
           }
-
-          if (provider.error != null) {
+          if (state is DashboardFailure) {
             return ErrorStateWidget(
-              message: provider.error!,
-              onRetry: provider.refresh,
+              message: state.message,
+              onRetry: () => context
+                  .read<DashboardBloc>()
+                  .add(BuyerDashboardLoadRequested(widget.userId)),
             );
           }
-
-          return _BuyerDashboardBody(
-            dashboard: provider.buyerDashboard,
-          );
+          if (state is BuyerDashboardLoaded) {
+            return _BuyerDashboardBody(dashboard: state.dashboard);
+          }
+          return const SizedBox.shrink();
         },
       ),
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Dashboard body
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _BuyerDashboardBody extends StatelessWidget {
   const _BuyerDashboardBody({required this.dashboard});
@@ -89,66 +74,50 @@ class _BuyerDashboardBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: () => context.read<DashboardProvider>().refresh(),
-      child: ListView(
-        padding: const EdgeInsets.all(AppTheme.padding16),
-        children: [
-          // ── Overview ─────────────────────────────────────────────
-          _SectionHeader(title: 'Overview'),
-          const SizedBox(height: AppTheme.margin8),
-
-          // ── Metric cards ─────────────────────────────────────────
-          GridView.count(
-            crossAxisCount: 2,
-            crossAxisSpacing: AppTheme.margin12,
-            mainAxisSpacing: AppTheme.margin12,
-            childAspectRatio: 1.4,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              _MetricCard(
-                icon: Icons.shopping_bag_outlined,
-                label: 'Total Purchases',
-                value: dashboard.totalPurchases.toString(),
-                color: AppTheme.primaryColor,
-                onTap: () => Navigator.of(context)
-                    .pushNamed('/transactions'),
-              ),
-              _MetricCard(
-                icon: Icons.chat_bubble_outline,
-                label: 'Conversations',
-                value: dashboard.conversations.toString(),
-                color: AppTheme.secondaryColor,
-                onTap: () => Navigator.of(context)
-                    .pushNamed('/messages'),
-              ),
-              _MetricCard(
-                icon: Icons.bookmark_outline,
-                label: 'Saved Listings',
-                value: dashboard.savedListings.toString(),
-                color: AppTheme.primaryDark,
-                onTap: () => Navigator.of(context)
-                    .pushNamed('/search'),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: AppTheme.padding24),
-
-          // ── Quick actions ─────────────────────────────────────────
-          _SectionHeader(title: 'Quick Actions'),
-          const SizedBox(height: AppTheme.margin8),
-          _QuickActionsRow(),
-        ],
-      ),
+    return ListView(
+      padding: const EdgeInsets.all(AppTheme.padding16),
+      children: [
+        _SectionHeader(title: 'Overview'),
+        const SizedBox(height: AppTheme.margin8),
+        GridView.count(
+          crossAxisCount: 2,
+          crossAxisSpacing: AppTheme.margin12,
+          mainAxisSpacing: AppTheme.margin12,
+          childAspectRatio: 1.4,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            _MetricCard(
+              icon: Icons.shopping_bag_outlined,
+              label: 'Total Purchases',
+              value: dashboard.totalPurchases.toString(),
+              color: AppTheme.primaryColor,
+              onTap: () => Navigator.of(context).pushNamed('/transactions'),
+            ),
+            _MetricCard(
+              icon: Icons.chat_bubble_outline,
+              label: 'Conversations',
+              value: dashboard.conversations.toString(),
+              color: AppTheme.secondaryColor,
+              onTap: () => Navigator.of(context).pushNamed('/messages'),
+            ),
+            _MetricCard(
+              icon: Icons.bookmark_outline,
+              label: 'Saved Listings',
+              value: dashboard.savedListings.toString(),
+              color: AppTheme.primaryDark,
+              onTap: () => Navigator.of(context).pushNamed('/search'),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppTheme.padding24),
+        _SectionHeader(title: 'Quick Actions'),
+        const SizedBox(height: AppTheme.margin8),
+        _QuickActionsRow(),
+      ],
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Metric card
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _MetricCard extends StatelessWidget {
   const _MetricCard({
@@ -169,9 +138,7 @@ class _MetricCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppTheme.borderRadiusLargeAll,
-      ),
+      shape: RoundedRectangleBorder(borderRadius: AppTheme.borderRadiusLargeAll),
       child: InkWell(
         onTap: onTap,
         borderRadius: AppTheme.borderRadiusLargeAll,
@@ -185,12 +152,10 @@ class _MetricCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    value,
-                    style: AppTheme.heading2.copyWith(color: color),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  Text(value,
+                      style: AppTheme.heading2.copyWith(color: color),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
                   Text(label, style: AppTheme.caption),
                 ],
               ),
@@ -202,10 +167,6 @@ class _MetricCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Quick actions row
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _QuickActionsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -215,8 +176,7 @@ class _QuickActionsRow extends StatelessWidget {
           child: _ActionButton(
             icon: Icons.search,
             label: 'Browse Listings',
-            onTap: () =>
-                Navigator.of(context).pushNamed('/search'),
+            onTap: () => Navigator.of(context).pushNamed('/search'),
           ),
         ),
         const SizedBox(width: AppTheme.margin12),
@@ -224,8 +184,7 @@ class _QuickActionsRow extends StatelessWidget {
           child: _ActionButton(
             icon: Icons.show_chart,
             label: 'Market Prices',
-            onTap: () =>
-                Navigator.of(context).pushNamed('/market-prices'),
+            onTap: () => Navigator.of(context).pushNamed('/market-prices'),
           ),
         ),
         const SizedBox(width: AppTheme.margin12),
@@ -233,8 +192,7 @@ class _QuickActionsRow extends StatelessWidget {
           child: _ActionButton(
             icon: Icons.message_outlined,
             label: 'Messages',
-            onTap: () =>
-                Navigator.of(context).pushNamed('/messages'),
+            onTap: () => Navigator.of(context).pushNamed('/messages'),
           ),
         ),
       ],
@@ -259,9 +217,7 @@ class _ActionButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: AppTheme.borderRadiusLargeAll,
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          vertical: AppTheme.padding12,
-        ),
+        padding: const EdgeInsets.symmetric(vertical: AppTheme.padding12),
         decoration: BoxDecoration(
           color: AppTheme.primaryColor.withValues(alpha: 0.08),
           borderRadius: AppTheme.borderRadiusLargeAll,
@@ -269,11 +225,7 @@ class _ActionButton extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: AppTheme.primaryColor,
-              size: AppTheme.iconSizeLarge,
-            ),
+            Icon(icon, color: AppTheme.primaryColor, size: AppTheme.iconSizeLarge),
             const SizedBox(height: AppTheme.margin4),
             Text(
               label,
@@ -290,10 +242,6 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Shared section header
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.title});
 
@@ -301,9 +249,7 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: AppTheme.heading2.copyWith(color: AppTheme.primaryColor),
-    );
+    return Text(title,
+        style: AppTheme.heading2.copyWith(color: AppTheme.primaryColor));
   }
 }

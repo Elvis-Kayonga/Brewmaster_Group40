@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
 import '../../../config/theme.dart';
-import '../../../data/providers/market_price_provider.dart';
 import '../../../domain/models/enums.dart';
 import '../../../domain/models/market_price.dart';
+import '../../blocs/market_price/market_price_bloc.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/loading_indicator.dart';
 
@@ -26,16 +26,12 @@ class MarketPricesScreen extends StatefulWidget {
 }
 
 class _MarketPricesScreenState extends State<MarketPricesScreen> {
-  // Currently selected variety filter (null = show all)
   String? _selectedVariety;
 
   @override
   void initState() {
     super.initState();
-    // Load prices on first render
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<MarketPriceProvider>().loadMarketPrices();
-    });
+    context.read<MarketPriceBloc>().add(const MarketPricesLoadRequested());
   }
 
   @override
@@ -47,68 +43,71 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Sync prices',
-            onPressed: () =>
-                context.read<MarketPriceProvider>().syncMarketPrices(),
+            onPressed: () => context
+                .read<MarketPriceBloc>()
+                .add(const MarketPricesSyncRequested()),
           ),
         ],
       ),
-      body: Consumer<MarketPriceProvider>(
-        builder: (context, provider, _) {
-          if (provider.isLoading && !provider.hasPrices) {
-            return const LoadingIndicator(
-              message: 'Loading market prices…',
-            );
+      body: BlocBuilder<MarketPriceBloc, MarketPriceState>(
+        builder: (context, state) {
+          if (state is MarketPriceLoading || state is MarketPriceInitial) {
+            return const LoadingIndicator(message: 'Loading market prices…');
           }
 
-          if (provider.error != null && !provider.hasPrices) {
+          if (state is MarketPriceFailure) {
             return ErrorStateWidget(
-              message: provider.error!,
-              onRetry: provider.loadMarketPrices,
+              message: state.message,
+              onRetry: () => context
+                  .read<MarketPriceBloc>()
+                  .add(const MarketPricesLoadRequested()),
             );
           }
 
-          final prices = _selectedVariety == null
-              ? provider.prices
-              : provider.prices
-                  .where((p) => p.variety == _selectedVariety)
-                  .toList();
+          if (state is MarketPricesLoaded) {
+            final allPrices = state.prices;
+            final varieties =
+                allPrices.map((p) => p.variety).toSet().toList()..sort();
 
-          return Column(
-            children: [
-              // ── Sync timestamp banner ──────────────────────────────────
-              if (provider.lastSyncTime != null)
-                _SyncBanner(syncTime: provider.lastSyncTime!),
+            final prices = _selectedVariety == null
+                ? allPrices
+                : allPrices
+                    .where((p) => p.variety == _selectedVariety)
+                    .toList();
 
-              // ── Variety filter chips ───────────────────────────────────
-              if (provider.varieties.isNotEmpty)
-                _VarietyFilterRow(
-                  varieties: provider.varieties,
-                  selected: _selectedVariety,
-                  onSelected: (v) => setState(
-                    () => _selectedVariety = _selectedVariety == v ? null : v,
+            return Column(
+              children: [
+                if (varieties.isNotEmpty)
+                  _VarietyFilterRow(
+                    varieties: varieties,
+                    selected: _selectedVariety,
+                    onSelected: (v) => setState(
+                      () =>
+                          _selectedVariety = _selectedVariety == v ? null : v,
+                    ),
                   ),
-                ),
-
-              // ── Price list ─────────────────────────────────────────────
-              Expanded(
-                child: prices.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No market prices available.',
-                          style: AppTheme.body,
+                Expanded(
+                  child: prices.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No market prices available.',
+                            style: AppTheme.body,
+                          ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.all(AppTheme.padding16),
+                          itemCount: prices.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: AppTheme.margin8),
+                          itemBuilder: (_, index) =>
+                              _PriceCard(price: prices[index]),
                         ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.all(AppTheme.padding16),
-                        itemCount: prices.length,
-                        separatorBuilder: (_, _) =>
-                            const SizedBox(height: AppTheme.margin8),
-                        itemBuilder: (_, index) =>
-                            _PriceCard(price: prices[index]),
-                      ),
-              ),
-            ],
-          );
+                ),
+              ],
+            );
+          }
+
+          return const SizedBox.shrink();
         },
       ),
     );
@@ -119,41 +118,6 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
 // Private widgets
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Banner showing when the price data was last synced (Requirement 3.5).
-class _SyncBanner extends StatelessWidget {
-  const _SyncBanner({required this.syncTime});
-
-  final DateTime syncTime;
-
-  @override
-  Widget build(BuildContext context) {
-    final formatter = DateFormat('d MMM yyyy, HH:mm');
-    return Container(
-      color: AppTheme.primaryColor.withValues(alpha: 0.08),
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.padding16,
-        vertical: AppTheme.padding8,
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.access_time,
-            size: AppTheme.iconSizeSmall,
-            color: AppTheme.textSecondary,
-          ),
-          const SizedBox(width: AppTheme.margin8),
-          Text(
-            'Last synced: ${formatter.format(syncTime)}',
-            style: AppTheme.caption,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Horizontal row of filter chips for each variety.
 class _VarietyFilterRow extends StatelessWidget {
   const _VarietyFilterRow({
     required this.varieties,
@@ -170,12 +134,10 @@ class _VarietyFilterRow extends StatelessWidget {
     return SizedBox(
       height: 48,
       child: ListView.separated(
-        padding:
-            const EdgeInsets.symmetric(horizontal: AppTheme.padding16),
+        padding: const EdgeInsets.symmetric(horizontal: AppTheme.padding16),
         scrollDirection: Axis.horizontal,
         itemCount: varieties.length,
-        separatorBuilder: (_, _) =>
-            const SizedBox(width: AppTheme.margin8),
+        separatorBuilder: (_, _) => const SizedBox(width: AppTheme.margin8),
         itemBuilder: (_, index) {
           final variety = varieties[index];
           final isSelected = selected == variety;
@@ -183,15 +145,11 @@ class _VarietyFilterRow extends StatelessWidget {
             label: Text(variety),
             selected: isSelected,
             onSelected: (_) => onSelected(variety),
-            selectedColor:
-                AppTheme.primaryColor.withValues(alpha: 0.15),
+            selectedColor: AppTheme.primaryColor.withValues(alpha: 0.15),
             checkmarkColor: AppTheme.primaryColor,
             labelStyle: AppTheme.caption.copyWith(
-              color: isSelected
-                  ? AppTheme.primaryColor
-                  : AppTheme.textPrimary,
-              fontWeight:
-                  isSelected ? FontWeight.w600 : FontWeight.normal,
+              color: isSelected ? AppTheme.primaryColor : AppTheme.textPrimary,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
             ),
           );
         },
@@ -200,7 +158,6 @@ class _VarietyFilterRow extends StatelessWidget {
   }
 }
 
-/// Card displaying the price range for one [MarketPrice] record.
 class _PriceCard extends StatelessWidget {
   const _PriceCard({required this.price});
 
@@ -210,34 +167,23 @@ class _PriceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppTheme.borderRadiusLargeAll,
-      ),
+      shape: RoundedRectangleBorder(borderRadius: AppTheme.borderRadiusLargeAll),
       child: Padding(
         padding: const EdgeInsets.all(AppTheme.padding16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Variety + grade row
             Row(
               children: [
-                const Icon(
-                  Icons.local_cafe,
-                  color: AppTheme.primaryColor,
-                  size: AppTheme.iconSizeMedium,
-                ),
+                const Icon(Icons.local_cafe,
+                    color: AppTheme.primaryColor,
+                    size: AppTheme.iconSizeMedium),
                 const SizedBox(width: AppTheme.margin8),
-                Expanded(
-                  child: Text(
-                    price.variety,
-                    style: AppTheme.heading2,
-                  ),
-                ),
+                Expanded(child: Text(price.variety, style: AppTheme.heading2)),
                 _GradeChip(grade: price.grade),
               ],
             ),
             const SizedBox(height: AppTheme.padding12),
-            // Price range row
             _PriceRangeRow(
               low: price.lowPrice,
               avg: price.avgPrice,
@@ -256,7 +202,6 @@ class _PriceCard extends StatelessWidget {
   }
 }
 
-/// Small chip showing the quality grade.
 class _GradeChip extends StatelessWidget {
   const _GradeChip({required this.grade});
 
@@ -275,25 +220,20 @@ class _GradeChip extends StatelessWidget {
     }
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.padding8,
-        vertical: AppTheme.padding4,
-      ),
+          horizontal: AppTheme.padding8, vertical: AppTheme.padding4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
         borderRadius: AppTheme.borderRadiusRoundAll,
       ),
       child: Text(
         grade.name[0].toUpperCase() + grade.name.substring(1),
-        style: AppTheme.caption.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
+        style: AppTheme.caption
+            .copyWith(color: color, fontWeight: FontWeight.w600),
       ),
     );
   }
 }
 
-/// Three-column price range row (low / average / high).
 class _PriceRangeRow extends StatelessWidget {
   const _PriceRangeRow({
     required this.low,
@@ -312,26 +252,23 @@ class _PriceRangeRow extends StatelessWidget {
     return Row(
       children: [
         _PriceColumn(
-          label: 'Low',
-          value: low,
-          currency: currency,
-          color: AppTheme.textSecondary,
-        ),
+            label: 'Low',
+            value: low,
+            currency: currency,
+            color: AppTheme.textSecondary),
         const Spacer(),
         _PriceColumn(
-          label: 'Average',
-          value: avg,
-          currency: currency,
-          color: AppTheme.primaryColor,
-          isHighlighted: true,
-        ),
+            label: 'Average',
+            value: avg,
+            currency: currency,
+            color: AppTheme.primaryColor,
+            isHighlighted: true),
         const Spacer(),
         _PriceColumn(
-          label: 'High',
-          value: high,
-          currency: currency,
-          color: AppTheme.successColor,
-        ),
+            label: 'High',
+            value: high,
+            currency: currency,
+            color: AppTheme.successColor),
       ],
     );
   }
@@ -362,10 +299,7 @@ class _PriceColumn extends StatelessWidget {
         Text(
           '$currency ${value.toStringAsFixed(2)}/kg',
           style: isHighlighted
-              ? AppTheme.body.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                )
+              ? AppTheme.body.copyWith(color: color, fontWeight: FontWeight.bold)
               : AppTheme.body.copyWith(color: color),
         ),
       ],

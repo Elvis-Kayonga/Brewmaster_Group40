@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../config/theme.dart';
-import '../../../data/providers/market_price_provider.dart';
 import '../../../domain/models/enums.dart';
 import '../../../domain/models/market_price.dart';
+import '../../blocs/market_price/market_price_bloc.dart';
 
 /// Inline widget that shows market price guidance for a specific coffee variety
 /// when a farmer is creating or editing a listing.
@@ -16,7 +16,7 @@ import '../../../domain/models/market_price.dart';
 ///
 /// Requirements: 3.3, 3.6, 16.1 (Clean Architecture)
 /// Developer: Developer 5
-class PriceGuidanceWidget extends StatefulWidget {
+class PriceGuidanceWidget extends StatelessWidget {
   const PriceGuidanceWidget({
     super.key,
     required this.variety,
@@ -24,65 +24,58 @@ class PriceGuidanceWidget extends StatefulWidget {
     this.askingPrice,
   });
 
-  /// The coffee variety for which to show price guidance.
   final String variety;
-
-  /// The quality grade; determines which price band to compare against.
   final QualityGrade grade;
-
-  /// The farmer's asking price per kg. When provided and non-zero, a
-  /// deviation warning may be shown.
   final double? askingPrice;
 
   @override
-  State<PriceGuidanceWidget> createState() => _PriceGuidanceWidgetState();
+  Widget build(BuildContext context) {
+    return BlocBuilder<MarketPriceBloc, MarketPriceState>(
+      builder: (context, state) {
+        if (state is MarketPriceInitial) {
+          // Trigger load if not yet started
+          context
+              .read<MarketPriceBloc>()
+              .add(const MarketPricesLoadRequested());
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: AppTheme.padding8),
+            child: LinearProgressIndicator(),
+          );
+        }
+
+        if (state is MarketPriceLoading) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: AppTheme.padding8),
+            child: LinearProgressIndicator(),
+          );
+        }
+
+        if (state is MarketPricesLoaded) {
+          final price = state.prices
+              .where((p) =>
+                  p.variety.toLowerCase() == variety.toLowerCase() &&
+                  p.grade == grade)
+              .firstOrNull;
+
+          if (price == null) return const SizedBox.shrink();
+
+          return _GuidanceCard(price: price, askingPrice: askingPrice);
+        }
+
+        return const SizedBox.shrink();
+      },
+    );
+  }
 }
 
-class _PriceGuidanceWidgetState extends State<PriceGuidanceWidget> {
-  MarketPrice? _price;
-  bool _loading = true;
+class _GuidanceCard extends StatelessWidget {
+  const _GuidanceCard({required this.price, this.askingPrice});
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchPrice();
-  }
-
-  @override
-  void didUpdateWidget(PriceGuidanceWidget old) {
-    super.didUpdateWidget(old);
-    if (old.variety != widget.variety || old.grade != widget.grade) {
-      _fetchPrice();
-    }
-  }
-
-  Future<void> _fetchPrice() async {
-    if (!mounted) return;
-    setState(() => _loading = true);
-    final provider =
-        context.read<MarketPriceProvider>();
-    final price =
-        await provider.getPriceForVariety(widget.variety, widget.grade);
-    if (!mounted) return;
-    setState(() {
-      _price = price;
-      _loading = false;
-    });
-  }
+  final MarketPrice price;
+  final double? askingPrice;
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: AppTheme.padding8),
-        child: LinearProgressIndicator(),
-      );
-    }
-
-    if (_price == null) {
-      return const SizedBox.shrink();
-    }
-
     final deviationWarning = _buildDeviationWarning();
 
     return Container(
@@ -99,15 +92,11 @@ class _PriceGuidanceWidgetState extends State<PriceGuidanceWidget> {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.trending_up,
-                size: AppTheme.iconSizeSmall,
-                color: AppTheme.primaryColor,
-              ),
+              const Icon(Icons.trending_up,
+                  size: AppTheme.iconSizeSmall, color: AppTheme.primaryColor),
               const SizedBox(width: AppTheme.margin8),
               Text(
-                'Market price – ${widget.variety} '
-                '(${_gradeLabel(widget.grade)})',
+                'Market price – ${price.variety} (${_gradeLabel(price.grade)})',
                 style: AppTheme.caption.copyWith(
                   fontWeight: FontWeight.w600,
                   color: AppTheme.primaryColor,
@@ -116,7 +105,7 @@ class _PriceGuidanceWidgetState extends State<PriceGuidanceWidget> {
             ],
           ),
           const SizedBox(height: AppTheme.padding8),
-          _PriceRow(price: _price!),
+          _PriceRow(price: price),
           if (deviationWarning != null) ...[
             const SizedBox(height: AppTheme.padding8),
             deviationWarning,
@@ -126,24 +115,19 @@ class _PriceGuidanceWidgetState extends State<PriceGuidanceWidget> {
     );
   }
 
-  /// Returns a warning widget when the asking price deviates > 20 % from the
-  /// market average (Requirement 3.6, Property 14).
   Widget? _buildDeviationWarning() {
-    final asking = widget.askingPrice;
-    if (asking == null || asking <= 0 || _price == null) return null;
+    final asking = askingPrice;
+    if (asking == null || asking <= 0) return null;
 
-    final avg = _price!.avgPrice;
+    final avg = price.avgPrice;
     final deviation = ((asking - avg) / avg).abs();
     if (deviation <= 0.20) return null;
 
     final isTooHigh = asking > avg;
     return Row(
       children: [
-        Icon(
-          Icons.warning_amber_rounded,
-          size: AppTheme.iconSizeSmall,
-          color: AppTheme.warningColor,
-        ),
+        Icon(Icons.warning_amber_rounded,
+            size: AppTheme.iconSizeSmall, color: AppTheme.warningColor),
         const SizedBox(width: AppTheme.margin8),
         Expanded(
           child: Text(
@@ -159,11 +143,10 @@ class _PriceGuidanceWidgetState extends State<PriceGuidanceWidget> {
     );
   }
 
-  String _gradeLabel(QualityGrade grade) =>
-      grade.name[0].toUpperCase() + grade.name.substring(1);
+  String _gradeLabel(QualityGrade g) =>
+      g.name[0].toUpperCase() + g.name.substring(1);
 }
 
-/// Compact row that displays the three price columns.
 class _PriceRow extends StatelessWidget {
   const _PriceRow({required this.price});
 
@@ -174,29 +157,20 @@ class _PriceRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _Column(
-          label: 'Low',
-          value: price.lowPrice,
-          currency: price.currency,
-        ),
-        _Column(
-          label: 'Avg',
-          value: price.avgPrice,
-          currency: price.currency,
-          bold: true,
-        ),
-        _Column(
-          label: 'High',
-          value: price.highPrice,
-          currency: price.currency,
-        ),
+        _Col(label: 'Low', value: price.lowPrice, currency: price.currency),
+        _Col(
+            label: 'Avg',
+            value: price.avgPrice,
+            currency: price.currency,
+            bold: true),
+        _Col(label: 'High', value: price.highPrice, currency: price.currency),
       ],
     );
   }
 }
 
-class _Column extends StatelessWidget {
-  const _Column({
+class _Col extends StatelessWidget {
+  const _Col({
     required this.label,
     required this.value,
     required this.currency,
@@ -216,10 +190,8 @@ class _Column extends StatelessWidget {
         Text(
           '$currency ${value.toStringAsFixed(2)}',
           style: AppTheme.caption.copyWith(
-            fontWeight:
-                bold ? FontWeight.bold : FontWeight.normal,
-            color:
-                bold ? AppTheme.primaryColor : AppTheme.textSecondary,
+            fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+            color: bold ? AppTheme.primaryColor : AppTheme.textSecondary,
           ),
         ),
       ],

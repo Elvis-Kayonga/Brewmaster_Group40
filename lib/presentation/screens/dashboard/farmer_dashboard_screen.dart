@@ -1,33 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../config/theme.dart';
-import '../../../data/providers/dashboard_provider.dart';
-import '../../../domain/models/enums.dart';
 import '../../../domain/models/farmer_dashboard.dart';
+import '../../blocs/dashboard/dashboard_bloc.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/common/status_badge.dart';
 
 /// Dashboard screen for farmers.
 ///
-/// Displays key business metrics: active listings, total earnings,
-/// active conversations, listing views, and response rate.
-/// Tapping a metric card navigates to the corresponding detail screen
-/// (Requirement 11.6).
-///
-/// Uses [DashboardProvider] for data and [StatusBadge] / [LoadingIndicator]
-/// from Phase 0 common widgets.
-///
 /// Requirements: 11.1, 11.3, 11.4, 11.5, 16.1 (Clean Architecture)
 /// Developer: Developer 5
 class FarmerDashboardScreen extends StatefulWidget {
-  const FarmerDashboardScreen({
-    super.key,
-    required this.userId,
-  });
+  const FarmerDashboardScreen({super.key, required this.userId});
 
-  /// The Firebase Auth UID of the logged-in farmer.
   final String userId;
 
   @override
@@ -38,11 +25,9 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context
-          .read<DashboardProvider>()
-          .loadDashboard(widget.userId, UserRole.farmer);
-    });
+    context
+        .read<DashboardBloc>()
+        .add(FarmerDashboardLoadRequested(widget.userId));
   }
 
   @override
@@ -54,38 +39,34 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
-            onPressed: () =>
-                context.read<DashboardProvider>().refresh(),
+            onPressed: () => context
+                .read<DashboardBloc>()
+                .add(FarmerDashboardLoadRequested(widget.userId)),
           ),
         ],
       ),
-      body: Consumer<DashboardProvider>(
-        builder: (context, provider, _) {
-          if (provider.isLoading) {
-            return const LoadingIndicator(
-              message: 'Loading your dashboard…',
-            );
+      body: BlocBuilder<DashboardBloc, DashboardState>(
+        builder: (context, state) {
+          if (state is DashboardLoading || state is DashboardInitial) {
+            return const LoadingIndicator(message: 'Loading your dashboard…');
           }
-
-          if (provider.error != null) {
+          if (state is DashboardFailure) {
             return ErrorStateWidget(
-              message: provider.error!,
-              onRetry: provider.refresh,
+              message: state.message,
+              onRetry: () => context
+                  .read<DashboardBloc>()
+                  .add(FarmerDashboardLoadRequested(widget.userId)),
             );
           }
-
-          return _FarmerDashboardBody(
-            dashboard: provider.farmerDashboard,
-          );
+          if (state is FarmerDashboardLoaded) {
+            return _FarmerDashboardBody(dashboard: state.dashboard);
+          }
+          return const SizedBox.shrink();
         },
       ),
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Dashboard body
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _FarmerDashboardBody extends StatelessWidget {
   const _FarmerDashboardBody({required this.dashboard});
@@ -94,74 +75,57 @@ class _FarmerDashboardBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: () => context.read<DashboardProvider>().refresh(),
-      child: ListView(
-        padding: const EdgeInsets.all(AppTheme.padding16),
-        children: [
-          // ── Greeting ────────────────────────────────────────────
-          _SectionHeader(title: 'Overview'),
-          const SizedBox(height: AppTheme.margin8),
-
-          // ── Metric cards grid ────────────────────────────────────
-          GridView.count(
-            crossAxisCount: 2,
-            crossAxisSpacing: AppTheme.margin12,
-            mainAxisSpacing: AppTheme.margin12,
-            childAspectRatio: 1.4,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              _MetricCard(
-                icon: Icons.list_alt,
-                label: 'Active Listings',
-                value: dashboard.activeListings.toString(),
-                color: AppTheme.primaryColor,
-              ),
-              _MetricCard(
-                icon: Icons.attach_money,
-                label: 'Total Earnings',
-                value:
-                    'USD ${dashboard.totalEarnings.toStringAsFixed(2)}',
-                color: AppTheme.successColor,
-              ),
-              _MetricCard(
-                icon: Icons.chat_bubble_outline,
-                label: 'Conversations',
-                value: dashboard.conversations.toString(),
-                color: AppTheme.secondaryColor,
-              ),
-              _MetricCard(
-                icon: Icons.visibility_outlined,
-                label: 'Total Views',
-                value: dashboard.views.toString(),
-                color: AppTheme.primaryDark,
-              ),
-            ],
-          ),
-
-          const SizedBox(height: AppTheme.padding24),
-
-          // ── Response rate ────────────────────────────────────────
-          _SectionHeader(title: 'Response Rate'),
-          const SizedBox(height: AppTheme.margin8),
-          _ResponseRateCard(rate: dashboard.responseRate),
-
-          const SizedBox(height: AppTheme.padding24),
-
-          // ── Quick actions ────────────────────────────────────────
-          _SectionHeader(title: 'Quick Actions'),
-          const SizedBox(height: AppTheme.margin8),
-          _QuickActionsRow(),
-        ],
-      ),
+    return ListView(
+      padding: const EdgeInsets.all(AppTheme.padding16),
+      children: [
+        _SectionHeader(title: 'Overview'),
+        const SizedBox(height: AppTheme.margin8),
+        GridView.count(
+          crossAxisCount: 2,
+          crossAxisSpacing: AppTheme.margin12,
+          mainAxisSpacing: AppTheme.margin12,
+          childAspectRatio: 1.4,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            _MetricCard(
+              icon: Icons.list_alt,
+              label: 'Active Listings',
+              value: dashboard.activeListings.toString(),
+              color: AppTheme.primaryColor,
+            ),
+            _MetricCard(
+              icon: Icons.attach_money,
+              label: 'Total Earnings',
+              value: 'USD ${dashboard.totalEarnings.toStringAsFixed(2)}',
+              color: AppTheme.successColor,
+            ),
+            _MetricCard(
+              icon: Icons.chat_bubble_outline,
+              label: 'Conversations',
+              value: dashboard.conversations.toString(),
+              color: AppTheme.secondaryColor,
+            ),
+            _MetricCard(
+              icon: Icons.visibility_outlined,
+              label: 'Total Views',
+              value: dashboard.views.toString(),
+              color: AppTheme.primaryDark,
+            ),
+          ],
+        ),
+        const SizedBox(height: AppTheme.padding24),
+        _SectionHeader(title: 'Response Rate'),
+        const SizedBox(height: AppTheme.margin8),
+        _ResponseRateCard(rate: dashboard.responseRate),
+        const SizedBox(height: AppTheme.padding24),
+        _SectionHeader(title: 'Quick Actions'),
+        const SizedBox(height: AppTheme.margin8),
+        _QuickActionsRow(),
+      ],
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Metric card
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _MetricCard extends StatelessWidget {
   const _MetricCard({
@@ -180,9 +144,7 @@ class _MetricCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppTheme.borderRadiusLargeAll,
-      ),
+      shape: RoundedRectangleBorder(borderRadius: AppTheme.borderRadiusLargeAll),
       child: Padding(
         padding: const EdgeInsets.all(AppTheme.padding12),
         child: Column(
@@ -193,12 +155,10 @@ class _MetricCard extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  value,
-                  style: AppTheme.heading2.copyWith(color: color),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Text(value,
+                    style: AppTheme.heading2.copyWith(color: color),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
                 Text(label, style: AppTheme.caption),
               ],
             ),
@@ -208,10 +168,6 @@ class _MetricCard extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Response rate card
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _ResponseRateCard extends StatelessWidget {
   const _ResponseRateCard({required this.rate});
@@ -228,9 +184,7 @@ class _ResponseRateCard extends StatelessWidget {
 
     return Card(
       elevation: 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppTheme.borderRadiusLargeAll,
-      ),
+      shape: RoundedRectangleBorder(borderRadius: AppTheme.borderRadiusLargeAll),
       child: Padding(
         padding: const EdgeInsets.all(AppTheme.padding16),
         child: Row(
@@ -239,14 +193,10 @@ class _ResponseRateCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '${rate.toStringAsFixed(0)} %',
-                    style: AppTheme.heading1,
-                  ),
+                  Text('${rate.toStringAsFixed(0)} %', style: AppTheme.heading1),
                   const SizedBox(height: 4),
                   Text(
-                    'You responded to ${rate.toStringAsFixed(0)} % of '
-                    'your conversations.',
+                    'You responded to ${rate.toStringAsFixed(0)} % of your conversations.',
                     style: AppTheme.caption,
                   ),
                 ],
@@ -269,10 +219,6 @@ class _ResponseRateCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Quick actions
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _QuickActionsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -282,8 +228,7 @@ class _QuickActionsRow extends StatelessWidget {
           child: _ActionButton(
             icon: Icons.add_circle_outline,
             label: 'New Listing',
-            onTap: () => Navigator.of(context)
-                .pushNamed('/listings/new'),
+            onTap: () => Navigator.of(context).pushNamed('/listings/new'),
           ),
         ),
         const SizedBox(width: AppTheme.margin12),
@@ -291,8 +236,7 @@ class _QuickActionsRow extends StatelessWidget {
           child: _ActionButton(
             icon: Icons.show_chart,
             label: 'Market Prices',
-            onTap: () => Navigator.of(context)
-                .pushNamed('/market-prices'),
+            onTap: () => Navigator.of(context).pushNamed('/market-prices'),
           ),
         ),
         const SizedBox(width: AppTheme.margin12),
@@ -300,8 +244,7 @@ class _QuickActionsRow extends StatelessWidget {
           child: _ActionButton(
             icon: Icons.message_outlined,
             label: 'Messages',
-            onTap: () => Navigator.of(context)
-                .pushNamed('/messages'),
+            onTap: () => Navigator.of(context).pushNamed('/messages'),
           ),
         ),
       ],
@@ -326,9 +269,7 @@ class _ActionButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: AppTheme.borderRadiusLargeAll,
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          vertical: AppTheme.padding12,
-        ),
+        padding: const EdgeInsets.symmetric(vertical: AppTheme.padding12),
         decoration: BoxDecoration(
           color: AppTheme.primaryColor.withValues(alpha: 0.08),
           borderRadius: AppTheme.borderRadiusLargeAll,
@@ -336,11 +277,7 @@ class _ActionButton extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: AppTheme.primaryColor,
-              size: AppTheme.iconSizeLarge,
-            ),
+            Icon(icon, color: AppTheme.primaryColor, size: AppTheme.iconSizeLarge),
             const SizedBox(height: AppTheme.margin4),
             Text(
               label,
@@ -357,10 +294,6 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Shared section header
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.title});
 
@@ -368,9 +301,7 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: AppTheme.heading2.copyWith(color: AppTheme.primaryColor),
-    );
+    return Text(title,
+        style: AppTheme.heading2.copyWith(color: AppTheme.primaryColor));
   }
 }
