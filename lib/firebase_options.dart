@@ -65,6 +65,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '371292882083',
     projectId: 'brewmaster-coffee',
     storageBucket: 'brewmaster-coffee.firebasestorage.app',
+    iosClientId: '371292882083-riivmcd6anujok331isp6lp95unlja2q.apps.googleusercontent.com',
     iosBundleId: 'com.brewmaster.brewmaster',
   );
 
@@ -74,6 +75,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '371292882083',
     projectId: 'brewmaster-coffee',
     storageBucket: 'brewmaster-coffee.firebasestorage.app',
+    iosClientId: '371292882083-riivmcd6anujok331isp6lp95unlja2q.apps.googleusercontent.com',
     iosBundleId: 'com.brewmaster.brewmaster',
   );
 

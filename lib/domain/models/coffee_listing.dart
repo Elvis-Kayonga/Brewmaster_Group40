@@ -1,29 +1,28 @@
 // lib/domain/models/coffee_listing.dart
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'enums.dart';
 
-enum ProcessingMethod { washed, natural, honey }
-
-enum ListingStatus { draft, active, sold, expired }
-
+/// Coffee listing model representing a farmer's coffee for sale
+/// Requirements: 2.1, 2.6, 8.4, 15.1, 16.1 (Clean Architecture)
+/// Developer: Developer 2
 class CoffeeListing {
   final String listingId;
   final String farmerId;
   final String variety;
-  final double quantity;
+  final double quantity; // in KG
   final double pricePerKg;
   final ProcessingMethod processingMethod;
-  final double altitude;
+  final double altitude; // meters above sea level
   final DateTime harvestDate;
-  final double qualityScore;
+  final double qualityScore; // 0 - 100
   final String description;
   final List<String> images;
-  final Map<String, double> location;
+  final String location;
   final ListingStatus status;
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  CoffeeListing({
+  const CoffeeListing({
     required this.listingId,
     required this.farmerId,
     required this.variety,
@@ -41,6 +40,7 @@ class CoffeeListing {
     required this.updatedAt,
   });
 
+  /// Convert object to JSON (for Firebase / API)
   Map<String, dynamic> toJson() {
     return {
       'listingId': listingId,
@@ -50,17 +50,18 @@ class CoffeeListing {
       'pricePerKg': pricePerKg,
       'processingMethod': processingMethod.name,
       'altitude': altitude,
-      'harvestDate': Timestamp.fromDate(harvestDate),
+      'harvestDate': harvestDate.toIso8601String(),
       'qualityScore': qualityScore,
       'description': description,
       'images': images,
       'location': location,
       'status': status.name,
-      'createdAt': Timestamp.fromDate(createdAt),
-      'updatedAt': Timestamp.fromDate(updatedAt),
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
     };
   }
 
+  /// Create object from JSON
   factory CoffeeListing.fromJson(Map<String, dynamic> json) {
     return CoffeeListing(
       listingId: json['listingId'] as String,
@@ -68,20 +69,18 @@ class CoffeeListing {
       variety: json['variety'] as String,
       quantity: (json['quantity'] as num).toDouble(),
       pricePerKg: (json['pricePerKg'] as num).toDouble(),
-      processingMethod: ProcessingMethod.values.firstWhere(
-        (e) => e.name == json['processingMethod'],
+      processingMethod: ProcessingMethodExtension.fromJson(
+        json['processingMethod'] as String,
       ),
       altitude: (json['altitude'] as num).toDouble(),
-      harvestDate: (json['harvestDate'] as Timestamp).toDate(),
+      harvestDate: DateTime.parse(json['harvestDate'] as String),
       qualityScore: (json['qualityScore'] as num).toDouble(),
       description: json['description'] as String,
       images: List<String>.from(json['images'] as List),
-      location: Map<String, double>.from(json['location'] as Map),
-      status: ListingStatus.values.firstWhere(
-        (e) => e.name == json['status'],
-      ),
-      createdAt: (json['createdAt'] as Timestamp).toDate(),
-      updatedAt: (json['updatedAt'] as Timestamp).toDate(),
+      location: json['location'] as String,
+      status: ListingStatusExtension.fromJson(json['status'] as String),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
   }
 
@@ -97,7 +96,7 @@ class CoffeeListing {
     double? qualityScore,
     String? description,
     List<String>? images,
-    Map<String, double>? location,
+    String? location,
     ListingStatus? status,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -119,5 +118,45 @@ class CoffeeListing {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is CoffeeListing &&
+        other.listingId == listingId &&
+        other.farmerId == farmerId &&
+        other.variety == variety &&
+        other.quantity == quantity &&
+        other.pricePerKg == pricePerKg &&
+        other.processingMethod == processingMethod &&
+        other.altitude == altitude &&
+        other.harvestDate == harvestDate &&
+        other.qualityScore == qualityScore &&
+        other.description == description &&
+        other.location == location &&
+        other.status == status;
+  }
+
+  @override
+  int get hashCode {
+    return listingId.hashCode ^
+        farmerId.hashCode ^
+        variety.hashCode ^
+        quantity.hashCode ^
+        pricePerKg.hashCode ^
+        processingMethod.hashCode ^
+        altitude.hashCode ^
+        harvestDate.hashCode ^
+        qualityScore.hashCode ^
+        description.hashCode ^
+        location.hashCode ^
+        status.hashCode;
+  }
+
+  @override
+  String toString() {
+    return 'CoffeeListing(listingId: $listingId, farmerId: $farmerId, variety: $variety, quantity: $quantity, pricePerKg: $pricePerKg, status: $status)';
   }
 }
