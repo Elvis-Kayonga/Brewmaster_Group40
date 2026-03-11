@@ -10,7 +10,7 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 
 import 'package:brewmaster/domain/models/user_profile.dart';
 import 'package:brewmaster/domain/models/enums.dart';
-import 'package:brewmaster/data/services/user_service.dart';
+import 'package:brewmaster/data/repositories/firebase_user_repository.dart';
 
 // --- Helpers ---
 
@@ -103,11 +103,11 @@ void main() {
       () async {
         for (int i = 0; i < 100; i++) {
           final firestore = FakeFirebaseFirestore();
-          final service = UserService(firestore: firestore);
+          final repo = FirebaseUserRepository(firestore: firestore);
           final profile = generateProfile(faker, i);
 
-          await service.createUserProfile(profile);
-          final retrieved = await service.getUserProfile(profile.id);
+          await repo.createUserProfile(profile);
+          final retrieved = await repo.getUserProfile(profile.id);
 
           expect(
             retrieved,
@@ -190,10 +190,10 @@ void main() {
       () async {
         for (int i = 0; i < 100; i++) {
           final firestore = FakeFirebaseFirestore();
-          final service = UserService(firestore: firestore);
+          final repo = FirebaseUserRepository(firestore: firestore);
           final profile = generateProfile(faker, i);
 
-          await service.createUserProfile(profile);
+          await repo.createUserProfile(profile);
 
           final newDisplayName = faker.person.name();
           final updates = <String, dynamic>{'displayName': newDisplayName};
@@ -212,8 +212,8 @@ void main() {
             );
           }
 
-          await service.updateUserProfile(profile.id, updates);
-          final retrieved = await service.getUserProfile(profile.id);
+          await repo.updateUserProfile(profile.id, updates);
+          final retrieved = await repo.getUserProfile(profile.id);
 
           expect(
             retrieved,
@@ -276,21 +276,21 @@ void main() {
       () async {
         for (int i = 0; i < 100; i++) {
           final firestore = FakeFirebaseFirestore();
-          final service = UserService(firestore: firestore);
+          final repo = FirebaseUserRepository(firestore: firestore);
           final profile = generateProfile(faker, i);
 
-          await service.createUserProfile(profile);
+          await repo.createUserProfile(profile);
 
           // Apply 3 sequential displayName updates
           String lastDisplayName = '';
           for (int j = 0; j < 3; j++) {
             lastDisplayName = faker.person.name();
-            await service.updateUserProfile(profile.id, {
+            await repo.updateUserProfile(profile.id, {
               'displayName': lastDisplayName,
             });
           }
 
-          final retrieved = await service.getUserProfile(profile.id);
+          final retrieved = await repo.getUserProfile(profile.id);
 
           expect(
             retrieved,
@@ -301,7 +301,8 @@ void main() {
           expect(
             retrieved!.displayName,
             equals(lastDisplayName),
-            reason: 'displayName should reflect the last update (iteration $i)',
+            reason:
+                'displayName should reflect the last update (iteration $i)',
           );
         }
       },
@@ -313,12 +314,13 @@ void main() {
       () async {
         for (int i = 0; i < 100; i++) {
           final firestore = FakeFirebaseFirestore();
-          final service = UserService(firestore: firestore);
+          final repo = FirebaseUserRepository(firestore: firestore);
           final profile = generateFarmerProfile(faker);
 
-          await service.createUserProfile(profile);
+          await repo.createUserProfile(profile);
 
-          final newFarmSize = faker.randomGenerator.decimal(min: 1, scale: 15);
+          final newFarmSize =
+              faker.randomGenerator.decimal(min: 1, scale: 15);
           final newFarmLocation = faker.address.city();
           final newVarieties = List.generate(
             faker.randomGenerator.integer(3, min: 1),
@@ -332,19 +334,20 @@ void main() {
           final newRegNumber =
               'REG-${faker.randomGenerator.integer(99999, min: 10000)}';
 
-          await service.updateUserProfile(profile.id, {
+          await repo.updateUserProfile(profile.id, {
             'farmSize': newFarmSize,
             'farmLocation': newFarmLocation,
             'coffeeVarieties': newVarieties,
             'farmRegistrationNumber': newRegNumber,
           });
 
-          final retrieved = await service.getUserProfile(profile.id);
+          final retrieved = await repo.getUserProfile(profile.id);
 
           expect(
             retrieved,
             isNotNull,
-            reason: 'Farmer profile should exist after update (iteration $i)',
+            reason:
+                'Farmer profile should exist after update (iteration $i)',
           );
           expect(
             retrieved!.farmSize,
@@ -364,7 +367,8 @@ void main() {
           expect(
             retrieved.farmRegistrationNumber,
             equals(newRegNumber),
-            reason: 'farmRegistrationNumber should be updated (iteration $i)',
+            reason:
+                'farmRegistrationNumber should be updated (iteration $i)',
           );
         }
       },
@@ -376,10 +380,10 @@ void main() {
       () async {
         for (int i = 0; i < 100; i++) {
           final firestore = FakeFirebaseFirestore();
-          final service = UserService(firestore: firestore);
+          final repo = FirebaseUserRepository(firestore: firestore);
           final profile = generateBuyerProfile(faker);
 
-          await service.createUserProfile(profile);
+          await repo.createUserProfile(profile);
 
           final newBusinessName = faker.company.name();
           final newBusinessType = faker.randomGenerator.element([
@@ -393,18 +397,19 @@ void main() {
             scale: 10000,
           );
 
-          await service.updateUserProfile(profile.id, {
+          await repo.updateUserProfile(profile.id, {
             'businessName': newBusinessName,
             'businessType': newBusinessType,
             'monthlyVolume': newMonthlyVolume,
           });
 
-          final retrieved = await service.getUserProfile(profile.id);
+          final retrieved = await repo.getUserProfile(profile.id);
 
           expect(
             retrieved,
             isNotNull,
-            reason: 'Buyer profile should exist after update (iteration $i)',
+            reason:
+                'Buyer profile should exist after update (iteration $i)',
           );
           expect(
             retrieved!.businessName,

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../domain/models/escrow_transaction.dart' as models;
 import '../../../domain/models/enums.dart';
-import '../../providers/payment_provider.dart';
+import '../../blocs/payment/payment_bloc.dart';
 import '../../widgets/common/status_badge.dart';
 import '../../widgets/common/empty_state_widget.dart';
 import 'transaction_detail_screen.dart';
 
-/// Screen displaying transaction history
+/// Screen displaying transaction history.
 /// Requirements: 6.7, 15.3
 class TransactionHistoryScreen extends StatefulWidget {
   final String userId;
@@ -33,12 +33,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<PaymentProvider>().subscribeToUserTransactions(
-        widget.userId,
-      );
-      context.read<PaymentProvider>().loadUserStatistics(widget.userId);
-    });
+    context
+        .read<PaymentBloc>()
+        .add(PaymentHistoryRequested(widget.userId));
   }
 
   @override
@@ -64,21 +61,23 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
           ],
         ),
       ),
-      body: Consumer<PaymentProvider>(
-        builder: (context, provider, child) {
+      body: BlocBuilder<PaymentBloc, PaymentState>(
+        builder: (context, state) {
+          if (state is! PaymentHistoryLoaded) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
           return Column(
             children: [
-              // Statistics card
-              if (provider.statistics != null) _buildStatisticsCard(provider),
-
-              // Transaction list
+              if (state.statistics != null)
+                _buildStatisticsCard(state.statistics!),
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildTransactionList(provider.transactions, null),
+                    _buildTransactionList(state.transactions, null),
                     _buildTransactionList(
-                      provider.transactions,
+                      state.transactions,
                       TransactionStatus.fundsHeld,
                       additionalStatuses: [
                         TransactionStatus.pending,
@@ -86,13 +85,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                       ],
                     ),
                     _buildTransactionList(
-                      provider.transactions,
-                      TransactionStatus.completed,
-                    ),
+                        state.transactions, TransactionStatus.completed),
                     _buildTransactionList(
-                      provider.transactions,
-                      TransactionStatus.disputed,
-                    ),
+                        state.transactions, TransactionStatus.disputed),
                   ],
                 ),
               ),
@@ -103,8 +98,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     );
   }
 
-  Widget _buildStatisticsCard(PaymentProvider provider) {
-    final stats = provider.statistics!;
+  Widget _buildStatisticsCard(Map<String, dynamic> stats) {
     final totalEarnings = stats['totalEarnings'] as double;
     final completedCount = stats['completedTransactions'] as int;
     final pendingCount = stats['pendingTransactions'] as int;
@@ -117,32 +111,21 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Summary',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            const Text('Summary',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
+                _buildStatItem('Total Earnings',
+                    '\$${totalEarnings.toStringAsFixed(2)}',
+                    Icons.attach_money, Colors.green),
                 _buildStatItem(
-                  'Total Earnings',
-                  '\$${totalEarnings.toStringAsFixed(2)}',
-                  Icons.attach_money,
-                  Colors.green,
-                ),
+                    'Completed', completedCount.toString(),
+                    Icons.check_circle, Colors.blue),
                 _buildStatItem(
-                  'Completed',
-                  completedCount.toString(),
-                  Icons.check_circle,
-                  Colors.blue,
-                ),
-                _buildStatItem(
-                  'Pending',
-                  pendingCount.toString(),
-                  Icons.pending,
-                  Colors.orange,
-                ),
+                    'Pending', pendingCount.toString(),
+                    Icons.pending, Colors.orange),
               ],
             ),
           ],
@@ -152,24 +135,16 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
   }
 
   Widget _buildStatItem(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
+      String label, String value, IconData icon, Color color) {
     return Column(
       children: [
         Icon(icon, color: color, size: 32),
         const SizedBox(height: 8),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Text(value,
+            style: TextStyle(
+                fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+        Text(label,
+            style: const TextStyle(fontSize: 12, color: Colors.grey)),
       ],
     );
   }
@@ -204,9 +179,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: filtered.length,
-      itemBuilder: (context, index) {
-        return _buildTransactionCard(filtered[index]);
-      },
+      itemBuilder: (context, index) =>
+          _buildTransactionCard(filtered[index]),
     );
   }
 
@@ -218,34 +192,27 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
       child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TransactionDetailScreen(
-                transactionId: transaction.id,
-                userId: widget.userId,
-                isFarmer: widget.isFarmer,
-              ),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TransactionDetailScreen(
+              transactionId: transaction.id,
+              userId: widget.userId,
+              isFarmer: widget.isFarmer,
             ),
-          );
-        },
+          ),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header row with amount and status
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    '\$${transaction.amount.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  Text('\$${transaction.amount.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold)),
                   StatusBadge(
                     label: _getStatusLabel(transaction.status),
                     type: _getStatusBadgeType(transaction.status),
@@ -254,8 +221,6 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                 ],
               ),
               const SizedBox(height: 12),
-
-              // Transaction details
               Row(
                 children: [
                   Icon(
@@ -267,43 +232,30 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                   Text(
                     isUserBuyer ? 'Payment Sent' : 'Payment Received',
                     style: TextStyle(
-                      fontSize: 14,
-                      color: isUserBuyer ? Colors.red : Colors.green,
-                      fontWeight: FontWeight.w500,
-                    ),
+                        fontSize: 14,
+                        color: isUserBuyer ? Colors.red : Colors.green,
+                        fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-
-              // Date and payment method
               Row(
                 children: [
-                  const Icon(
-                    Icons.calendar_today,
-                    size: 14,
-                    color: Colors.grey,
-                  ),
+                  const Icon(Icons.calendar_today,
+                      size: 14, color: Colors.grey),
                   const SizedBox(width: 4),
-                  Text(
-                    dateFormat.format(transaction.createdAt),
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
+                  Text(dateFormat.format(transaction.createdAt),
+                      style:
+                          const TextStyle(fontSize: 12, color: Colors.grey)),
                   const SizedBox(width: 16),
-                  Icon(
-                    _getPaymentMethodIcon(transaction.paymentMethod),
-                    size: 14,
-                    color: Colors.grey,
-                  ),
+                  Icon(_getPaymentMethodIcon(transaction.paymentMethod),
+                      size: 14, color: Colors.grey),
                   const SizedBox(width: 4),
-                  Text(
-                    _getPaymentMethodLabel(transaction.paymentMethod),
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
+                  Text(_getPaymentMethodLabel(transaction.paymentMethod),
+                      style:
+                          const TextStyle(fontSize: 12, color: Colors.grey)),
                 ],
               ),
-
-              // Retry indicator if applicable
               if (transaction.retryCount > 0)
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
@@ -311,29 +263,21 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                     children: [
                       const Icon(Icons.refresh, size: 14, color: Colors.orange),
                       const SizedBox(width: 4),
-                      Text(
-                        'Retried ${transaction.retryCount} time(s)',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.orange,
-                        ),
-                      ),
+                      Text('Retried ${transaction.retryCount} time(s)',
+                          style: const TextStyle(
+                              fontSize: 12, color: Colors.orange)),
                     ],
                   ),
                 ),
-
-              // Dispute indicator if applicable
               if (transaction.status == TransactionStatus.disputed)
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Row(
-                    children: [
-                      const Icon(Icons.flag, size: 14, color: Colors.red),
-                      const SizedBox(width: 4),
-                      const Text(
-                        'Under dispute',
-                        style: TextStyle(fontSize: 12, color: Colors.red),
-                      ),
+                    children: const [
+                      Icon(Icons.flag, size: 14, color: Colors.red),
+                      SizedBox(width: 4),
+                      Text('Under dispute',
+                          style: TextStyle(fontSize: 12, color: Colors.red)),
                     ],
                   ),
                 ),

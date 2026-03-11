@@ -7,7 +7,7 @@ BrewMaster is a Flutter-based mobile application that connects smallholder coffe
 ### Key Design Principles
 
 1. **Offline-First Architecture**: All critical operations must work without internet connectivity using Firestore offline persistence
-2. **Clean Architecture**: Separation of concerns using Models → Services → Providers → UI layers
+2. **Clean Architecture**: Separation of concerns using Models → Repositories → BLoCs → UI layers
 3. **Accessibility**: Icon-driven navigation, voice input support, and simple workflows for low-literacy users
 4. **Performance**: Optimized for low-end Android devices with minimal data usage
 5. **Security**: Firebase Authentication, Firestore security rules, and encrypted communications
@@ -17,7 +17,7 @@ BrewMaster is a Flutter-based mobile application that connects smallholder coffe
 
 - **Frontend**: Flutter (Dart) for cross-platform mobile development
 - **Backend**: Firebase (Firestore, Authentication, Storage, Cloud Functions)
-- **State Management**: Provider pattern for reactive state updates
+- **State Management**: BLoC pattern (flutter_bloc + equatable) for reactive state updates
 - **Offline Support**: Firestore offline persistence with automatic synchronization
 - **Payment Integration**: M-Pesa and MTN Mobile Money APIs
 - **Push Notifications**: Firebase Cloud Messaging (FCM)
@@ -34,17 +34,22 @@ BrewMaster is a Flutter-based mobile application that connects smallholder coffe
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                    State Management (Providers)              │
-│   AuthProvider | ListingProvider | MessageProvider | etc.   │
+│                      BLoC Layer                              │
+│   AuthBloc | ListingBloc | MessagingBloc | PaymentBloc      │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                      Service Layer                           │
-│  AuthService | ListingService | PaymentService | etc.       │
+│               Repository Layer (Abstract Interfaces)         │
+│  AuthRepository | ListingRepository | PaymentRepository     │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                      Data Layer (Models)                     │
+│          Firebase Repository Implementations                 │
+│  FirebaseAuthRepository | FirebaseListingRepository | etc.  │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                      Domain Layer (Models)                   │
 │    User | Listing | Message | Transaction | etc.            │
 └─────────────────────────────────────────────────────────────┘
                               ↓
@@ -63,8 +68,17 @@ The project follows clean architecture principles with clear separation of conce
 ```
 lib/
 ├── presentation/          # UI Layer - All visual components
+│   ├── blocs/            # BLoC state management (one subfolder per feature)
+│   │   ├── auth/         # auth_bloc.dart, auth_event.dart, auth_state.dart
+│   │   ├── listings/     # listings_bloc.dart, listings_event.dart, listings_state.dart
+│   │   ├── search/       # search_bloc.dart, search_event.dart, search_state.dart
+│   │   ├── messaging/    # messaging_bloc.dart, messaging_event.dart, messaging_state.dart
+│   │   ├── payments/     # payment_bloc.dart, payment_event.dart, payment_state.dart
+│   │   ├── dashboard/    # dashboard_bloc.dart, dashboard_event.dart, dashboard_state.dart
+│   │   ├── market_price/ # market_price_bloc.dart, market_price_event.dart, market_price_state.dart
+│   │   └── settings/     # settings_cubit.dart, theme_cubit.dart
 │   ├── screens/          # Full-screen pages
-│   │   ├── auth/         # Login, signup, profile setup
+│   │   ├── auth/         # Login, signup, email verification, profile setup
 │   │   ├── listings/     # Listing form, detail, my listings
 │   │   ├── search/       # Search and filter screens
 │   │   ├── messaging/    # Conversations, chat screens
@@ -86,34 +100,33 @@ lib/
 │   │   ├── escrow_transaction.dart
 │   │   ├── market_price.dart
 │   │   └── enums.dart   # All enums (UserRole, ListingStatus, etc.)
+│   ├── repositories/    # Abstract repository interfaces (pure Dart, no Firebase)
+│   │   ├── auth_repository.dart
+│   │   ├── user_repository.dart
+│   │   ├── listing_repository.dart
+│   │   ├── message_repository.dart
+│   │   ├── payment_repository.dart
+│   │   ├── market_price_repository.dart
+│   │   ├── verification_repository.dart
+│   │   ├── notification_repository.dart
+│   │   └── dashboard_repository.dart
 │   └── validators/      # Input validation logic
 │       ├── user_profile_validator.dart
 │       ├── coffee_listing_validator.dart
 │       └── form_validators.dart
 │
-├── data/                # Data Layer - External interactions
-│   ├── services/        # Business logic and Firebase interactions
-│   │   ├── auth_service.dart
-│   │   ├── user_service.dart
-│   │   ├── listing_service.dart
-│   │   ├── message_service.dart
-│   │   ├── payment_service.dart
-│   │   ├── market_price_service.dart
-│   │   ├── verification_service.dart
-│   │   ├── notification_service.dart
-│   │   ├── dashboard_service.dart
-│   │   └── offline_sync_service.dart
-│   ├── providers/       # State management (Provider pattern)
-│   │   ├── auth_provider.dart
-│   │   ├── user_provider.dart
-│   │   ├── listing_provider.dart
-│   │   ├── message_provider.dart
-│   │   ├── payment_provider.dart
-│   │   ├── market_price_provider.dart
-│   │   ├── dashboard_provider.dart
-│   │   └── connectivity_provider.dart
-│   └── repositories/    # Optional: Data access abstraction
-│       └── (if needed for complex data operations)
+├── data/                # Data Layer - Firebase implementations
+│   └── repositories/    # Concrete Firebase repository implementations
+│       ├── firebase_auth_repository.dart
+│       ├── firebase_user_repository.dart
+│       ├── firebase_listing_repository.dart
+│       ├── firebase_message_repository.dart
+│       ├── firebase_payment_repository.dart
+│       ├── firebase_market_price_repository.dart
+│       ├── firebase_verification_repository.dart
+│       ├── firebase_notification_repository.dart
+│       ├── firebase_dashboard_repository.dart
+│       └── firebase_offline_sync_repository.dart
 │
 ├── config/              # App-wide configuration
 │   ├── theme.dart       # AppTheme class with colors, text styles, spacing
@@ -139,8 +152,11 @@ lib/
 
 **Classes:**
 - Use `PascalCase` for class names: `CoffeeListing`, `AuthService`, `ListingProvider`
-- Suffix providers with `Provider`: `AuthProvider`, `ListingProvider`
-- Suffix services with `Service`: `AuthService`, `MessageService`
+- Suffix BLoCs with `Bloc`: `AuthBloc`, `ListingBloc`
+- Suffix BLoC events with `Event`: `AuthEvent`, `ListingEvent`
+- Suffix BLoC states with `State`: `AuthState`, `ListingState`
+- Suffix repository interfaces with `Repository`: `AuthRepository`, `ListingRepository`
+- Prefix Firebase implementations with `Firebase`: `FirebaseAuthRepository`, `FirebaseListingRepository`
 - Suffix validators with `Validator`: `UserProfileValidator`
 
 **Variables and Functions:**
@@ -167,12 +183,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:equatable/equatable.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:brewmaster/domain/models/user_profile.dart';
-import 'package:brewmaster/data/services/auth_service.dart';
+import 'package:brewmaster/domain/repositories/auth_repository.dart';
 import 'package:brewmaster/config/theme.dart';
 ```
 
@@ -180,24 +197,24 @@ import 'package:brewmaster/config/theme.dart';
 
 **Critical Rules:**
 1. **Presentation → Domain**: Screens and widgets can import models and validators
-2. **Presentation → Data**: Screens use providers (via Provider.of or Consumer), never call services directly
-3. **Data (Providers) → Data (Services)**: Providers call services to perform operations
-4. **Data (Services) → Domain**: Services use models for data structures
-5. **Domain → Nothing**: Models and validators should not import from other layers (pure Dart)
+2. **Presentation → BLoC**: Screens dispatch events via `context.read<XxxBloc>().add(...)` and listen to states via `BlocBuilder`/`BlocConsumer`; screens NEVER call repositories or Firebase directly
+3. **BLoC → Domain (Repositories)**: BLoCs depend only on abstract repository interfaces from `domain/repositories/`; BLoCs never import Firebase packages
+4. **Data (Repositories) → Domain**: Firebase repository implementations use domain models
+5. **Domain → Nothing**: Models, validators, and repository interfaces should not import from other layers (pure Dart)
 
 **Forbidden:**
-- ❌ Screens calling services directly (bypass providers)
-- ❌ Services importing widgets or screens
+- ❌ Screens calling repositories or Firebase directly (must go through BLoC)
+- ❌ BLoCs importing Firebase packages (depend on repository interfaces instead)
 - ❌ Models importing Firebase or Flutter packages
-- ❌ Putting business logic in widgets
+- ❌ Putting business logic in widgets or screens
 
 **Example Correct Flow:**
 ```
-LoginScreen (presentation)
-    ↓ uses Consumer<AuthProvider>
-AuthProvider (data/providers)
-    ↓ calls signIn()
-AuthService (data/services)
+LoginScreen (presentation/screens)
+    ↓ dispatches AuthSignInRequested event
+AuthBloc (presentation/blocs/auth)
+    ↓ calls authRepository.signIn()
+FirebaseAuthRepository (data/repositories)
     ↓ uses UserProfile model
 UserProfile (domain/models)
 ```
@@ -210,8 +227,9 @@ Before any feature development begins, Developer 1 and Developer 6 must create t
 # Create all folders
 mkdir -p lib/presentation/screens/{auth,listings,search,messaging,payments,dashboard,profile}
 mkdir -p lib/presentation/widgets/{common,listing,message,dashboard}
-mkdir -p lib/domain/{models,validators}
-mkdir -p lib/data/{services,providers,repositories}
+mkdir -p lib/presentation/blocs/{auth,listings,search,messaging,payments,dashboard,market_price,settings}
+mkdir -p lib/domain/{models,validators,repositories}
+mkdir -p lib/data/repositories
 mkdir -p lib/config/localization
 mkdir -p lib/utils
 mkdir -p test/{unit,properties,widgets}
@@ -229,12 +247,12 @@ This ensures all developers can immediately place their files in the correct loc
 - Navigate between screens
 - Show loading states and errors
 
-**State Management Layer (Providers)**
-- Manage application state using Provider pattern
-- Notify UI of state changes
-- Coordinate between services
+**BLoC Layer (presentation/blocs)**
+- Manage application state using BLoC pattern (flutter_bloc)
+- Receive events from UI and emit states
+- Coordinate between repository calls
 - Handle loading and error states
-- Cache data for offline access
+- Never import Firebase packages — depend on repository interfaces only
 
 **Service Layer**
 - Encapsulate business logic
@@ -263,49 +281,71 @@ This ensures all developers can immediately place their files in the correct loc
 ### 1. Authentication System
 
 **Components:**
-- `AuthService`: Handles Firebase Authentication operations
-- `AuthProvider`: Manages authentication state
+- `AuthRepository` *(domain/repositories)*: Abstract interface for auth operations
+- `FirebaseAuthRepository` *(data/repositories)*: Firebase implementation
+- `AuthBloc` *(presentation/blocs/auth)*: Manages authentication state via events/states
+- `AuthGate`: Routes user based on auth state (unauthenticated → login, unverified → verification screen, authenticated → app)
 - `LoginScreen`: Email/Google login interface
 - `SignupScreen`: User registration with role selection
+- `EmailVerificationScreen`: Polls every 3 seconds, auto-navigates when verified
 - `ProfileSetupScreen`: Post-registration profile completion
+
+**Email Verification Flow:**
+1. User registers → `AuthBloc` calls `authRepository.register()` then `sendEmailVerification()` → emits `AuthEmailNotVerified`
+2. `AuthGate` routes to `EmailVerificationScreen`
+3. Screen starts a 3-second poll timer calling `user.reload()` on each tick
+4. When `emailVerified == true`, screen dispatches `AuthCheckRequested` to `AuthBloc`
+5. `AuthBloc` re-reads auth state → emits `AuthAuthenticated` → `AuthGate` routes to app shell
+6. Google sign-in skips verification (always verified)
 
 **Key Interfaces:**
 
 ```dart
-class AuthService {
-  Future<User?> signUpWithEmail(String email, String password, UserRole role);
-  Future<User?> signInWithEmail(String email, String password);
-  Future<User?> signInWithGoogle();
-  Future<void> signOut();
+abstract class AuthRepository {
   Stream<User?> get authStateChanges;
-  Future<void> sendPasswordResetEmail(String email);
+  Future<void> register({required String email, required String password, required UserRole role});
+  Future<void> signIn({required String email, required String password});
+  Future<UserProfile> signInWithGoogle();
+  Future<void> sendEmailVerification();
+  Future<void> signOut();
+  Future<UserProfile?> getCurrentUserProfile();
+  Future<UserProfile?> createProfileFromCurrentUser();
 }
 
-class AuthProvider extends ChangeNotifier {
-  User? currentUser;
-  bool isLoading;
-  String? errorMessage;
-  
-  Future<void> signUp(String email, String password, UserRole role);
-  Future<void> signIn(String email, String password);
-  Future<void> signInWithGoogle();
-  Future<void> signOut();
-}
+// AuthBloc events
+abstract class AuthEvent extends Equatable {}
+class AuthCheckRequested extends AuthEvent {}
+class AuthSignInRequested extends AuthEvent { final String email, password; }
+class AuthRegisterRequested extends AuthEvent { final String email, password; final UserRole role; }
+class AuthGoogleSignInRequested extends AuthEvent {}
+class AuthVerificationEmailRequested extends AuthEvent {}
+class AuthSignOutRequested extends AuthEvent {}
+
+// AuthBloc states
+abstract class AuthState extends Equatable {}
+class AuthInitial extends AuthState {}
+class AuthLoading extends AuthState {}
+class AuthAuthenticated extends AuthState { final UserProfile profile; }
+class AuthUnauthenticated extends AuthState {}
+class AuthEmailNotVerified extends AuthState {}
+class AuthVerificationEmailSent extends AuthState {}
+class AuthFailure extends AuthState { final String message; }
 ```
 
 ### 2. User Profile System
 
 **Components:**
-- `UserService`: CRUD operations for user profiles
-- `UserProvider`: Manages user profile state
+- `UserRepository` *(domain/repositories)*: Abstract interface for user profile operations
+- `FirebaseUserRepository` *(data/repositories)*: Firebase implementation
+- `ProfileBloc` *(presentation/blocs)*: Manages user profile state
 - `ProfileScreen`: Display and edit user profile
 - `VerificationScreen`: Submit verification documents
 
 **Key Interfaces:**
 
 ```dart
-class UserService {
-  Future<UserProfile> getUserProfile(String userId);
+abstract class UserRepository {
+  Future<UserProfile?> getUserProfile(String userId);
   Future<void> createUserProfile(UserProfile profile);
   Future<void> updateUserProfile(String userId, Map<String, dynamic> updates);
   Future<void> uploadVerificationDocuments(String userId, List<File> documents);
@@ -341,8 +381,9 @@ class UserProfile {
 ### 3. Coffee Listing System
 
 **Components:**
-- `ListingService`: CRUD operations for coffee listings
-- `ListingProvider`: Manages listing state and search
+- `ListingRepository` *(domain/repositories)*: Abstract interface for listing operations
+- `FirebaseListingRepository` *(data/repositories)*: Firebase implementation
+- `ListingBloc` *(presentation/blocs/listings)*: Manages listing state and search
 - `ListingFormScreen`: Create/edit coffee listings
 - `ListingDetailScreen`: View detailed listing information
 - `MyListingsScreen`: View farmer's own listings
@@ -350,7 +391,7 @@ class UserProfile {
 **Key Interfaces:**
 
 ```dart
-class ListingService {
+abstract class ListingRepository {
   Future<String> createListing(CoffeeListing listing);
   Future<void> updateListing(String listingId, Map<String, dynamic> updates);
   Future<void> deleteListing(String listingId);
@@ -401,15 +442,16 @@ class SearchFilters {
 ### 4. Market Price System
 
 **Components:**
-- `MarketPriceService`: Fetch and cache market price data
-- `MarketPriceProvider`: Manages price state
+- `MarketPriceRepository` *(domain/repositories)*: Abstract interface for price data
+- `FirebaseMarketPriceRepository` *(data/repositories)*: Firebase implementation
+- `MarketPriceBloc` *(presentation/blocs/market_price)*: Manages price state
 - `MarketPricesScreen`: Display current market prices
 - `PriceGuidanceWidget`: Inline price suggestions
 
 **Key Interfaces:**
 
 ```dart
-class MarketPriceService {
+abstract class MarketPriceRepository {
   Future<List<MarketPrice>> getMarketPrices();
   Future<MarketPrice> getPriceForVariety(String variety, QualityGrade grade);
   Future<void> syncMarketPrices();
@@ -433,15 +475,16 @@ class MarketPrice {
 ### 5. Messaging System
 
 **Components:**
-- `MessageService`: Send/receive messages via Firestore
-- `MessageProvider`: Manages conversation state
+- `MessageRepository` *(domain/repositories)*: Abstract interface for messaging
+- `FirebaseMessageRepository` *(data/repositories)*: Firebase implementation
+- `MessagingBloc` *(presentation/blocs/messaging)*: Manages conversation state
 - `ConversationsScreen`: List all conversations
 - `ChatScreen`: Individual conversation view
 
 **Key Interfaces:**
 
 ```dart
-class MessageService {
+abstract class MessageRepository {
   Future<String> createConversation(String userId1, String userId2, String? listingId);
   Future<void> sendMessage(String conversationId, Message message);
   Future<List<Message>> getMessages(String conversationId, {int limit = 50});
@@ -484,15 +527,16 @@ class Conversation {
 ### 6. Payment and Escrow System
 
 **Components:**
-- `PaymentService`: Handle escrow transactions and mobile money integration
-- `PaymentProvider`: Manages payment state
+- `PaymentRepository` *(domain/repositories)*: Abstract interface for escrow and payments
+- `FirebasePaymentRepository` *(data/repositories)*: Firebase implementation
+- `PaymentBloc` *(presentation/blocs/payments)*: Manages payment state
 - `PaymentScreen`: Initiate and track payments
 - `TransactionHistoryScreen`: View past transactions
 
 **Key Interfaces:**
 
 ```dart
-class PaymentService {
+abstract class PaymentRepository {
   Future<String> createEscrowTransaction(EscrowTransaction transaction);
   Future<void> initiatePayment(String transactionId, PaymentMethod method);
   Future<void> confirmDelivery(String transactionId, String userId);
@@ -541,14 +585,15 @@ enum PaymentMethod {
 ### 7. Verification System
 
 **Components:**
-- `VerificationService`: Handle verification requests and status
-- `VerificationProvider`: Manages verification state
+- `VerificationRepository` *(domain/repositories)*: Abstract interface for verification
+- `FirebaseVerificationRepository` *(data/repositories)*: Firebase implementation
+- `VerificationBloc` *(presentation/blocs)*: Manages verification state
 - `VerificationRequestScreen`: Submit verification documents
 
 **Key Interfaces:**
 
 ```dart
-class VerificationService {
+abstract class VerificationRepository {
   Future<void> requestVerification(String userId, List<File> documents);
   Future<VerificationStatus> getVerificationStatus(String userId);
   Future<void> updateVerificationStatus(String userId, VerificationStatus status);
@@ -571,13 +616,14 @@ class VerificationStatus {
 ### 8. Notification System
 
 **Components:**
-- `NotificationService`: Handle FCM and local notifications
-- `NotificationProvider`: Manages notification state
+- `NotificationRepository` *(domain/repositories)*: Abstract interface for notifications
+- `FirebaseNotificationRepository` *(data/repositories)*: Firebase/FCM implementation
+- `NotificationBloc` *(presentation/blocs)*: Manages notification state
 
 **Key Interfaces:**
 
 ```dart
-class NotificationService {
+abstract class NotificationRepository {
   Future<void> initialize();
   Future<String?> getFCMToken();
   Future<void> subscribeToTopic(String topic);
@@ -607,14 +653,15 @@ enum NotificationType {
 ### 9. Dashboard System
 
 **Components:**
-- `DashboardService`: Aggregate dashboard metrics
-- `DashboardProvider`: Manages dashboard state
+- `DashboardRepository` *(domain/repositories)*: Abstract interface for dashboard metrics
+- `FirebaseDashboardRepository` *(data/repositories)*: Firebase implementation
+- `DashboardBloc` *(presentation/blocs/dashboard)*: Manages dashboard state
 - `DashboardScreen`: Display metrics and quick actions
 
 **Key Interfaces:**
 
 ```dart
-class DashboardService {
+abstract class DashboardRepository {
   Future<FarmerDashboard> getFarmerDashboard(String farmerId);
   Future<BuyerDashboard> getBuyerDashboard(String buyerId);
 }
@@ -650,13 +697,14 @@ class BuyerDashboard {
 ### 10. Offline Sync System
 
 **Components:**
-- `OfflineSyncService`: Manage offline queue and synchronization
-- `ConnectivityProvider`: Monitor network connectivity
+- `OfflineSyncRepository` *(domain/repositories)*: Abstract interface for offline queue
+- `FirebaseOfflineSyncRepository` *(data/repositories)*: Firebase implementation
+- `ConnectivityBloc` *(presentation/blocs)*: Monitors network state and sync status
 
 **Key Interfaces:**
 
 ```dart
-class OfflineSyncService {
+abstract class OfflineSyncRepository {
   Future<void> initialize();
   Future<void> queueOperation(OfflineOperation operation);
   Future<void> syncPendingOperations();
@@ -676,13 +724,11 @@ class OfflineOperation {
   factory OfflineOperation.fromJson(Map<String, dynamic> json);
 }
 
-class ConnectivityProvider extends ChangeNotifier {
-  bool isOnline;
-  DateTime? lastSyncTime;
-  int pendingOperations;
-  
-  Future<void> checkConnectivity();
-  Future<void> forceSyncNow();
+// ConnectivityBloc state (example)
+class ConnectivityState extends Equatable {
+  final bool isOnline;
+  final DateTime? lastSyncTime;
+  final int pendingOperations;
 }
 ```
 
@@ -1568,46 +1614,40 @@ While automated tests cover most functionality, manual testing is required for:
 
 **Developer 1: Firebase Setup + Authentication + User Profiles**
 - Set up Firebase project and configure Flutter app
-- Implement AuthService and AuthProvider
-- Build login, signup, and profile screens
-- Configure Firestore security rules
-- Implement offline persistence setup
+- Define `AuthRepository` interface; implement `FirebaseAuthRepository`
+- Implement `AuthBloc` with email verification flow (polling, auto-navigation)
+- Build `AuthGate`, login, signup, email verification, and profile setup screens
+- Configure Firestore security rules and offline persistence
 
 **Developer 2: Coffee Listings + Search/Filter**
-- Implement ListingService and ListingProvider
-- Build listing creation and editing screens
-- Implement search and filter functionality
-- Create listing detail view
+- Define `ListingRepository` interface; implement `FirebaseListingRepository`
+- Implement `ListingBloc` with search and filter state
+- Build listing creation, editing, detail, and my-listings screens
 - Implement image upload and compression
 
 **Developer 3: Messaging System + Notifications**
-- Implement MessageService and MessageProvider
+- Define `MessageRepository` and `NotificationRepository` interfaces; implement Firebase versions
+- Implement `MessagingBloc` and `NotificationBloc`
 - Build conversations list and chat screens
-- Set up Firebase Cloud Messaging
-- Implement notification handling
-- Create message queue for offline support
+- Set up Firebase Cloud Messaging and notification handling
 
 **Developer 4: Payment Integration + Escrow System**
-- Implement PaymentService and PaymentProvider
+- Define `PaymentRepository` interface; implement `FirebasePaymentRepository`
+- Implement `PaymentBloc` with escrow state machine
 - Integrate M-Pesa and MTN Mobile Money APIs
-- Build payment and transaction screens
-- Implement escrow state machine
-- Handle payment errors and retries
+- Build payment and transaction screens; handle retries
 
 **Developer 5: Dashboard + Market Prices + Analytics**
-- Implement DashboardService and MarketPriceService
-- Build dashboard screens for farmers and buyers
-- Implement analytics calculations
-- Create market price display
-- Build transaction history views
+- Define `DashboardRepository` and `MarketPriceRepository` interfaces; implement Firebase versions
+- Implement `DashboardBloc` and `MarketPriceBloc`
+- Build dashboard screens for farmers and buyers; market price display
 
 **Developer 6: UI/UX + Navigation + Testing + Integration**
-- Design and implement app theme and navigation
+- Design and implement app theme, navigation, and `AppShell`
 - Create reusable UI components and widgets
-- Implement voice input integration
-- Build connectivity indicator
+- Implement voice input integration and connectivity indicator
+- Wire all BLoCs into `main.dart` using `MultiBlocProvider`
 - Write integration tests and coordinate testing
-- Wire all components together
 
 ### Development Phases
 
@@ -1646,7 +1686,7 @@ While automated tests cover most functionality, manual testing is required for:
 
 ### Key Technical Decisions
 
-1. **State Management**: Provider pattern chosen for simplicity and team familiarity
+1. **State Management**: BLoC pattern (flutter_bloc + equatable) chosen for testability and strict separation — UI never touches Firebase directly
 2. **Offline Strategy**: Firestore offline persistence + custom queue for complex operations
 3. **Image Storage**: Firebase Storage with client-side compression
 4. **Payment Integration**: Direct API integration with M-Pesa/MTN (not Firebase Extensions)
@@ -1705,10 +1745,10 @@ Unit tests verify that individual functions and methods work correctly in isolat
    - Test CoffeeListingValidator with valid and invalid data
    - Verify validation rules are enforced correctly
 
-3. **Service Method Tests**:
-   - Test AuthService signUpWithEmail() with mock Firebase
-   - Test ListingService createListing() with mock Firestore
-   - Test MessageService sendMessage() with mock Firestore
+3. **BLoC / Repository Tests**:
+   - Test `AuthBloc` state transitions using mock `AuthRepository`
+   - Test `FirebaseListingRepository.createListing()` with mock Firestore
+   - Test `MessagingBloc` message send flow using mock `MessageRepository`
 
 #### Test Coverage Target
 - **Minimum Coverage**: 70% for services and models
@@ -1734,7 +1774,7 @@ Unit tests verify that individual functions and methods work correctly in isolat
 
 ### Code Quality Requirements
 - [ ] Code organized into presentation/, domain/, and data/ folders
-- [ ] Provider used for all state management (no setState in production code)
+- [ ] BLoC pattern used for all state management (flutter_bloc + equatable, no setState in production code, UI never calls Firebase directly)
 - [ ] `flutter analyze` returns 0 issues
 - [ ] All variables and functions have descriptive names
 - [ ] Complex logic includes explanatory comments

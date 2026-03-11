@@ -10,17 +10,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:faker/faker.dart';
 
-import 'package:brewmaster/data/services/auth_service.dart';
-import 'package:brewmaster/data/providers/auth_provider.dart' as app;
+import 'package:brewmaster/data/repositories/firebase_auth_repository.dart';
 
-// --- Manual fake implementations (reusing patterns from auth_properties_test.dart) ---
+// --- Manual fake implementations ---
 
 /// A fake User that returns a predictable uid and email.
 class FakeUser implements User {
   final String _uid;
   final String? _email;
 
-  FakeUser({required String uid, String? email}) : _uid = uid, _email = email;
+  FakeUser({required String uid, String? email})
+      : _uid = uid,
+        _email = email;
 
   @override
   String get uid => _uid;
@@ -50,8 +51,8 @@ class FakeUserCredential implements UserCredential {
 
 /// A fake FirebaseAuth that simulates session persistence.
 /// After sign-in, currentUser remains set (simulating Firebase's native
-/// session persistence). A new AuthProvider using the same FakeFirebaseAuth
-/// instance will see the persisted session.
+/// session persistence). A new FirebaseAuthRepository using the same
+/// FakeFirebaseAuth instance will see the persisted session.
 class FakeFirebaseAuth implements FirebaseAuth {
   FakeUser? _currentUser;
   final StreamController<User?> _authStateController =
@@ -62,7 +63,8 @@ class FakeFirebaseAuth implements FirebaseAuth {
     required String email,
     required String password,
   }) async {
-    _currentUser = FakeUser(uid: 'uid_signup_${email.hashCode}', email: email);
+    _currentUser =
+        FakeUser(uid: 'uid_signup_${email.hashCode}', email: email);
     _authStateController.add(_currentUser);
     return FakeUserCredential(_currentUser!);
   }
@@ -72,7 +74,8 @@ class FakeFirebaseAuth implements FirebaseAuth {
     required String email,
     required String password,
   }) async {
-    _currentUser = FakeUser(uid: 'uid_signin_${email.hashCode}', email: email);
+    _currentUser =
+        FakeUser(uid: 'uid_signin_${email.hashCode}', email: email);
     _authStateController.add(_currentUser);
     return FakeUserCredential(_currentUser!);
   }
@@ -113,11 +116,11 @@ void main() {
       fakeAuth.dispose();
     });
 
-    // Property 3a: After sign-in, AuthService.currentUser is non-null
+    // Property 3a: After sign-in, currentUser is non-null on the repository
     test(
-      'after sign-in, currentUser persists on AuthService (100 iterations)',
+      'after sign-in, currentUser persists on FirebaseAuthRepository (100 iterations)',
       () async {
-        final authService = AuthService(auth: fakeAuth);
+        final authRepo = FirebaseAuthRepository(auth: fakeAuth);
 
         for (int i = 0; i < 100; i++) {
           final email = faker.internet.email();
@@ -125,16 +128,16 @@ void main() {
             length: 8 + faker.randomGenerator.integer(20),
           );
 
-          await authService.signInWithEmail(email, password);
+          await authRepo.signIn(email, password);
 
           expect(
-            authService.currentUser,
+            authRepo.currentUser,
             isNotNull,
             reason:
                 'currentUser should be non-null after sign-in (iteration $i, email=$email)',
           );
           expect(
-            authService.currentUser!.email,
+            authRepo.currentUser!.email,
             equals(email),
             reason:
                 'currentUser email should match sign-in email (iteration $i)',
@@ -143,12 +146,12 @@ void main() {
       },
     );
 
-    // Property 3b: A new AuthProvider using the same FirebaseAuth instance
+    // Property 3b: A new repository using the same FirebaseAuth instance
     // restores the session (simulating app restart with persisted auth)
     test(
-      'new AuthProvider.init() restores session from same FirebaseAuth (100 iterations)',
+      'new FirebaseAuthRepository restores session from same FirebaseAuth (100 iterations)',
       () async {
-        final authService = AuthService(auth: fakeAuth);
+        final authRepo = FirebaseAuthRepository(auth: fakeAuth);
 
         for (int i = 0; i < 100; i++) {
           final email = faker.internet.email();
@@ -156,29 +159,21 @@ void main() {
             length: 8 + faker.randomGenerator.integer(20),
           );
 
-          // Sign in via the service
-          await authService.signInWithEmail(email, password);
+          // Sign in via the repository
+          await authRepo.signIn(email, password);
 
-          // Simulate app restart: create a new AuthProvider with the same
+          // Simulate app restart: create a new repository with the same
           // underlying FirebaseAuth (which still holds the session)
-          final newAuthService = AuthService(auth: fakeAuth);
-          final newProvider = app.AuthProvider(authService: newAuthService);
-          newProvider.init();
+          final restartRepo = FirebaseAuthRepository(auth: fakeAuth);
 
           expect(
-            newProvider.currentUser,
+            restartRepo.currentUser,
             isNotNull,
             reason:
-                'New AuthProvider should restore session after init() (iteration $i)',
+                'New repository should restore session (iteration $i)',
           );
           expect(
-            newProvider.isAuthenticated,
-            isTrue,
-            reason:
-                'New AuthProvider should be authenticated after init() (iteration $i)',
-          );
-          expect(
-            newProvider.currentUser!.email,
+            restartRepo.currentUser!.email,
             equals(email),
             reason:
                 'Restored session email should match original sign-in (iteration $i)',
@@ -191,7 +186,7 @@ void main() {
     test(
       'authStateChanges emits authenticated user after sign-in (100 iterations)',
       () async {
-        final authService = AuthService(auth: fakeAuth);
+        final authRepo = FirebaseAuthRepository(auth: fakeAuth);
 
         for (int i = 0; i < 100; i++) {
           final email = faker.internet.email();
@@ -200,9 +195,9 @@ void main() {
           );
 
           // Listen for the next auth state change before signing in
-          final futureUser = authService.authStateChanges.first;
+          final futureUser = authRepo.authStateChanges.first;
 
-          await authService.signInWithEmail(email, password);
+          await authRepo.signIn(email, password);
 
           final emittedUser = await futureUser;
 
@@ -224,7 +219,7 @@ void main() {
 
     // Property 3d: Session persists for both sign-up and sign-in methods
     test(
-      'session persists for both sign-up and sign-in methods (100 iterations)',
+      'session persists for both register and sign-in methods (100 iterations)',
       () async {
         for (int i = 0; i < 100; i++) {
           final email = faker.internet.email();
@@ -232,13 +227,13 @@ void main() {
             length: 8 + faker.randomGenerator.integer(20),
           );
 
-          final authService = AuthService(auth: fakeAuth);
+          final authRepo = FirebaseAuthRepository(auth: fakeAuth);
 
           // Alternate between sign-up and sign-in
           if (i.isEven) {
-            await authService.signUpWithEmail(email, password);
+            await authRepo.register(email, password);
           } else {
-            await authService.signInWithEmail(email, password);
+            await authRepo.signIn(email, password);
           }
 
           // Verify session is set on the underlying auth
@@ -249,19 +244,17 @@ void main() {
                 'FirebaseAuth.currentUser should persist after auth (iteration $i)',
           );
 
-          // Simulate restart: new provider picks up the session
-          final restartService = AuthService(auth: fakeAuth);
-          final restartProvider = app.AuthProvider(authService: restartService);
-          restartProvider.init();
+          // Simulate restart: new repository picks up the session
+          final restartRepo = FirebaseAuthRepository(auth: fakeAuth);
 
           expect(
-            restartProvider.isAuthenticated,
-            isTrue,
+            restartRepo.currentUser,
+            isNotNull,
             reason:
-                'Session should persist across provider re-creation (iteration $i)',
+                'Session should persist across repository re-creation (iteration $i)',
           );
           expect(
-            restartProvider.currentUser!.email,
+            restartRepo.currentUser!.email,
             equals(email),
             reason: 'Persisted session email should match (iteration $i)',
           );

@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brewmaster/config/theme.dart';
-import 'package:brewmaster/data/providers/auth_provider.dart';
-import 'package:brewmaster/data/providers/user_provider.dart';
+import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
 import 'package:brewmaster/presentation/widgets/common/custom_text_field.dart';
 import 'package:brewmaster/presentation/widgets/common/custom_button.dart';
-import 'package:brewmaster/presentation/widgets/common/error_state_widget.dart';
 import 'signup_screen.dart';
-import 'profile_setup_screen.dart';
-import '../dashboard/dashboard_screen.dart';
 
 /// Login screen with email/password and Google sign-in.
+/// Navigation is handled entirely by [AuthGate] via [AuthBloc] state.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -30,105 +27,19 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _handleSignIn() async {
+  void _handleSignIn() {
     if (!_formKey.currentState!.validate()) return;
-    final authProvider = context.read<AuthProvider>();
-    final nav = Navigator.of(context);
-    final success = await authProvider.signIn(
-      _emailController.text.trim(),
-      _passwordController.text,
-    );
-    if (success && mounted) {
-      final user = authProvider.currentUser;
-      // capture providers/navigator before any awaits to satisfy lint
-      final userProvider = context.read<UserProvider>();
-      if (user != null) {
-        // Check if profile exists
-        try {
-          final profile = await userProvider.fetchProfileQuietly(user.uid);
-          if (profile != null) {
-            // Profile exists - go to dashboard
-            nav.pushReplacement(
-              MaterialPageRoute(builder: (_) => const DashboardScreen()),
-            );
-          } else {
-            // Profile doesn't exist - go to profile setup
-            nav.pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => ProfileSetupScreen(
-                  userId: user.uid,
-                  email: user.email ?? '',
-                  displayName: user.displayName ?? 'User',
-                  role: null,
-                ),
-              ),
-            );
-          }
-        } catch (e) {
-          // On error, assume new user and go to profile setup
-          nav.pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => ProfileSetupScreen(
-                userId: user.uid,
-                email: user.email ?? '',
-                displayName: user.displayName ?? 'User',
-                role: null,
-              ),
-            ),
-          );
-        }
-      }
-    }
+    context.read<AuthBloc>().add(AuthSignInRequested(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        ));
   }
 
-  Future<void> _handleGoogleSignIn() async {
-    final authProvider = context.read<AuthProvider>();
-    final nav = Navigator.of(context);
-    final success = await authProvider.signInWithGoogle();
-    if (success && mounted) {
-      final user = authProvider.currentUser;
-      if (user != null) {
-        // Google accounts are treated as verified, no email check needed.
-        // Check if profile exists
-        final userProvider = context.read<UserProvider>();
-        try {
-          final profile = await userProvider.fetchProfileQuietly(user.uid);
-          if (profile != null) {
-            // Profile exists - go to dashboard
-            nav.pushReplacement(
-              MaterialPageRoute(builder: (_) => const DashboardScreen()),
-            );
-          } else {
-            // Profile doesn't exist - go to profile setup
-            nav.pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => ProfileSetupScreen(
-                  userId: user.uid,
-                  email: user.email ?? '',
-                  displayName: user.displayName ?? 'User',
-                  role: null,
-                ),
-              ),
-            );
-          }
-        } catch (e) {
-          // On error, assume new user and go to profile setup
-          nav.pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => ProfileSetupScreen(
-                userId: user.uid,
-                email: user.email ?? '',
-                displayName: user.displayName ?? 'User',
-                role: null,
-              ),
-            ),
-          );
-        }
-      }
-    }
+  void _handleGoogleSignIn() {
+    context.read<AuthBloc>().add(const AuthGoogleSignInRequested());
   }
 
-  Future<void> _handleForgotPassword() async {
+  void _handleForgotPassword() {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -136,14 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       return;
     }
-    final authProvider = context.read<AuthProvider>();
-    final messenger = ScaffoldMessenger.of(context);
-    final sent = await authProvider.sendPasswordResetEmail(email);
-    if (sent && mounted) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Password reset email sent.')),
-      );
-    }
+    context.read<AuthBloc>().add(AuthPasswordResetRequested(email));
   }
 
   @override
@@ -153,8 +57,27 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppTheme.padding24),
-            child: Consumer<AuthProvider>(
-              builder: (context, auth, _) {
+            child: BlocConsumer<AuthBloc, AuthState>(
+              listener: (context, state) {
+                if (state is AuthFailure) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(state.message),
+                      backgroundColor: AppTheme.errorColor,
+                    ),
+                  );
+                }
+                if (state is AuthPasswordResetSent) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Password reset email sent.'),
+                      backgroundColor: AppTheme.successColor,
+                    ),
+                  );
+                }
+              },
+              builder: (context, state) {
+                final isLoading = state is AuthLoading;
                 return Form(
                   key: _formKey,
                   child: Column(
@@ -180,15 +103,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: AppTheme.padding32),
-
-                      // Error banner
-                      if (auth.errorMessage != null) ...[
-                        ErrorBanner(
-                          message: auth.errorMessage!,
-                          onDismiss: auth.clearError,
-                        ),
-                        const SizedBox(height: AppTheme.padding16),
-                      ],
 
                       // Email field
                       EmailTextField(
@@ -235,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       CustomButton(
                         text: 'Sign In',
                         isFullWidth: true,
-                        isLoading: auth.isLoading,
+                        isLoading: isLoading,
                         onPressed: _handleSignIn,
                       ),
                       const SizedBox(height: AppTheme.padding16),
@@ -261,7 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         type: ButtonType.outlined,
                         isFullWidth: true,
                         leadingIcon: Icons.g_mobiledata,
-                        isLoading: auth.isLoading,
+                        isLoading: isLoading,
                         onPressed: _handleGoogleSignIn,
                       ),
                       const SizedBox(height: AppTheme.padding24),

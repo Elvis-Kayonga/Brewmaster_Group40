@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../domain/models/escrow_transaction.dart' as models;
 import '../../../domain/models/enums.dart';
 import '../../../domain/validators/payment_validator.dart';
-import '../../providers/payment_provider.dart';
+import '../../blocs/payment/payment_bloc.dart';
 import '../../widgets/common/status_badge.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/confirmation_dialog.dart';
 import '../../widgets/common/custom_text_field.dart';
 
-/// Screen displaying detailed information about a transaction
+/// Screen displaying detailed information about a transaction.
 /// Requirements: 6.3, 6.4, 6.5
 class TransactionDetailScreen extends StatefulWidget {
   final String transactionId;
@@ -35,9 +35,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<PaymentProvider>().loadTransaction(widget.transactionId);
-    });
+    context
+        .read<PaymentBloc>()
+        .add(PaymentTransactionLoadRequested(widget.transactionId));
   }
 
   @override
@@ -46,7 +46,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     super.dispose();
   }
 
-  Future<void> _confirmDelivery(models.Transaction transaction) async {
+  void _confirmDelivery(models.Transaction transaction) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => ConfirmationDialog(
@@ -58,33 +58,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         type: ConfirmationDialogType.confirm,
       ),
     );
-
-    if (confirmed != true) return;
-
-    if (!mounted) return;
-    final provider = context.read<PaymentProvider>();
-    final success = await provider.confirmDelivery(transaction.id);
-
-    if (!mounted) return;
-
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Delivery confirmed successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(provider.error ?? 'Failed to confirm delivery'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    if (confirmed != true || !mounted) return;
+    context.read<PaymentBloc>().add(PaymentDeliveryConfirmed(transaction.id));
   }
 
-  Future<void> _confirmReceipt(models.Transaction transaction) async {
+  void _confirmReceipt(models.Transaction transaction) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => ConfirmationDialog(
@@ -96,35 +74,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         type: ConfirmationDialogType.confirm,
       ),
     );
-
-    if (confirmed != true) return;
-
-    if (!mounted) return;
-    final provider = context.read<PaymentProvider>();
-    final success = await provider.confirmReceiptAndReleaseFunds(
-      transaction.id,
-    );
-
-    if (!mounted) return;
-
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Receipt confirmed and funds released'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(provider.error ?? 'Failed to release funds'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    if (confirmed != true || !mounted) return;
+    context.read<PaymentBloc>().add(PaymentReceiptConfirmed(transaction.id));
   }
 
-  Future<void> _raiseDispute(models.Transaction transaction) async {
+  void _raiseDispute(models.Transaction transaction) async {
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -157,12 +111,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             text: 'Submit Dispute',
             onPressed: () {
               final error = PaymentValidator.validateDisputeReason(
-                _disputeController.text,
-              );
+                  _disputeController.text);
               if (error != null) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(error), backgroundColor: Colors.red),
-                );
+                    SnackBar(
+                        content: Text(error),
+                        backgroundColor: Colors.red));
                 return;
               }
               Navigator.pop(context, _disputeController.text);
@@ -174,47 +128,54 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       ),
     );
 
-    if (result == null) return;
-
-    if (!mounted) return;
-    final provider = context.read<PaymentProvider>();
-    final success = await provider.raiseDispute(transaction.id, result);
-
-    if (!mounted) return;
-
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Dispute raised successfully'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(provider.error ?? 'Failed to raise dispute'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    if (result == null || !mounted) return;
+    context.read<PaymentBloc>().add(
+        PaymentDisputeRaised(transactionId: transaction.id, reason: result));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Transaction Details'),
-        centerTitle: true,
-      ),
-      body: Consumer<PaymentProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading) {
+      appBar:
+          AppBar(title: const Text('Transaction Details'), centerTitle: true),
+      body: BlocConsumer<PaymentBloc, PaymentState>(
+        listener: (context, state) {
+          if (state is PaymentActionSuccess) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Action completed successfully'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            // Reload transaction after an action
+            context
+                .read<PaymentBloc>()
+                .add(PaymentTransactionLoadRequested(widget.transactionId));
+          }
+          if (state is PaymentFailure) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red),
+            );
+          }
+        },
+        builder: (context, state) {
+          if (state is PaymentLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final transaction = provider.currentTransaction;
+          models.Transaction? transaction;
+          if (state is PaymentTransactionLoaded) {
+            transaction = state.transaction;
+          }
+
           if (transaction == null) {
-            return const Center(child: Text('Transaction not found'));
+            return Center(
+              child: Text(state is PaymentFailure
+                  ? state.message
+                  : 'Transaction not found'),
+            );
           }
 
           return SingleChildScrollView(
@@ -222,7 +183,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Status badge
                 Center(
                   child: StatusBadge(
                     label: _getStatusLabel(transaction.status),
@@ -233,22 +193,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-
-                // Transaction info card
                 _buildInfoCard(transaction),
                 const SizedBox(height: 16),
-
-                // Timeline card
                 _buildTimelineCard(transaction),
                 const SizedBox(height: 16),
-
-                // Dispute info if applicable
                 if (transaction.disputeReason != null)
                   _buildDisputeCard(transaction),
-
                 const SizedBox(height: 24),
-
-                // Action buttons
                 ..._buildActionButtons(transaction),
               ],
             ),
@@ -260,7 +211,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
   Widget _buildInfoCard(models.Transaction transaction) {
     final dateFormat = DateFormat('MMM dd, yyyy HH:mm');
-
     return Card(
       elevation: 2,
       child: Padding(
@@ -268,26 +218,18 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Transaction Information',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            const Text('Transaction Information',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const Divider(height: 24),
             _buildInfoRow('Transaction ID', transaction.id),
             _buildInfoRow(
-              'Amount',
-              '\$${transaction.amount.toStringAsFixed(2)}',
-            ),
-            _buildInfoRow(
-              'Payment Method',
-              _getPaymentMethodLabel(transaction.paymentMethod),
-            ),
+                'Amount', '\$${transaction.amount.toStringAsFixed(2)}'),
+            _buildInfoRow('Payment Method',
+                _getPaymentMethodLabel(transaction.paymentMethod)),
             _buildInfoRow('Created', dateFormat.format(transaction.createdAt)),
             if (transaction.retryCount > 0)
               _buildInfoRow(
-                'Retry Attempts',
-                transaction.retryCount.toString(),
-              ),
+                  'Retry Attempts', transaction.retryCount.toString()),
           ],
         ),
       ),
@@ -302,16 +244,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Status Timeline',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            const Text('Status Timeline',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const Divider(height: 24),
             ...transaction.statusHistory.entries.map((entry) {
               return _buildTimelineItem(
-                entry.key,
-                DateFormat('MMM dd, HH:mm').format(entry.value),
-              );
+                  entry.key,
+                  DateFormat('MMM dd, HH:mm').format(entry.value));
             }),
           ],
         ),
@@ -332,21 +271,16 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
               children: [
                 Icon(Icons.warning_amber, color: Colors.orange.shade700),
                 const SizedBox(width: 8),
-                Text(
-                  'Dispute Raised',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orange.shade900,
-                  ),
-                ),
+                Text('Dispute Raised',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade900)),
               ],
             ),
             const SizedBox(height: 12),
-            Text(
-              transaction.disputeReason ?? 'No reason provided',
-              style: const TextStyle(fontSize: 14),
-            ),
+            Text(transaction.disputeReason ?? 'No reason provided',
+                style: const TextStyle(fontSize: 14)),
           ],
         ),
       ),
@@ -361,20 +295,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         children: [
           SizedBox(
             width: 120,
-            child: Text(
-              '$label:',
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Colors.grey,
-              ),
-            ),
+            child: Text('$label:',
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600, color: Colors.grey)),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ),
+              child: Text(value,
+                  style: const TextStyle(fontWeight: FontWeight.w500))),
         ],
       ),
     );
@@ -393,7 +320,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
           ),
-          Text(time, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          Text(time,
+              style: const TextStyle(fontSize: 12, color: Colors.grey)),
         ],
       ),
     );
@@ -401,55 +329,42 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
   List<Widget> _buildActionButtons(models.Transaction transaction) {
     final buttons = <Widget>[];
-
-    // Farmer actions
     if (widget.isFarmer) {
       if (transaction.status == TransactionStatus.fundsHeld) {
-        buttons.add(
-          CustomButton(
-            text: 'Confirm Delivery',
-            onPressed: () => _confirmDelivery(transaction),
-            type: ButtonType.primary,
-            size: ButtonSize.large,
-            isFullWidth: true,
-            leadingIcon: Icons.local_shipping,
-          ),
-        );
+        buttons.add(CustomButton(
+          text: 'Confirm Delivery',
+          onPressed: () => _confirmDelivery(transaction),
+          type: ButtonType.primary,
+          size: ButtonSize.large,
+          isFullWidth: true,
+          leadingIcon: Icons.local_shipping,
+        ));
       }
-    }
-    // Buyer actions
-    else {
+    } else {
       if (transaction.status == TransactionStatus.delivered) {
-        buttons.add(
-          CustomButton(
-            text: 'Confirm Receipt & Release Funds',
-            onPressed: () => _confirmReceipt(transaction),
-            type: ButtonType.success,
-            size: ButtonSize.large,
-            isFullWidth: true,
-            leadingIcon: Icons.check_circle,
-          ),
-        );
+        buttons.add(CustomButton(
+          text: 'Confirm Receipt & Release Funds',
+          onPressed: () => _confirmReceipt(transaction),
+          type: ButtonType.success,
+          size: ButtonSize.large,
+          isFullWidth: true,
+          leadingIcon: Icons.check_circle,
+        ));
       }
     }
-
-    // Dispute button (available to both parties)
     if (transaction.status != TransactionStatus.completed &&
         transaction.status != TransactionStatus.cancelled &&
         transaction.status != TransactionStatus.disputed) {
       if (buttons.isNotEmpty) buttons.add(const SizedBox(height: 12));
-      buttons.add(
-        CustomButton(
-          text: 'Raise Dispute',
-          onPressed: () => _raiseDispute(transaction),
-          type: ButtonType.danger,
-          size: ButtonSize.medium,
-          isFullWidth: true,
-          leadingIcon: Icons.flag,
-        ),
-      );
+      buttons.add(CustomButton(
+        text: 'Raise Dispute',
+        onPressed: () => _raiseDispute(transaction),
+        type: ButtonType.danger,
+        size: ButtonSize.medium,
+        isFullWidth: true,
+        leadingIcon: Icons.flag,
+      ));
     }
-
     return buttons;
   }
 
@@ -503,11 +418,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     }
   }
 
-  bool _isActiveStatus(TransactionStatus status) {
-    return status == TransactionStatus.pending ||
-        status == TransactionStatus.fundsHeld ||
-        status == TransactionStatus.delivered;
-  }
+  bool _isActiveStatus(TransactionStatus status) =>
+      status == TransactionStatus.pending ||
+      status == TransactionStatus.fundsHeld ||
+      status == TransactionStatus.delivered;
 
   String _getPaymentMethodLabel(PaymentMethod method) {
     switch (method) {

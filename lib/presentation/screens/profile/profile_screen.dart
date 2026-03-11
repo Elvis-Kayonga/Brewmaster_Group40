@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brewmaster/config/theme.dart';
-import 'package:brewmaster/data/providers/user_provider.dart';
 import 'package:brewmaster/domain/models/enums.dart';
+import 'package:brewmaster/domain/models/user_profile.dart';
+import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
+import 'package:brewmaster/presentation/blocs/profile/profile_bloc.dart';
 import 'package:brewmaster/presentation/widgets/common/custom_button.dart';
 import 'package:brewmaster/presentation/widgets/common/loading_indicator.dart';
 import 'package:brewmaster/presentation/widgets/common/error_state_widget.dart';
 import 'package:brewmaster/presentation/widgets/common/status_badge.dart';
 import 'package:brewmaster/presentation/screens/profile/edit_profile_screen.dart';
-import 'package:brewmaster/presentation/screens/auth/login_screen.dart';
-import 'package:brewmaster/data/providers/auth_provider.dart';
 import 'package:brewmaster/presentation/screens/dashboard/dashboard_screen.dart';
-import 'package:brewmaster/presentation/screens/auth/verify_email_screen.dart';
 
 /// Profile screen displaying user information.
 class ProfileScreen extends StatefulWidget {
@@ -22,73 +21,21 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  bool _hasPrompted = false;
-  UserProvider? _userProvider;
-
-  StatusBadgeType _verificationBadgeType(VerificationStatus status) {
-    switch (status) {
-      case VerificationStatus.verified:
-        return StatusBadgeType.success;
-      case VerificationStatus.pending:
-        return StatusBadgeType.pending;
-      case VerificationStatus.rejected:
-        return StatusBadgeType.error;
-      case VerificationStatus.unverified:
-        return StatusBadgeType.neutral;
-    }
-  }
-
-  void _onUserProviderChanged() {
-    if (!_hasPrompted) _maybePromptResend();
-  }
-
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final up = Provider.of<UserProvider>(context);
-    if (_userProvider != up) {
-      _userProvider?.removeListener(_onUserProviderChanged);
-      _userProvider = up;
-      _userProvider?.addListener(_onUserProviderChanged);
+  void initState() {
+    super.initState();
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthAuthenticated) {
+      context
+          .read<ProfileBloc>()
+          .add(ProfileWatchRequested(authState.profile.id));
     }
-    // Load profile if not loaded
-    if (_userProvider?.userProfile == null) {
-      final auth = Provider.of<AuthProvider>(context, listen: false);
-      final userId = auth.currentUser?.uid;
-      if (userId != null) {
-        _userProvider?.loadProfile(userId);
-      }
-    }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybePromptResend());
   }
 
-  @override
-  void dispose() {
-    _userProvider?.removeListener(_onUserProviderChanged);
-    super.dispose();
-  }
-
-  Future<void> _maybePromptResend() async {
-    final profile = _userProvider?.userProfile;
-    if (profile == null) return;
-    if (profile.verificationStatus != VerificationStatus.unverified) return;
-    if (_hasPrompted) return;
-    _hasPrompted = true;
-
-    // Auto-resend once (no prompt)
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    final ok = await auth.sendEmailVerification();
-    if (!mounted) return;
-    if (ok) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => VerifyEmailScreen(email: profile.email),
-        ),
-      );
-    } else {
-      final msg = auth.errorMessage ?? 'Failed to send verification email.';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-    }
+UserProfile? _profileFromState(ProfileState state) {
+    if (state is ProfileLoaded) return state.profile;
+    if (state is ProfileUpdateSuccess) return state.profile;
+    return null;
   }
 
   @override
@@ -100,37 +47,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
           IconButton(
             tooltip: 'Dashboard',
             icon: const Icon(Icons.dashboard),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const DashboardScreen()),
-              );
-            },
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const DashboardScreen()),
+            ),
           ),
         ],
       ),
-      body: Consumer<UserProvider>(
-        builder: (context, userProvider, _) {
-          if (userProvider.isLoading) {
+      body: BlocListener<AuthBloc, AuthState>(
+        listener: (context, authState) {
+          if (authState is AuthUnauthenticated) {
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          }
+        },
+        child: BlocConsumer<ProfileBloc, ProfileState>(
+        listener: (context, state) {
+          if (state is ProfileFailure) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppTheme.errorColor,
+              ),
+            );
+          }
+        },
+        builder: (context, state) {
+          if (state is ProfileLoading) {
             return const LoadingIndicator(message: 'Loading profile...');
           }
 
-          if (userProvider.errorMessage != null) {
+          final profile = _profileFromState(state);
+          if (profile == null) {
             return ErrorStateWidget(
-              message: userProvider.errorMessage!,
+              message: state is ProfileFailure
+                  ? state.message
+                  : 'No profile found.',
+              icon: Icons.person_off_outlined,
               onRetry: () {
-                final profile = userProvider.userProfile;
-                if (profile != null) {
-                  userProvider.loadProfile(profile.id);
+                final authState = context.read<AuthBloc>().state;
+                if (authState is AuthAuthenticated) {
+                  context
+                      .read<ProfileBloc>()
+                      .add(ProfileLoadRequested(authState.profile.id));
                 }
               },
-            );
-          }
-
-          final profile = userProvider.userProfile;
-          if (profile == null) {
-            return const ErrorStateWidget(
-              message: 'No profile found.',
-              icon: Icons.person_off_outlined,
             );
           }
 
@@ -178,44 +137,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 : Icons.shopping_bag,
                           ),
                           const SizedBox(width: AppTheme.padding8),
+                          // Email verification status (isVerified field)
                           StatusBadge(
-                            label: profile.verificationStatus.name,
-                            type: _verificationBadgeType(
-                              profile.verificationStatus,
-                            ),
+                            label: profile.isVerified
+                                ? 'Email Verified'
+                                : 'Email Unverified',
+                            type: profile.isVerified
+                                ? StatusBadgeType.success
+                                : StatusBadgeType.neutral,
                             showIndicator: true,
                           ),
-                          const SizedBox(width: AppTheme.padding8),
-                          // If user is unverified, offer a button to resend verification
-                          if (profile.verificationStatus ==
-                              VerificationStatus.unverified)
+                          if (!profile.isVerified) ...[
+                            const SizedBox(width: AppTheme.padding8),
                             TextButton.icon(
                               icon: const Icon(Icons.verified_user_outlined),
                               label: const Text('Verify Email'),
-                              onPressed: () async {
-                                final auth = Provider.of<AuthProvider>(
-                                  context,
-                                  listen: false,
-                                );
-                                final ok = await auth.sendEmailVerification();
-                                if (ok && context.mounted) {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => VerifyEmailScreen(
-                                        email: profile.email,
-                                      ),
-                                    ),
-                                  );
-                                } else if (context.mounted) {
-                                  final msg =
-                                      auth.errorMessage ??
-                                      'Failed to send verification email.';
-                                  ScaffoldMessenger.of(
-                                    context,
-                                  ).showSnackBar(SnackBar(content: Text(msg)));
-                                }
-                              },
+                              onPressed: () => context
+                                  .read<AuthBloc>()
+                                  .add(const AuthVerificationEmailRequested()),
                             ),
+                          ],
                         ],
                       ),
                     ],
@@ -229,96 +170,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (profile.role == UserRole.farmer) ...[
                   Text('Farm Details', style: AppTheme.heading2),
                   const SizedBox(height: AppTheme.padding16),
-                  _buildInfoRow(
-                    Icons.landscape,
-                    'Farm Size',
-                    profile.farmSize != null
-                        ? '${profile.farmSize} hectares'
-                        : 'Not set',
-                  ),
-                  _buildInfoRow(
-                    Icons.location_on_outlined,
-                    'Location',
-                    profile.farmLocation ?? 'Not set',
-                  ),
-                  _buildInfoRow(
-                    Icons.coffee,
-                    'Coffee Varieties',
-                    profile.coffeeVarieties?.join(', ') ?? 'Not set',
-                  ),
-                  _buildInfoRow(
-                    Icons.badge_outlined,
-                    'Registration No.',
-                    profile.farmRegistrationNumber ?? 'Not set',
-                  ),
+                  _buildInfoRow(Icons.landscape, 'Farm Size',
+                      profile.farmSize != null
+                          ? '${profile.farmSize} hectares'
+                          : 'Not set'),
+                  _buildInfoRow(Icons.location_on_outlined, 'Location',
+                      profile.farmLocation ?? 'Not set'),
+                  _buildInfoRow(Icons.coffee, 'Coffee Varieties',
+                      profile.coffeeVarieties?.join(', ') ?? 'Not set'),
+                  _buildInfoRow(Icons.badge_outlined, 'Registration No.',
+                      profile.farmRegistrationNumber ?? 'Not set'),
                 ],
 
                 if (profile.role == UserRole.buyer) ...[
                   Text('Business Details', style: AppTheme.heading2),
                   const SizedBox(height: AppTheme.padding16),
+                  _buildInfoRow(Icons.business, 'Business Name',
+                      profile.businessName ?? 'Not set'),
+                  _buildInfoRow(Icons.category_outlined, 'Business Type',
+                      profile.businessType ?? 'Not set'),
                   _buildInfoRow(
-                    Icons.business,
-                    'Business Name',
-                    profile.businessName ?? 'Not set',
-                  ),
-                  _buildInfoRow(
-                    Icons.category_outlined,
-                    'Business Type',
-                    profile.businessType ?? 'Not set',
-                  ),
-                  _buildInfoRow(
-                    Icons.scale,
-                    'Monthly Volume',
-                    profile.monthlyVolume != null
-                        ? '${profile.monthlyVolume} kg'
-                        : 'Not set',
-                  ),
+                      Icons.scale,
+                      'Monthly Volume',
+                      profile.monthlyVolume != null
+                          ? '${profile.monthlyVolume} kg'
+                          : 'Not set'),
                 ],
 
                 const SizedBox(height: AppTheme.padding32),
 
-                // Edit profile button
                 CustomButton(
                   text: 'Edit Profile',
                   type: ButtonType.outlined,
                   isFullWidth: true,
                   leadingIcon: Icons.edit,
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => EditProfileScreen(userProfile: profile),
-                      ),
-                    );
-                  },
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EditProfileScreen(userProfile: profile),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: AppTheme.padding16),
-                // Sign out link
                 Center(
                   child: TextButton.icon(
                     icon: const Icon(Icons.logout),
                     label: const Text('Sign out'),
-                    onPressed: () async {
-                      final auth = Provider.of<AuthProvider>(
-                        context,
-                        listen: false,
-                      );
-                      // capture navigator before the async gap
-                      final navigator = Navigator.of(context);
-                      await auth.signOut();
-                      if (!mounted) return;
-                      // after logout, send user to login page and clear stack
-                      navigator.pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (_) => const LoginScreen()),
-                        (r) => false,
-                      );
-                    },
+                    onPressed: () => context
+                        .read<AuthBloc>()
+                        .add(const AuthSignOutRequested()),
                   ),
                 ),
               ],
             ),
           );
         },
+      ),
       ),
     );
   }
@@ -328,11 +235,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.only(bottom: AppTheme.padding12),
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: AppTheme.iconSizeMedium,
-            color: AppTheme.textSecondary,
-          ),
+          Icon(icon,
+              size: AppTheme.iconSizeMedium, color: AppTheme.textSecondary),
           const SizedBox(width: AppTheme.padding12),
           Expanded(
             child: Column(

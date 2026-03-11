@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brewmaster/config/theme.dart';
-import 'package:brewmaster/data/providers/user_provider.dart';
 import 'package:brewmaster/domain/models/enums.dart';
 import 'package:brewmaster/domain/models/user_profile.dart';
+import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
+import 'package:brewmaster/presentation/blocs/profile/profile_bloc.dart';
 import 'package:brewmaster/presentation/widgets/common/custom_text_field.dart';
 import 'package:brewmaster/presentation/widgets/common/custom_button.dart';
 import 'package:brewmaster/presentation/widgets/common/error_state_widget.dart';
-import 'package:brewmaster/presentation/screens/profile/profile_screen.dart';
-import 'package:brewmaster/presentation/screens/auth/verify_email_screen.dart';
-import 'package:brewmaster/data/providers/auth_provider.dart';
 
 /// Profile setup screen shown after registration.
-/// Displays conditional fields based on user role (farmer vs buyer).
+/// Displayed by [AuthGate] when the state is [AuthNeedsProfile].
 class ProfileSetupScreen extends StatefulWidget {
   final String userId;
   final String email;
@@ -33,8 +31,6 @@ class ProfileSetupScreen extends StatefulWidget {
 
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _formKey = GlobalKey<FormState>();
-
-  // Track selected role if not provided
   late UserRole? _selectedRole;
 
   // Farmer fields
@@ -66,26 +62,22 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     super.dispose();
   }
 
-  Future<void> _handleSave() async {
+  void _handleSave() {
     if (_selectedRole == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a role (Farmer or Buyer)')),
+        const SnackBar(
+            content: Text('Please select a role (Farmer or Buyer)')),
       );
       return;
     }
-
     if (!_formKey.currentState!.validate()) return;
 
     final now = DateTime.now();
-    // Determine initial verification info.  The Firebase user may not have
-    // `emailVerified` set when the account comes from Google, but Google's
-    // identity provider already ensures the address belongs to the user.
-    final auth = context.read<AuthProvider>();
-    final firebaseUser = auth.currentUser;
-    final bool isEmailVerified =
-        firebaseUser?.emailVerified == true ||
-        (firebaseUser?.providerData.any((p) => p.providerId == 'google.com') ??
-            false);
+
+    // AuthNeedsProfile carries isGoogleUser; read it from the current AuthBloc state
+    final authState = context.read<AuthBloc>().state;
+    final isGoogleUser =
+        authState is AuthNeedsProfile ? authState.isGoogleUser : false;
 
     final profile = UserProfile(
       id: widget.userId,
@@ -95,96 +87,82 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       displayName: widget.displayName,
       createdAt: now,
       updatedAt: now,
-      isVerified: isEmailVerified,
-      verificationStatus: isEmailVerified
+      isVerified: isGoogleUser,
+      verificationStatus: isGoogleUser
           ? VerificationStatus.verified
           : VerificationStatus.unverified,
-      farmSize:
-          _selectedRole == UserRole.farmer &&
+      farmSize: _selectedRole == UserRole.farmer &&
               _farmSizeController.text.isNotEmpty
           ? double.tryParse(_farmSizeController.text)
           : null,
-      farmLocation:
-          _selectedRole == UserRole.farmer &&
+      farmLocation: _selectedRole == UserRole.farmer &&
               _farmLocationController.text.isNotEmpty
           ? _farmLocationController.text.trim()
           : null,
-      coffeeVarieties:
-          _selectedRole == UserRole.farmer &&
+      coffeeVarieties: _selectedRole == UserRole.farmer &&
               _coffeeVarietiesController.text.isNotEmpty
           ? _coffeeVarietiesController.text
-                .split(',')
-                .map((e) => e.trim())
-                .where((e) => e.isNotEmpty)
-                .toList()
+              .split(',')
+              .map((e) => e.trim())
+              .where((e) => e.isNotEmpty)
+              .toList()
           : null,
-      farmRegistrationNumber:
-          _selectedRole == UserRole.farmer &&
+      farmRegistrationNumber: _selectedRole == UserRole.farmer &&
               _farmRegNumberController.text.isNotEmpty
           ? _farmRegNumberController.text.trim()
           : null,
-      businessName:
-          _selectedRole == UserRole.buyer &&
+      businessName: _selectedRole == UserRole.buyer &&
               _businessNameController.text.isNotEmpty
           ? _businessNameController.text.trim()
           : null,
-      businessType:
-          _selectedRole == UserRole.buyer &&
+      businessType: _selectedRole == UserRole.buyer &&
               _businessTypeController.text.isNotEmpty
           ? _businessTypeController.text.trim()
           : null,
-      monthlyVolume:
-          _selectedRole == UserRole.buyer &&
+      monthlyVolume: _selectedRole == UserRole.buyer &&
               _monthlyVolumeController.text.isNotEmpty
           ? double.tryParse(_monthlyVolumeController.text)
           : null,
     );
 
-    final userProvider = context.read<UserProvider>();
-    final success = await userProvider.createProfile(profile);
-    if (success && mounted) {
-      final auth = context.read<AuthProvider>();
-      final firebaseUser = auth.currentUser;
-      final isGoogleSignIn = firebaseUser?.providerData.any((p) => p.providerId == 'google.com') ?? false;
-      
-      if (isGoogleSignIn) {
-        // Google users are already verified, go directly to profile
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const ProfileScreen()),
-          (route) => false,
-        );
-      } else {
-        // Email/password users need to verify their email
-        // Send verification email
-        await auth.sendEmailVerification();
-        
-        if (mounted) {
-          // Navigate to verification screen
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => VerifyEmailScreen(email: widget.email),
-            ),
-          );
-        }
-      }
-    }
+    context.read<ProfileBloc>().add(ProfileCreateRequested(profile));
   }
 
   @override
   Widget build(BuildContext context) {
-    // Show role selection if not yet selected
-    if (_selectedRole == null) {
-      return _buildRoleSelectionScreen();
-    }
+    if (_selectedRole == null) return _buildRoleSelectionScreen();
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Complete Your Profile')),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppTheme.padding24),
-          child: Consumer<UserProvider>(
-            builder: (context, userProvider, _) {
-              return Form(
+    return BlocConsumer<ProfileBloc, ProfileState>(
+      listener: (context, state) {
+        if (state is ProfileCreateSuccess) {
+          final authState = context.read<AuthBloc>().state;
+          final isGoogleUser =
+              authState is AuthNeedsProfile ? authState.isGoogleUser : false;
+
+          if (isGoogleUser) {
+            context.read<AuthBloc>().add(const AuthCheckRequested());
+          } else {
+            context
+                .read<AuthBloc>()
+                .add(const AuthVerificationEmailRequested());
+          }
+        }
+        if (state is ProfileFailure) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppTheme.errorColor,
+            ),
+          );
+        }
+      },
+      builder: (context, state) {
+        return Scaffold(
+          appBar: AppBar(title: const Text('Complete Your Profile')),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppTheme.padding24),
+              child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -197,15 +175,16 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     ),
                     const SizedBox(height: AppTheme.padding8),
                     Text(
-                      'Tell us more about your ${_selectedRole == UserRole.farmer ? 'farm' : 'business'}.',
+                      'Tell us more about your '
+                      '${_selectedRole == UserRole.farmer ? 'farm' : 'business'}.',
                       style: AppTheme.caption,
                     ),
                     const SizedBox(height: AppTheme.padding24),
 
-                    if (userProvider.errorMessage != null) ...[
+                    if (state is ProfileFailure) ...[
                       ErrorBanner(
-                        message: userProvider.errorMessage!,
-                        onDismiss: userProvider.clearError,
+                        message: state.message,
+                        onDismiss: () {},
                       ),
                       const SizedBox(height: AppTheme.padding16),
                     ],
@@ -218,16 +197,16 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     CustomButton(
                       text: 'Save Profile',
                       isFullWidth: true,
-                      isLoading: userProvider.isLoading,
+                      isLoading: state is ProfileLoading,
                       onPressed: _handleSave,
                     ),
                   ],
                 ),
-              );
-            },
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -241,11 +220,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'What is your role?',
-                style: AppTheme.heading1,
-                textAlign: TextAlign.center,
-              ),
+              Text('What is your role?', style: AppTheme.heading1,
+                  textAlign: TextAlign.center),
               const SizedBox(height: AppTheme.padding8),
               Text(
                 'This helps us show you relevant features and content.',
@@ -253,29 +229,18 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppTheme.padding32),
-              const SizedBox(height: AppTheme.padding16),
-              // Farmer option
               _buildRoleCard(
-                title: 'I\'m a Farmer',
+                title: "I'm a Farmer",
                 description: 'Grow and sell coffee beans',
                 icon: Icons.agriculture,
-                onTap: () {
-                  setState(() {
-                    _selectedRole = UserRole.farmer;
-                  });
-                },
+                onTap: () => setState(() => _selectedRole = UserRole.farmer),
               ),
               const SizedBox(height: AppTheme.padding16),
-              // Buyer option
               _buildRoleCard(
-                title: 'I\'m a Buyer',
+                title: "I'm a Buyer",
                 description: 'Purchase and trade coffee',
                 icon: Icons.shopping_cart,
-                onTap: () {
-                  setState(() {
-                    _selectedRole = UserRole.buyer;
-                  });
-                },
+                onTap: () => setState(() => _selectedRole = UserRole.buyer),
               ),
             ],
           ),
@@ -299,17 +264,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             children: [
               Icon(icon, size: 48, color: AppTheme.primaryColor),
               const SizedBox(height: AppTheme.padding16),
-              Text(
-                title,
-                style: AppTheme.heading2,
-                textAlign: TextAlign.center,
-              ),
+              Text(title, style: AppTheme.heading2,
+                  textAlign: TextAlign.center),
               const SizedBox(height: AppTheme.padding8),
-              Text(
-                description,
-                style: AppTheme.caption,
-                textAlign: TextAlign.center,
-              ),
+              Text(description, style: AppTheme.caption,
+                  textAlign: TextAlign.center),
             ],
           ),
         ),
@@ -329,9 +288,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           validator: (value) {
             if (value != null && value.isNotEmpty) {
               final size = double.tryParse(value);
-              if (size == null || size <= 0) {
-                return 'Enter a valid farm size';
-              }
+              if (size == null || size <= 0) return 'Enter a valid farm size';
             }
             return null;
           },
@@ -392,9 +349,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           validator: (value) {
             if (value != null && value.isNotEmpty) {
               final volume = double.tryParse(value);
-              if (volume == null || volume < 0) {
-                return 'Enter a valid volume';
-              }
+              if (volume == null || volume < 0) return 'Enter a valid volume';
             }
             return null;
           },

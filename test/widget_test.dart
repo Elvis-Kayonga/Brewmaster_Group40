@@ -1,30 +1,84 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:brewmaster/domain/models/user_profile.dart';
+import 'package:brewmaster/domain/repositories/auth_repository.dart';
+import 'package:brewmaster/domain/repositories/user_repository.dart';
+import 'package:brewmaster/domain/repositories/payment_repository.dart';
+import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
+import 'package:brewmaster/presentation/blocs/profile/profile_bloc.dart';
+import 'package:brewmaster/presentation/blocs/payment/payment_bloc.dart';
+import 'package:brewmaster/presentation/screens/auth/login_screen.dart';
 import 'package:brewmaster/main.dart';
 
+class _FakeAuthRepository implements AuthRepository {
+  final fb.User? _user;
+  _FakeAuthRepository(this._user);
+
+  @override
+  fb.User? get currentUser => _user;
+  @override
+  Stream<fb.User?> get authStateChanges => Stream.value(_user);
+  @override
+  Future<fb.User?> register(String e, String p) async => _user;
+  @override
+  Future<fb.User?> signIn(String e, String p) async => _user;
+  @override
+  Future<fb.User?> signInWithGoogle() async => _user;
+  @override
+  Future<void> signOut() async {}
+  @override
+  Future<void> sendPasswordResetEmail(String e) async {}
+  @override
+  Future<bool> sendEmailVerification() async => true;
+  @override
+  Future<bool> isEmailVerified() async => false;
+}
+
+class _FakeUserRepository implements UserRepository {
+  @override
+  Future<UserProfile?> getUserProfile(String id) async => null;
+  @override
+  Future<UserProfile?> getUserProfileByEmail(String e) async => null;
+  @override
+  Future<void> createUserProfile(UserProfile p) async {}
+  @override
+  Future<void> updateUserProfile(String id, Map<String, dynamic> u) async {}
+  @override
+  Stream<UserProfile?> watchUserProfile(String id) => const Stream.empty();
+}
+
+class _FakePaymentRepository implements PaymentRepository {
+  @override
+  dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
+}
+
+Widget _buildTestApp() {
+  final authRepo = _FakeAuthRepository(null);
+  final userRepo = _FakeUserRepository();
+  final paymentRepo = _FakePaymentRepository();
+  return MultiBlocProvider(
+    providers: [
+      BlocProvider(
+          create: (_) => AuthBloc(
+              authRepository: authRepo, userRepository: userRepo)),
+      BlocProvider(create: (_) => ProfileBloc(userRepository: userRepo)),
+      BlocProvider(
+          create: (_) => PaymentBloc(paymentRepository: paymentRepo)),
+    ],
+    child: const BrewMasterApp(),
+  );
+}
+
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('App smoke test: renders without crashing (unauthenticated)',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(_buildTestApp());
+    await tester.pumpAndSettle();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Unauthenticated → LoginScreen is shown
+    expect(find.byType(MaterialApp), findsOneWidget);
+    expect(find.byType(LoginScreen), findsOneWidget);
   });
 }

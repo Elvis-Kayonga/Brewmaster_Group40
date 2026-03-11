@@ -37,6 +37,9 @@ The system must support offline-first operations, low-literacy users through voi
 6. WHEN a user completes profile setup THEN THE Profile_System SHALL persist all data to Firestore with offline support
 7. WHEN a user logs in THEN THE Authentication_System SHALL maintain session state across app restarts
 8. WHEN a user updates their profile THEN THE Profile_System SHALL sync changes to Firestore when connectivity is available
+9. WHEN a user registers with email/password THEN THE Authentication_System SHALL send a verification email immediately and route the user to an email verification screen before granting access to the app
+10. WHEN the email verification screen is displayed THEN THE Authentication_System SHALL poll Firebase every 3 seconds and automatically navigate the user into the app as soon as the email link is clicked, with no manual action required
+11. WHEN the user is on the email verification screen THEN THE Authentication_System SHALL provide a "Resend Email" button and a "Sign Out" button, and SHALL display feedback when the resend succeeds or fails
 
 ### Requirement 2: Coffee Listing Management
 
@@ -248,7 +251,7 @@ These requirements ensure the project meets academic standards and grading crite
 
 16.1. WHEN the codebase is analyzed THEN `flutter analyze` SHALL return zero issues (no warnings or errors)
 16.2. WHEN the project structure is reviewed THEN THE code SHALL be organized into presentation/, domain/, and data/ layers following clean architecture
-16.3. WHEN state management is implemented THEN THE application SHALL use Provider (or equivalent advanced state management) and avoid setState() in production code except for local UI state
+16.3. WHEN state management is implemented THEN THE application SHALL use the BLoC pattern (flutter_bloc + equatable) and avoid setState() in production code except for local UI state; UI screens SHALL communicate exclusively through BLoC events and states, never calling Firebase or services directly
 16.4. WHEN variables and functions are named THEN THEY SHALL use descriptive names following Dart naming conventions (camelCase for variables, PascalCase for classes)
 16.5. WHEN complex logic is implemented THEN THE code SHALL include comments explaining the logic
 16.6. WHEN code is written THEN functions SHALL be extracted for reusability rather than duplicating code

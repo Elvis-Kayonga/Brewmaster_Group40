@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brewmaster/config/theme.dart';
-import 'package:brewmaster/data/providers/auth_provider.dart';
+import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
 import 'package:brewmaster/presentation/widgets/common/custom_text_field.dart';
 import 'package:brewmaster/presentation/widgets/common/custom_button.dart';
-import 'package:brewmaster/presentation/widgets/common/error_state_widget.dart';
-import 'package:brewmaster/presentation/screens/auth/profile_setup_screen.dart';
 import 'package:brewmaster/utils/password_validator.dart';
 
-/// Sign-up screen collecting email, password and display name in a single step.
+/// Sign-up screen. Navigation after register is handled by [AuthGate].
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -29,7 +27,8 @@ class _SignupScreenState extends State<SignupScreen> {
     super.initState();
     _passwordController.addListener(() {
       setState(() {
-        _passwordStrength = PasswordValidator.getStrength(_passwordController.text);
+        _passwordStrength =
+            PasswordValidator.getStrength(_passwordController.text);
       });
     });
   }
@@ -43,59 +42,17 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
-  bool _validateInputs() {
-    return _formKey.currentState?.validate() ?? false;
+  void _handleSignUp() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    context.read<AuthBloc>().add(AuthRegisterRequested(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          displayName: _displayNameController.text.trim(),
+        ));
   }
 
-  Future<void> _handleSignUp() async {
-    if (!_validateInputs()) return;
-    final nav = Navigator.of(context);
-    final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.signUp(
-      _emailController.text.trim(),
-      _passwordController.text,
-    );
-    if (success && mounted) {
-      final user = authProvider.currentUser;
-      if (user != null) {
-        // Go directly to profile setup (verification email will be sent after profile creation)
-        nav.pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => ProfileSetupScreen(
-              userId: user.uid,
-              email: user.email ?? '',
-              displayName: _displayNameController.text.trim().isNotEmpty
-                  ? _displayNameController.text.trim()
-                  : (user.displayName ?? ''),
-              role: null,
-            ),
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _handleGoogleSignUp() async {
-    final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.signInWithGoogle();
-    if (success && mounted) {
-      final user = authProvider.currentUser;
-      if (user != null) {
-        // Google sign-ins are implicitly trusted; even if Firebase reports
-        // emailVerified==false the address belongs to Google so we'll treat it
-        // as verified and skip the separate email flow.
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => ProfileSetupScreen(
-              userId: user.uid,
-              email: user.email ?? '',
-              displayName: user.displayName ?? '',
-              role: null,
-            ),
-          ),
-        );
-      }
-    }
+  void _handleGoogleSignUp() {
+    context.read<AuthBloc>().add(const AuthGoogleSignInRequested());
   }
 
   @override
@@ -105,23 +62,33 @@ class _SignupScreenState extends State<SignupScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppTheme.padding24),
-          child: Consumer<AuthProvider>(
-            builder: (context, auth, _) {
+          child: BlocConsumer<AuthBloc, AuthState>(
+            listener: (context, state) {
+              if (state is AuthFailure) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: AppTheme.errorColor,
+                  ),
+                );
+              } else if (state is AuthNeedsProfile ||
+                  state is AuthEmailNotVerified ||
+                  state is AuthAuthenticated) {
+                // Pop SignupScreen so AuthGate's updated content becomes visible.
+                // canPop() guard prevents double-pop if both the manual
+                // _AuthUserChanged dispatch and the stream fire.
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop();
+                }
+              }
+            },
+            builder: (context, state) {
+              final isLoading = state is AuthLoading;
               return Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Error banner
-                    if (auth.errorMessage != null) ...[
-                      ErrorBanner(
-                        message: auth.errorMessage!,
-                        onDismiss: auth.clearError,
-                      ),
-                      const SizedBox(height: AppTheme.padding16),
-                    ],
-
-                    // Single-step inputs
                     ..._buildEmailPasswordStep(),
                     const SizedBox(height: AppTheme.padding16),
                     CustomTextField(
@@ -130,26 +97,20 @@ class _SignupScreenState extends State<SignupScreen> {
                       validator: (v) =>
                           v == null || v.trim().isEmpty ? 'Required' : null,
                     ),
-
                     const SizedBox(height: AppTheme.padding32),
-
-                    // Sign up button
                     CustomButton(
                       text: 'Sign Up',
                       isFullWidth: true,
-                      isLoading: auth.isLoading,
+                      isLoading: isLoading,
                       onPressed: _handleSignUp,
                     ),
-
-                    // Google sign-up
                     const SizedBox(height: AppTheme.padding16),
                     Row(
                       children: [
                         const Expanded(child: Divider()),
                         Padding(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: AppTheme.padding16,
-                          ),
+                              horizontal: AppTheme.padding16),
                           child: Text('OR', style: AppTheme.caption),
                         ),
                         const Expanded(child: Divider()),
@@ -161,20 +122,15 @@ class _SignupScreenState extends State<SignupScreen> {
                       type: ButtonType.outlined,
                       isFullWidth: true,
                       leadingIcon: Icons.g_mobiledata,
-                      isLoading: auth.isLoading,
+                      isLoading: isLoading,
                       onPressed: _handleGoogleSignUp,
                     ),
-
                     const SizedBox(height: AppTheme.padding24),
-
-                    // Sign in link
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          'Already have an account? ',
-                          style: AppTheme.caption,
-                        ),
+                        Text('Already have an account? ',
+                            style: AppTheme.caption),
                         CustomButton(
                           text: 'Sign In',
                           type: ButtonType.text,
@@ -201,9 +157,7 @@ class _SignupScreenState extends State<SignupScreen> {
         hintText: 'Enter your email',
         textInputAction: TextInputAction.next,
         validator: (value) {
-          if (value == null || value.trim().isEmpty) {
-            return 'Email is required';
-          }
+          if (value == null || value.trim().isEmpty) return 'Email is required';
           if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value.trim())) {
             return 'Enter a valid email';
           }
@@ -228,9 +182,7 @@ class _SignupScreenState extends State<SignupScreen> {
           if (value == null || value.isEmpty) {
             return 'Please confirm your password';
           }
-          if (value != _passwordController.text) {
-            return 'Passwords do not match';
-          }
+          if (value != _passwordController.text) return 'Passwords do not match';
           return null;
         },
       ),
@@ -247,7 +199,8 @@ class _SignupScreenState extends State<SignupScreen> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
-                  value: _passwordStrength.index / PasswordStrength.values.length,
+                  value: _passwordStrength.index /
+                      PasswordStrength.values.length,
                   minHeight: 8,
                   backgroundColor: Colors.grey[300],
                   valueColor: AlwaysStoppedAnimation<Color>(
@@ -267,22 +220,27 @@ class _SignupScreenState extends State<SignupScreen> {
           ],
         ),
         const SizedBox(height: AppTheme.padding8),
-        Text(
-          'Requirements:',
-          style: AppTheme.caption.copyWith(fontWeight: FontWeight.w600),
-        ),
-        _buildRequirement('At least 8 characters', _passwordController.text.length >= 8),
-        _buildRequirement('Uppercase letter (A-Z)', _passwordController.text.contains(RegExp(r'[A-Z]'))),
-        _buildRequirement('Lowercase letter (a-z)', _passwordController.text.contains(RegExp(r'[a-z]'))),
-        _buildRequirement('Number (0-9)', _passwordController.text.contains(RegExp(r'[0-9]'))),
-        _buildRequirement('Special character (!@#\$%^&*)', _hasSpecialCharacter()),
+        Text('Requirements:',
+            style: AppTheme.caption.copyWith(fontWeight: FontWeight.w600)),
+        _buildRequirement(
+            'At least 8 characters', _passwordController.text.length >= 8),
+        _buildRequirement('Uppercase letter (A-Z)',
+            _passwordController.text.contains(RegExp(r'[A-Z]'))),
+        _buildRequirement('Lowercase letter (a-z)',
+            _passwordController.text.contains(RegExp(r'[a-z]'))),
+        _buildRequirement(
+            'Number (0-9)', _passwordController.text.contains(RegExp(r'[0-9]'))),
+        _buildRequirement(
+            'Special character (!@#\$%^&*)', _hasSpecialCharacter()),
       ],
     );
   }
 
   bool _hasSpecialCharacter() {
     const specialChars = '!@#\$%^&*()_+-=[]{}:;\'",.<>?/\\|`~';
-    return _passwordController.text.split('').any((char) => specialChars.contains(char));
+    return _passwordController.text
+        .split('')
+        .any((char) => specialChars.contains(char));
   }
 
   Widget _buildRequirement(String text, bool met) {
@@ -306,5 +264,4 @@ class _SignupScreenState extends State<SignupScreen> {
       ),
     );
   }
-
 }

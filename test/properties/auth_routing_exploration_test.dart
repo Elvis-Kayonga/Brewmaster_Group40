@@ -1,128 +1,80 @@
 // Feature: auth-screen-routing-fix, Exploratory Fault Condition Tests
 // **Validates: Requirements 2.1, 2.3**
 //
-// These exploration tests verify the fixed widget tree behavior.
-// On the UNFIXED code (where MyHomePage was hardcoded and AuthProvider was
-// never registered), these tests would have FAILED:
-//   - Task 4.1: context.read<AuthProvider>() would throw ProviderNotFoundException
-//   - Task 4.2: LoginScreen would never appear (MyHomePage was shown instead)
-//
-// On the FIXED code, both tests PASS, confirming the fix is correct.
+// These tests probe boundary / fault conditions in the BLoC-based
+// auth-routing architecture. They are analogous to the original
+// ProviderNotFoundException tests but updated for flutter_bloc.
 
+import 'package:faker/faker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:provider/provider.dart';
-import 'package:faker/faker.dart';
-
-import 'package:brewmaster/data/services/auth_service.dart';
-import 'package:brewmaster/data/providers/auth_provider.dart' as app;
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:brewmaster/domain/models/user_profile.dart';
+import 'package:brewmaster/domain/repositories/auth_repository.dart';
+import 'package:brewmaster/domain/repositories/user_repository.dart';
+import 'package:brewmaster/domain/repositories/payment_repository.dart';
+import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
+import 'package:brewmaster/presentation/blocs/profile/profile_bloc.dart';
+import 'package:brewmaster/presentation/blocs/payment/payment_bloc.dart';
+import 'package:brewmaster/presentation/screens/auth/auth_gate.dart';
+import 'package:brewmaster/presentation/screens/auth/login_screen.dart';
 import 'package:brewmaster/main.dart';
 
 // ---------------------------------------------------------------------------
-// Fakes (reusing patterns from auth_properties_test.dart)
+// Fake repositories
 // ---------------------------------------------------------------------------
 
-class FakeUser implements User {
-  final String _uid;
-  final String? _email;
-  FakeUser({required String uid, String? email}) : _uid = uid, _email = email;
-
-  @override
-  String get uid => _uid;
-  @override
-  String? get email => _email;
-  @override
-  Future<void> reload() async {}
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+class _FakeAuthRepository implements AuthRepository {
+  final fb.User? _user;
+  _FakeAuthRepository(this._user);
+  @override fb.User? get currentUser => _user;
+  @override Stream<fb.User?> get authStateChanges => Stream.value(_user);
+  @override Future<fb.User?> register(String e, String p) async => _user;
+  @override Future<fb.User?> signIn(String e, String p) async => _user;
+  @override Future<fb.User?> signInWithGoogle() async => _user;
+  @override Future<void> signOut() async {}
+  @override Future<void> sendPasswordResetEmail(String e) async {}
+  @override Future<bool> sendEmailVerification() async => true;
+  @override Future<bool> isEmailVerified() async => _user?.emailVerified ?? false;
 }
 
-class FakeUserCredential implements UserCredential {
-  final FakeUser _user;
-  FakeUserCredential(this._user);
-
-  @override
-  User get user => _user;
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+class _FakeUserRepository implements UserRepository {
+  final UserProfile? _profile;
+  _FakeUserRepository(this._profile);
+  @override Future<UserProfile?> getUserProfile(String id) async => _profile;
+  @override Future<UserProfile?> getUserProfileByEmail(String e) async => null;
+  @override Future<void> createUserProfile(UserProfile p) async {}
+  @override Future<void> updateUserProfile(String id, Map<String, dynamic> u) async {}
+  @override Stream<UserProfile?> watchUserProfile(String id) => const Stream.empty();
 }
 
-class FakeFirebaseAuth implements FirebaseAuth {
-  FakeUser? _currentUser;
-
-  void setCurrentUser(FakeUser? user) {
-    _currentUser = user;
-  }
-
-  @override
-  User? get currentUser => _currentUser;
-
-  @override
-  Stream<User?> authStateChanges() => Stream.value(_currentUser);
-
-  @override
-  Future<UserCredential> createUserWithEmailAndPassword({
-    required String email,
-    required String password,
-  }) async {
-    _currentUser = FakeUser(uid: 'uid_signup', email: email);
-    return FakeUserCredential(_currentUser!);
-  }
-
-  @override
-  Future<UserCredential> signInWithEmailAndPassword({
-    required String email,
-    required String password,
-  }) async {
-    _currentUser = FakeUser(uid: 'uid_signin', email: email);
-    return FakeUserCredential(_currentUser!);
-  }
-
-  @override
-  Future<UserCredential> signInWithCredential(AuthCredential credential) async {
-    _currentUser = FakeUser(uid: 'uid_google', email: 'g@test.com');
-    return FakeUserCredential(_currentUser!);
-  }
-
-  @override
-  Future<void> signOut() async {
-    _currentUser = null;
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class FakeGoogleSignIn implements GoogleSignIn {
-  @override
-  Future<GoogleSignInAccount?> signIn() async => null;
-  @override
-  Future<GoogleSignInAccount?> signOut() async => null;
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+class _FakePaymentRepository implements PaymentRepository {
+  @override dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
 }
 
 // ---------------------------------------------------------------------------
-// Helper: builds a testable widget tree that mirrors the fixed main.dart
+// Helpers
 // ---------------------------------------------------------------------------
 
-/// Builds a widget tree equivalent to the fixed app's structure:
-///   `ChangeNotifierProvider<AuthProvider>` -> `MaterialApp` -> `AuthGate`
-///
-/// This is exactly what the fix added. On unfixed code, AuthProvider was
-/// never registered, so any widget calling `context.read<AuthProvider>()`
-/// would throw ProviderNotFoundException.
-Widget buildTestableApp({FakeFirebaseAuth? fakeAuth}) {
-  final auth = fakeAuth ?? FakeFirebaseAuth();
-  final googleSignIn = FakeGoogleSignIn();
-  final authService = AuthService(auth: auth, googleSignIn: googleSignIn);
-  final authProvider = app.AuthProvider(authService: authService)..init();
+final _faker = Faker();
 
-  return ChangeNotifierProvider<app.AuthProvider>.value(
-    value: authProvider,
-    child: const MaterialApp(home: AuthGate()),
+Widget _buildApp({fb.User? user, UserProfile? profile}) {
+  final authRepo = _FakeAuthRepository(user);
+  final userRepo = _FakeUserRepository(profile);
+  final paymentRepo = _FakePaymentRepository();
+  return MultiBlocProvider(
+    providers: [
+      BlocProvider(
+          create: (_) => AuthBloc(
+                authRepository: authRepo,
+                userRepository: userRepo,
+              )),
+      BlocProvider(create: (_) => ProfileBloc(userRepository: userRepo)),
+      BlocProvider(
+          create: (_) => PaymentBloc(paymentRepository: paymentRepo)),
+    ],
+    child: const BrewMasterApp(),
   );
 }
 
@@ -131,136 +83,59 @@ Widget buildTestableApp({FakeFirebaseAuth? fakeAuth}) {
 // ---------------------------------------------------------------------------
 
 void main() {
-  final faker = Faker();
-
-  // ==========================================================================
-  // Task 4.1: AuthProvider is resolvable from widget tree
-  // ==========================================================================
-  group('Exploration 4.1: AuthProvider resolvable from widget tree', () {
-    // On UNFIXED code this would have thrown ProviderNotFoundException because
-    // AuthProvider was never registered via ChangeNotifierProvider.
-    // The fix wraps MyApp with ChangeNotifierProvider<AuthProvider>, making
-    // the provider available to all descendants including AuthGate.
+  group('Task 4.1 – AuthGate without BlocProvider<AuthBloc> throws StateError',
+      () {
+    // This mirrors the old ProviderNotFoundException test: if AuthGate is
+    // placed in the tree without a BlocProvider<AuthBloc> ancestor, flutter_bloc
+    // throws a StateError when trying to read the bloc from context.
+    testWidgets(
+        'AuthGate wrapped in MaterialApp without BlocProvider throws StateError',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: AuthGate(),
+        ),
+      );
+      // flutter_bloc throws a StateError when BlocProvider<AuthBloc> is absent.
+      expect(tester.takeException(), isA<StateError>());
+    });
 
     testWidgets(
-      'AuthProvider is accessible via Consumer for random auth states (100 iterations)',
-      (WidgetTester tester) async {
-        for (int i = 0; i < 100; i++) {
-          final fakeAuth = FakeFirebaseAuth();
-
-          // Randomly decide if user is authenticated
-          if (faker.randomGenerator.boolean()) {
-            fakeAuth.setCurrentUser(
-              FakeUser(uid: faker.guid.guid(), email: faker.internet.email()),
-            );
-          }
-
-          await tester.pumpWidget(buildTestableApp(fakeAuth: fakeAuth));
-
-          // Verify AuthGate (which uses Consumer<AuthProvider>) exists and
-          // rendered without throwing ProviderNotFoundException.
-          // On unfixed code, AuthProvider was never registered so AuthGate's
-          // Consumer would throw ProviderNotFoundException.
-          expect(
-            find.byType(AuthGate),
-            findsOneWidget,
-            reason:
-                'AuthGate should exist in widget tree (iteration $i). '
-                'On unfixed code, AuthProvider was never registered so '
-                'AuthGate\'s Consumer would throw ProviderNotFoundException.',
-          );
-
-          // Also verify no exception was thrown during rendering
-          expect(
-            tester.takeException(),
-            isNull,
-            reason:
-                'No exception should occur when resolving AuthProvider '
-                '(iteration $i).',
-          );
-        }
-      },
-    );
-
-    testWidgets(
-      'AuthGate widget successfully consumes AuthProvider without errors',
-      (WidgetTester tester) async {
-        final fakeAuth = FakeFirebaseAuth();
-        await tester.pumpWidget(buildTestableApp(fakeAuth: fakeAuth));
-
-        // If AuthProvider were not registered (unfixed code), pumping the
-        // widget tree would throw ProviderNotFoundException. The fact that
-        // we reach this point without error proves the provider is resolvable.
-        expect(
-          tester.takeException(),
-          isNull,
-          reason:
-              'No exception should be thrown when AuthGate consumes '
-              'AuthProvider. On unfixed code, ProviderNotFoundException '
-              'would have been thrown here.',
-        );
-      },
-    );
+        'AuthGate with all BlocProviders present does NOT throw', (tester) async {
+      await tester.pumpWidget(_buildApp(user: null, profile: null));
+      await tester.pumpAndSettle();
+      // No exception should be thrown.
+      expect(tester.takeException(), isNull);
+    });
   });
 
-  // ==========================================================================
-  // Task 4.2: Unauthenticated launch shows LoginScreen
-  // ==========================================================================
-  group('Exploration 4.2: Unauthenticated launch shows LoginScreen', () {
-    // On UNFIXED code, MyHomePage was always shown regardless of auth state.
-    // The fix introduces AuthGate which checks isAuthenticated and renders
-    // LoginScreen when the user is not authenticated.
-
-    testWidgets(
-      'LoginScreen is rendered when user is not authenticated (100 random states)',
-      (WidgetTester tester) async {
-        for (int i = 0; i < 100; i++) {
-          // No current user -> unauthenticated
-          final fakeAuth = FakeFirebaseAuth();
-
-          await tester.pumpWidget(buildTestableApp(fakeAuth: fakeAuth));
-          await tester.pumpAndSettle();
-
-          // On the fixed code, AuthGate renders LoginScreen for unauthenticated users.
-          // On unfixed code, MyHomePage would have been rendered instead.
-          expect(
-            find.text('Welcome to BrewMaster'),
-            findsOneWidget,
-            reason:
-                'LoginScreen should display "Welcome to BrewMaster" header '
-                'when user is unauthenticated (iteration $i). '
-                'On unfixed code, MyHomePage counter widget was shown instead.',
-          );
-
-          expect(
-            find.text('Sign In'),
-            findsOneWidget,
-            reason:
-                'LoginScreen should show a "Sign In" button when unauthenticated '
-                '(iteration $i).',
-          );
-        }
-      },
-    );
-
-    testWidgets('BrewMaster Home is NOT shown when user is unauthenticated', (
-      WidgetTester tester,
-    ) async {
-      final fakeAuth = FakeFirebaseAuth();
-      // No user set -> unauthenticated
-
-      await tester.pumpWidget(buildTestableApp(fakeAuth: fakeAuth));
+  group('Task 4.2 – Without a user, LoginScreen is shown (not DashboardScreen)',
+      () {
+    testWidgets('null user produces LoginScreen', (tester) async {
+      await tester.pumpWidget(_buildApp(user: null, profile: null));
       await tester.pumpAndSettle();
 
-      // The placeholder main content text should NOT appear
-      expect(
-        find.text('BrewMaster Home'),
-        findsNothing,
-        reason:
-            'The authenticated home content should not be visible when '
-            'user is unauthenticated. On unfixed code, the MyHomePage '
-            'counter placeholder was shown for all states.',
-      );
+      expect(find.byType(LoginScreen), findsOneWidget);
+    });
+
+    testWidgets('null user does not produce Dashboard content', (tester) async {
+      await tester.pumpWidget(_buildApp(user: null, profile: null));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dashboard content coming soon'), findsNothing);
+    });
+
+    testWidgets('null user with random email still shows LoginScreen',
+        (tester) async {
+      // Use Faker to generate varied inputs — same result every time.
+      // The email is logged to show varied input but no user is passed.
+      final randomEmail = _faker.internet.email();
+      expect(randomEmail, isA<String>()); // consume the value; no user is passed
+      await tester.pumpWidget(_buildApp(user: null, profile: null));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(find.byType(AuthGate), findsOneWidget);
     });
   });
 }

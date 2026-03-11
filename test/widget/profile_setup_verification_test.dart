@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:provider/provider.dart';
 
-import 'package:brewmaster/data/providers/auth_provider.dart' as app;
-import 'package:brewmaster/data/providers/user_provider.dart';
-import 'package:brewmaster/data/services/auth_service.dart';
-import 'package:brewmaster/data/services/user_service.dart';
 import 'package:brewmaster/domain/models/enums.dart';
 import 'package:brewmaster/domain/models/user_profile.dart';
+import 'package:brewmaster/domain/repositories/auth_repository.dart';
+import 'package:brewmaster/domain/repositories/user_repository.dart';
+import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
+import 'package:brewmaster/presentation/blocs/profile/profile_bloc.dart';
 import 'package:brewmaster/presentation/screens/auth/profile_setup_screen.dart';
 
-// Minimal user implementation that allows setting emailVerified and
-// providerData. We only implement the getters that the code inspects.
-class TestUser implements fb.User {
+// ---------------------------------------------------------------------------
+// Minimal fake implementations
+// ---------------------------------------------------------------------------
+
+class _FakeUser implements fb.User {
   @override
   final String uid;
   @override
@@ -25,14 +25,13 @@ class TestUser implements fb.User {
   @override
   final List<fb.UserInfo> providerData;
 
-  TestUser({
+  _FakeUser({
     required this.uid,
     this.email,
     this.emailVerified = false,
     this.providerData = const [],
   });
 
-  // everything else is unneeded for the test
   @override
   Future<void> reload() async {}
 
@@ -40,178 +39,184 @@ class TestUser implements fb.User {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class TestUserInfo implements fb.UserInfo {
+class _FakeUserInfo implements fb.UserInfo {
   @override
   final String providerId;
   @override
   final String? uid;
   @override
-  final String? displayName;
+  String? get displayName => null;
   @override
-  final String? photoURL;
+  String? get photoURL => null;
   @override
-  final String? email;
+  String? get email => null;
   @override
-  final String? phoneNumber;
+  String? get phoneNumber => null;
 
-  TestUserInfo({
-    required this.providerId,
-    this.uid,
-    this.displayName,
-    this.photoURL,
-    this.email,
-    this.phoneNumber,
-  });
+  const _FakeUserInfo({required this.providerId, this.uid});
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-// A fake auth service that simply returns a predetermined user.
-class FakeAuthService extends AuthService {
-  final fb.User? fakeUser;
-  FakeAuthService({this.fakeUser})
-    : super(
-        auth: _FakeFirebaseAuth(fakeUser),
-        googleSignIn: _FakeGoogleSignIn(),
-      );
-
-  @override
-  fb.User? get currentUser => fakeUser;
-
-  @override
-  Stream<fb.User?> get authStateChanges => Stream.value(fakeUser);
-}
-
-// Minimal FirebaseAuth mock
-class _FakeFirebaseAuth implements fb.FirebaseAuth {
+class _FakeAuthRepository implements AuthRepository {
   final fb.User? _user;
-  _FakeFirebaseAuth(this._user);
+  _FakeAuthRepository(this._user);
 
   @override
   fb.User? get currentUser => _user;
 
   @override
-  Stream<fb.User?> authStateChanges() => Stream.value(_user);
+  Stream<fb.User?> get authStateChanges => Stream.value(_user);
 
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
+  Future<fb.User?> register(String email, String password) async => _user;
 
-// Minimal GoogleSignIn mock
-class _FakeGoogleSignIn implements GoogleSignIn {
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
+  Future<fb.User?> signIn(String email, String password) async => _user;
 
-// Minimal Firestore mock
-class _FakeFirebaseFirestore implements FirebaseFirestore {
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  Future<fb.User?> signInWithGoogle() async => _user;
+
+  @override
+  Future<void> signOut() async {}
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {}
+
+  @override
+  Future<bool> sendEmailVerification() async => true;
+
+  @override
+  Future<bool> isEmailVerified() async => _user?.emailVerified ?? false;
 }
 
-// Captures the profile passed to createUserProfile.
-class CapturingUserService extends UserService {
+/// Captures the profile passed to [createUserProfile].
+/// Returns the captured profile from [getUserProfile] so that
+/// [AuthBloc] can settle after profile creation.
+class _CapturingUserRepository implements UserRepository {
   UserProfile? lastCreated;
 
-  CapturingUserService() : super(firestore: _FakeFirebaseFirestore());
+  @override
+  Future<UserProfile?> getUserProfile(String userId) async => lastCreated;
+
+  @override
+  Future<UserProfile?> getUserProfileByEmail(String email) async => null;
 
   @override
   Future<void> createUserProfile(UserProfile profile) async {
     lastCreated = profile;
-    // do not call super which writes to Firestore
   }
+
+  @override
+  Future<void> updateUserProfile(
+      String userId, Map<String, dynamic> updates) async {}
+
+  @override
+  Stream<UserProfile?> watchUserProfile(String userId) =>
+      const Stream.empty();
 }
 
+// ---------------------------------------------------------------------------
+// Helper
+// ---------------------------------------------------------------------------
+
+Widget _buildApp({
+  required Widget home,
+  required AuthRepository authRepo,
+  required UserRepository userRepo,
+}) {
+  return MultiBlocProvider(
+    providers: [
+      BlocProvider<AuthBloc>(
+        create: (_) => AuthBloc(
+          authRepository: authRepo,
+          userRepository: userRepo,
+        ),
+      ),
+      BlocProvider<ProfileBloc>(
+        create: (_) => ProfileBloc(userRepository: userRepo),
+      ),
+    ],
+    child: MaterialApp(home: home),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
 void main() {
-  testWidgets('Profile setup marks google accounts verified', (
-    WidgetTester tester,
-  ) async {
-    // create a fake Google user that reports emailVerified=false but
-    // providerData includes google.com
-    final googleUser = TestUser(
+  testWidgets('Profile setup marks Google accounts as verified',
+      (WidgetTester tester) async {
+    // Google user: providerData contains 'google.com'
+    final googleUser = _FakeUser(
       uid: 'test-google-id',
       email: 'google@user.com',
       emailVerified: false,
-      providerData: [
-        TestUserInfo(providerId: 'google.com', uid: 'test-google-id'),
+      providerData: const [
+        _FakeUserInfo(providerId: 'google.com', uid: 'test-google-id'),
       ],
     );
 
-    final authProvider = app.AuthProvider(
-      authService: FakeAuthService(fakeUser: googleUser),
-    )..init();
-    final fakeService = CapturingUserService();
-    final userProvider = UserProvider(userService: fakeService);
+    final authRepo = _FakeAuthRepository(googleUser);
+    final userRepo = _CapturingUserRepository();
 
-    await tester.pumpWidget(
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider<app.AuthProvider>.value(value: authProvider),
-          ChangeNotifierProvider<UserProvider>.value(value: userProvider),
-        ],
-        child: const MaterialApp(
-          home: ProfileSetupScreen(
-            userId: 'test-google-id',
-            email: 'google@user.com',
-            displayName: 'Google User',
-            role: UserRole.buyer,
-          ),
-        ),
+    await tester.pumpWidget(_buildApp(
+      home: const ProfileSetupScreen(
+        userId: 'test-google-id',
+        email: 'google@user.com',
+        displayName: 'Google User',
+        role: UserRole.buyer,
       ),
-    );
+      authRepo: authRepo,
+      userRepo: userRepo,
+    ));
+    // Allow AuthBloc to emit AuthNeedsProfile(isGoogleUser: true)
+    await tester.pumpAndSettle();
 
-    // fill the required buyer fields to make form valid
+    // Fill required buyer fields
     await tester.enterText(find.byType(TextFormField).at(0), 'Acme Coffee');
     await tester.enterText(find.byType(TextFormField).at(1), 'Roaster');
     await tester.enterText(find.byType(TextFormField).at(2), '100');
 
-    // tap save
     await tester.tap(find.text('Save Profile'));
     await tester.pumpAndSettle();
 
-    expect(fakeService.lastCreated, isNotNull);
-    expect(fakeService.lastCreated!.isVerified, isTrue);
+    expect(userRepo.lastCreated, isNotNull);
+    expect(userRepo.lastCreated!.isVerified, isTrue);
     expect(
-      fakeService.lastCreated!.verificationStatus,
+      userRepo.lastCreated!.verificationStatus,
       equals(VerificationStatus.verified),
     );
   });
 
-  testWidgets('Profile setup respects emailVerified status', (
-    WidgetTester tester,
-  ) async {
-    final emailUser = TestUser(
+  testWidgets('Profile setup marks email-only accounts as unverified',
+      (WidgetTester tester) async {
+    // Email/password user: no Google provider in providerData
+    final emailUser = _FakeUser(
       uid: 'test-email-id',
       email: 'email@user.com',
-      emailVerified: true,
-      providerData: [],
+      emailVerified: false,
+      providerData: const [],
     );
 
-    final authProvider = app.AuthProvider(
-      authService: FakeAuthService(fakeUser: emailUser),
-    )..init();
-    final fakeService = CapturingUserService();
-    final userProvider = UserProvider(userService: fakeService);
+    final authRepo = _FakeAuthRepository(emailUser);
+    final userRepo = _CapturingUserRepository();
 
-    await tester.pumpWidget(
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider<app.AuthProvider>.value(value: authProvider),
-          ChangeNotifierProvider<UserProvider>.value(value: userProvider),
-        ],
-        child: const MaterialApp(
-          home: ProfileSetupScreen(
-            userId: 'test-email-id',
-            email: 'email@user.com',
-            displayName: 'Email User',
-            role: UserRole.farmer,
-          ),
-        ),
+    await tester.pumpWidget(_buildApp(
+      home: const ProfileSetupScreen(
+        userId: 'test-email-id',
+        email: 'email@user.com',
+        displayName: 'Email User',
+        role: UserRole.farmer,
       ),
-    );
+      authRepo: authRepo,
+      userRepo: userRepo,
+    ));
+    await tester.pumpAndSettle();
 
-    // fill some farmer fields
+    // Fill farmer fields
     await tester.enterText(find.byType(TextFormField).at(0), '5');
     await tester.enterText(find.byType(TextFormField).at(1), 'Somewhere');
     await tester.enterText(find.byType(TextFormField).at(2), 'Bourbon');
@@ -220,11 +225,11 @@ void main() {
     await tester.tap(find.text('Save Profile'));
     await tester.pumpAndSettle();
 
-    expect(fakeService.lastCreated, isNotNull);
-    expect(fakeService.lastCreated!.isVerified, isTrue);
+    expect(userRepo.lastCreated, isNotNull);
+    expect(userRepo.lastCreated!.isVerified, isFalse);
     expect(
-      fakeService.lastCreated!.verificationStatus,
-      equals(VerificationStatus.verified),
+      userRepo.lastCreated!.verificationStatus,
+      equals(VerificationStatus.unverified),
     );
   });
 }

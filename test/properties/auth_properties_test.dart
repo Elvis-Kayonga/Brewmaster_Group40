@@ -9,8 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:faker/faker.dart';
 
-import 'package:brewmaster/data/services/auth_service.dart';
-import 'package:brewmaster/data/providers/auth_provider.dart' as app;
+import 'package:brewmaster/data/repositories/firebase_auth_repository.dart';
 
 // --- Manual mock implementations for Firebase Auth (platform-dependent) ---
 
@@ -27,7 +26,9 @@ class FakeUser implements User {
   final String _uid;
   final String? _email;
 
-  FakeUser({required String uid, String? email}) : _uid = uid, _email = email;
+  FakeUser({required String uid, String? email})
+      : _uid = uid,
+        _email = email;
 
   @override
   String get uid => _uid;
@@ -100,7 +101,8 @@ class FakeFirebaseAuth implements FirebaseAuth {
   }
 
   @override
-  Future<UserCredential> signInWithCredential(AuthCredential credential) async {
+  Future<UserCredential> signInWithCredential(
+      AuthCredential credential) async {
     callLog.signInWithCredentialCalls++;
     if (shouldFail) {
       throw FirebaseAuthException(
@@ -190,12 +192,13 @@ void main() {
   group('Property 1: Authentication Method Support', () {
     late FakeFirebaseAuth fakeAuth;
     late FakeGoogleSignIn fakeGoogleSignIn;
-    late AuthService authService;
+    late FirebaseAuthRepository authRepo;
 
     setUp(() {
       fakeAuth = FakeFirebaseAuth();
       fakeGoogleSignIn = FakeGoogleSignIn();
-      authService = AuthService(auth: fakeAuth, googleSignIn: fakeGoogleSignIn);
+      authRepo = FirebaseAuthRepository(
+          auth: fakeAuth, googleSignIn: fakeGoogleSignIn);
     });
 
     // Property 1a: Email/password sign-up returns a non-null user for any valid input
@@ -208,7 +211,7 @@ void main() {
             length: 8 + faker.randomGenerator.integer(20),
           );
 
-          final user = await authService.signUpWithEmail(email, password);
+          final user = await authRepo.register(email, password);
 
           expect(
             user,
@@ -219,7 +222,8 @@ void main() {
           expect(
             user!.email,
             equals(email),
-            reason: 'Returned user email should match the registration email',
+            reason:
+                'Returned user email should match the registration email',
           );
         }
 
@@ -242,7 +246,7 @@ void main() {
             length: 8 + faker.randomGenerator.integer(20),
           );
 
-          final user = await authService.signInWithEmail(email, password);
+          final user = await authRepo.signIn(email, password);
 
           expect(
             user,
@@ -271,7 +275,7 @@ void main() {
       'Google sign-in succeeds and returns a user (100 iterations)',
       () async {
         for (int i = 0; i < 100; i++) {
-          final user = await authService.signInWithGoogle();
+          final user = await authRepo.signInWithGoogle();
 
           expect(
             user,
@@ -283,12 +287,14 @@ void main() {
         expect(
           fakeGoogleSignIn.signInCalls,
           equals(100),
-          reason: 'GoogleSignIn.signIn() should be called exactly 100 times',
+          reason:
+              'GoogleSignIn.signIn() should be called exactly 100 times',
         );
         expect(
           fakeAuth.callLog.signInWithCredentialCalls,
           equals(100),
-          reason: 'signInWithCredential should be called exactly 100 times',
+          reason:
+              'signInWithCredential should be called exactly 100 times',
         );
       },
     );
@@ -305,13 +311,13 @@ void main() {
           final User? user;
           switch (i % 3) {
             case 0:
-              user = await authService.signUpWithEmail(email, password);
+              user = await authRepo.register(email, password);
               break;
             case 1:
-              user = await authService.signInWithEmail(email, password);
+              user = await authRepo.signIn(email, password);
               break;
             default:
-              user = await authService.signInWithGoogle();
+              user = await authRepo.signInWithGoogle();
               break;
           }
 
@@ -330,11 +336,12 @@ void main() {
     );
 
     // Property 1e: Google sign-in gracefully returns null when user cancels
-    test('Google sign-in returns null when user cancels (100 iterations)', () async {
+    test('Google sign-in returns null when user cancels (100 iterations)',
+        () async {
       fakeGoogleSignIn.simulateCancel = true;
 
       for (int i = 0; i < 100; i++) {
-        final user = await authService.signInWithGoogle();
+        final user = await authRepo.signInWithGoogle();
 
         expect(
           user,
@@ -352,48 +359,5 @@ void main() {
             'signInWithCredential should not be called when Google sign-in is cancelled',
       );
     });
-
-    // Property 1f: AuthProvider delegates correctly to AuthService for both methods
-    test(
-      'AuthProvider delegates to AuthService for both auth methods (100 iterations)',
-      () async {
-        final authProvider = app.AuthProvider(authService: authService);
-
-        for (int i = 0; i < 100; i++) {
-          final email = faker.internet.email();
-          final password = faker.internet.password(length: 10);
-
-          bool result;
-          if (i.isEven) {
-            result = await authProvider.signUp(email, password);
-          } else {
-            result = await authProvider.signIn(email, password);
-          }
-
-          expect(
-            result,
-            isTrue,
-            reason:
-                'AuthProvider should return true on successful auth (iteration $i)',
-          );
-          expect(
-            authProvider.isAuthenticated,
-            isTrue,
-            reason:
-                'AuthProvider should be authenticated after auth (iteration $i)',
-          );
-          expect(
-            authProvider.errorMessage,
-            isNull,
-            reason: 'No error should be set on success (iteration $i)',
-          );
-          expect(
-            authProvider.isLoading,
-            isFalse,
-            reason: 'Loading should be false after completion (iteration $i)',
-          );
-        }
-      },
-    );
   });
 }
