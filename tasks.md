@@ -539,10 +539,10 @@ These tasks establish the foundation that all other developers depend on. Estima
   - _Requirements: 7.1, 7.2, 7.3_
   - _Developer: Developer 1_
 
-- [ ] 26. Build verification UI (Developer 1 + Developer 2)
-  - [ ] 26.1 Create VerificationRequestScreen (Developer 1)
-  - [ ] 26.2 Create VerificationBadge widget and integrate into profiles and listings (Developer 2 creates widget, Developer 1 integrates into profiles, Developer 2 integrates into listings)
-  - [ ]* 26.3 Write property tests for badge propagation, search prioritization, trusted buyer badge
+- [x] 26. Build verification UI (Developer 1 + Developer 2)
+  - [x] 26.1 Create VerificationRequestScreen (Developer 1)
+  - [x] 26.2 Create VerificationBadge widget and integrate into profiles and listings (Developer 2 creates widget, Developer 1 integrates into profiles, Developer 2 integrates into listings)
+  - [x]* 26.3 Write property tests for badge propagation, search prioritization, trusted buyer badge
   - _Requirements: 7.2, 7.4, 7.5, 7.6_
   - _Developer: Developer 1 + Developer 2_
 

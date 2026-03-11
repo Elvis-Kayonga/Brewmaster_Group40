@@ -10,7 +10,9 @@ import 'package:brewmaster/presentation/widgets/common/loading_indicator.dart';
 import 'package:brewmaster/presentation/widgets/common/error_state_widget.dart';
 import 'package:brewmaster/presentation/widgets/common/status_badge.dart';
 import 'package:brewmaster/presentation/screens/profile/edit_profile_screen.dart';
+import 'package:brewmaster/presentation/screens/profile/verification_request_screen.dart';
 import 'package:brewmaster/presentation/screens/dashboard/dashboard_screen.dart';
+import 'package:brewmaster/presentation/widgets/common/verification_badge.dart';
 
 /// Profile screen displaying user information.
 class ProfileScreen extends StatefulWidget {
@@ -161,6 +163,28 @@ UserProfile? _profileFromState(ProfileState state) {
                       ),
                     ],
                   ),
+                ),
+                const SizedBox(height: AppTheme.padding8),
+                // Identity verification badge + action
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    VerificationBadge(status: profile.verificationStatus),
+                    if (profile.verificationStatus.name == 'unverified' ||
+                        profile.verificationStatus.name == 'rejected') ...[
+                      const SizedBox(width: AppTheme.padding8),
+                      TextButton.icon(
+                        icon: const Icon(Icons.upload_file),
+                        label: const Text('Get Verified'),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const VerificationRequestScreen(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: AppTheme.padding32),
                 const Divider(),
