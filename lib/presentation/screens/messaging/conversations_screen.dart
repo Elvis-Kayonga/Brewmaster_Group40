@@ -7,6 +7,7 @@ import '../../blocs/messaging/messaging_bloc.dart';
 import '../../widgets/common/empty_state_widget.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/loading_indicator.dart';
+import '../../widgets/common/sync_status_indicator.dart';
 import 'chat_screen.dart';
 
 /// Screen displaying all conversations for the current user.
@@ -39,7 +40,11 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Messages'), elevation: 0),
+      appBar: AppBar(
+        title: const Text('Messages'),
+        elevation: 0,
+        actions: const [SyncStatusIndicator()],
+      ),
       body: BlocBuilder<MessagingBloc, MessagingState>(
         builder: (context, state) {
           if (state is MessagingLoading || state is MessagingInitial) {
