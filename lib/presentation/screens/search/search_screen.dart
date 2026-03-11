@@ -15,6 +15,7 @@ import '../../widgets/common/custom_text_field.dart';
 import '../../widgets/common/empty_state_widget.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/listing/listing_card.dart';
+import '../../widgets/common/sync_status_indicator.dart';
 import '../listings/listing_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -88,7 +89,11 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Search Listings'), elevation: 0),
+      appBar: AppBar(
+        title: const Text('Search Listings'),
+        elevation: 0,
+        actions: const [SyncStatusIndicator()],
+      ),
       body: Column(
         children: [
           Padding(

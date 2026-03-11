@@ -493,13 +493,13 @@ These tasks establish the foundation that all other developers depend on. Estima
 
 #### Offline Sync (Developer 6)
 
-- [ ] 22. Implement offline sync system (Developer 6)
-  - [ ] 22.1 Create OfflineSyncRepository interface and FirebaseOfflineSyncRepository implementation
+- [x] 22. Implement offline sync system (Developer 6)
+  - [x] 22.1 Create OfflineSyncRepository interface and FirebaseOfflineSyncRepository implementation
     - Create lib/domain/repositories/offline_sync_repository.dart (abstract interface)
       - Define: `enqueueOperation()`, `processPendingQueue()`, `clearQueue()`, `watchConnectivity()` stream
     - Create lib/data/repositories/firebase_offline_sync_repository.dart with queue, retry logic, conflict resolution
-  - [ ]* 22.2 Write property tests for offline queue, conflict resolution, sync timestamp
-  - [ ] 22.3 Create ConnectivityBloc (connectivity_bloc.dart, connectivity_event.dart, connectivity_state.dart)
+  - [x]* 22.2 Write property tests for offline queue, conflict resolution, sync timestamp
+  - [x] 22.3 Create ConnectivityBloc (connectivity_bloc.dart, connectivity_event.dart, connectivity_state.dart)
     - Create lib/presentation/blocs/settings/connectivity_bloc.dart
     - Constructor receives `OfflineSyncRepository` (not connectivity_plus directly)
     - States extend `Equatable`: `ConnectivityOnline`, `ConnectivityOffline`, `ConnectivityUnknown`
@@ -507,15 +507,15 @@ These tasks establish the foundation that all other developers depend on. Estima
   - _Requirements: 9.2, 9.3, 9.4, 9.5, 9.6_
   - _Developer: Developer 6_
 
-- [ ] 23. Build offline support UI (Developer 6)
-  - [ ] 23.1 Create SyncStatusIndicator widget
-  - [ ] 23.2 Integrate offline indicators across app
+- [x] 23. Build offline support UI (Developer 6)
+  - [x] 23.1 Create SyncStatusIndicator widget
+  - [x] 23.2 Integrate offline indicators across app
   - _Requirements: 9.5, 9.6, 9.8_
   - _Developer: Developer 6_
 
-- [ ] 24. Implement image handling for offline (Developer 6)
-  - [ ] 24.1 Create ImageCompressionService with compression, queue, retry
-  - [ ]* 24.2 Write property tests for image compression, caching
+- [x] 24. Implement image handling for offline (Developer 6)
+  - [x] 24.1 Create ImageCompressionService with compression, queue, retry
+  - [x]* 24.2 Write property tests for image compression, caching
   - _Requirements: 9.7, 14.2_
   - _Developer: Developer 6_
 

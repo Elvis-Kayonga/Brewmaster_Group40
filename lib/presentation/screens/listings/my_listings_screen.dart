@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../config/theme.dart';
 import '../../blocs/listing/listing_bloc.dart';
 import '../../widgets/common/empty_state_widget.dart';
+import '../../widgets/common/sync_status_indicator.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/listing/listing_card.dart';
@@ -37,7 +38,11 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('My Listings'), elevation: 0),
+      appBar: AppBar(
+        title: const Text('My Listings'),
+        elevation: 0,
+        actions: const [SyncStatusIndicator()],
+      ),
       body: BlocConsumer<ListingBloc, ListingState>(
         listener: (context, state) {
           if (state is ListingActionSuccess) {
