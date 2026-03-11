@@ -364,14 +364,14 @@ These tasks establish the foundation that all other developers depend on. Estima
 
 #### Messaging & Notifications (Developer 3)
 
-- [ ] 9. Implement messaging system (Developer 3)
-  - [ ] 9.1 Create MessageRepository interface and FirebaseMessageRepository implementation
+- [x] 9. Implement messaging system (Developer 3)
+  - [x] 9.1 Create MessageRepository interface and FirebaseMessageRepository implementation
     - Create lib/domain/repositories/message_repository.dart (abstract interface)
       - Define: `sendMessage()`, `getConversations()`, `getMessages()`, `markAsRead()`, `watchConversations()` stream, `watchMessages()` stream
     - Create lib/data/repositories/firebase_message_repository.dart (implements MessageRepository)
       - All Firestore imports stay here — never in UI or BLoC
-  - [ ]* 9.2 Write property tests for message delivery, unread counts, read status
-  - [ ] 9.3 Create MessagingBloc (messaging_bloc.dart, messaging_event.dart, messaging_state.dart)
+  - [x]* 9.2 Write property tests for message delivery, unread counts, read status
+  - [x] 9.3 Create MessagingBloc (messaging_bloc.dart, messaging_event.dart, messaging_state.dart)
     - Create lib/presentation/blocs/messaging/messaging_bloc.dart
     - Constructor receives `MessageRepository` (not Firebase directly)
     - Events: `ConversationsLoadRequested`, `MessagesLoadRequested`, `MessageSendRequested`, `MessagesMarkReadRequested`
@@ -379,27 +379,27 @@ These tasks establish the foundation that all other developers depend on. Estima
   - _Requirements: 5.2, 5.3, 5.5, 5.6, 16.1 (Clean Architecture), 16.3 (BLoC state management)_
   - _Developer: Developer 3_
 
-- [ ] 10. Build messaging UI (Developer 3)
-  - [ ] 10.1 Create ConversationsScreen using common widgets from Phase 0
+- [x] 10. Build messaging UI (Developer 3)
+  - [x] 10.1 Create ConversationsScreen using common widgets from Phase 0
     - Create lib/presentation/screens/messaging/conversations_screen.dart
-  - [ ] 10.2 Create ChatScreen with message bubbles, voice input placeholder
+  - [x] 10.2 Create ChatScreen with message bubbles, voice input placeholder
     - Create lib/presentation/screens/messaging/chat_screen.dart
-  - [ ]* 10.3 Write property test for listing references
+  - [x]* 10.3 Write property test for listing references
   - _Requirements: 5.2, 5.5, 5.6, 5.7, 5.8, 16.1 (Clean Architecture)_
   - _Developer: Developer 3_
 
-- [ ] 11. Implement notification system (Developer 3)
-  - [ ] 11.1 Create NotificationRepository interface and FirebaseNotificationRepository implementation
+- [x] 11. Implement notification system (Developer 3)
+  - [x] 11.1 Create NotificationRepository interface and FirebaseNotificationRepository implementation
     - Create lib/domain/repositories/notification_repository.dart (abstract interface)
       - Define: `requestPermission()`, `getToken()`, `watchNotifications()` stream
     - Create lib/data/repositories/firebase_notification_repository.dart with FCM integration
-  - [ ] 11.2 Create NotificationBloc (notification_bloc.dart, notification_event.dart, notification_state.dart)
+  - [x] 11.2 Create NotificationBloc (notification_bloc.dart, notification_event.dart, notification_state.dart)
     - Create lib/presentation/blocs/messaging/notification_bloc.dart
     - Constructor receives `NotificationRepository` (not FCM/Firebase directly)
     - Events: `NotificationPermissionRequested`, `NotificationReceived`
     - States: `NotificationInitial`, `NotificationGranted`, `NotificationDenied`, `NotificationFailure(message)`
-  - [ ]* 11.3 Write property test for notification preferences
-  - [ ] 11.4 Integrate notifications with messaging
+  - [x]* 11.3 Write property test for notification preferences
+  - [x] 11.4 Integrate notifications with messaging
   - _Requirements: 5.4, 12.1, 12.2, 12.3, 12.6, 12.7_
   - _Developer: Developer 3_
 
