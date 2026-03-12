@@ -566,25 +566,25 @@ These tasks establish the foundation that all other developers depend on. Estima
 
 #### Accessibility & UI Polish
 
-- [ ] 29. Implement accessibility features (Developer 6)
-  - [ ] 29.1 Create VoiceInputWidget with speech recognition
-  - [ ] 29.2 Implement localization (English, Kinyarwanda, Swahili)
-  - [ ]* 29.3 Write property test for localization
-  - [ ] 29.4 Implement error handling UI improvements
-  - [ ]* 29.5 Write property test for error messages
+- [x] 29. Implement accessibility features (Developer 6)
+  - [x] 29.1 Create VoiceInputWidget with speech recognition
+  - [x] 29.2 Implement localization (English, Kinyarwanda, Swahili)
+  - [x]* 29.3 Write property test for localization
+  - [x] 29.4 Implement error handling UI improvements
+  - [x]* 29.5 Write property test for error messages
   - _Requirements: 1.5, 5.7, 10.3, 10.6, 10.7_
   - _Developer: Developer 6_
 
-- [ ] 30. Create main app integration (Developer 6 + Developer 1)
-  - [ ] 30.1 Implement navigation structure with named routes, deep linking
-  - [ ] 30.2 Create main app scaffold with navigation
-  - [ ] 30.3 Wire all BLoCs in main.dart using `MultiBlocProvider` (Developer 6 + Developer 1 for Firebase init)
+- [x] 30. Create main app integration (Developer 6 + Developer 1)
+  - [x] 30.1 Implement navigation structure with named routes, deep linking
+  - [x] 30.2 Create main app scaffold with navigation
+  - [x] 30.3 Wire all BLoCs in main.dart using `MultiBlocProvider` (Developer 6 + Developer 1 for Firebase init)
     - Provide `AuthBloc`, `ProfileBloc`, `ListingBloc`, `MessagingBloc`, `NotificationBloc`, `PaymentBloc`, `DashboardBloc`, `MarketPriceBloc`, `ConnectivityBloc`, `VerificationBloc`
     - Each BLoC receives its corresponding repository via constructor injection
     - Instantiate Firebase repository implementations and inject into BLoCs at app root
     - Set `AuthGate` as home widget so routing is driven by `AuthBloc` state
-  - [ ] 30.4 Connect all screens to navigation
-  - [ ] 30.5 Integrate offline sync across all features
+  - [x] 30.4 Connect all screens to navigation
+  - [x] 30.5 Integrate offline sync across all features
   - _Requirements: 9.1, 9.2, 9.3, 9.5, 10.1, 11.6_
   - _Developer: Developer 6 (lead), Developer 1 (Firebase), Developer 3 (notifications)_
 

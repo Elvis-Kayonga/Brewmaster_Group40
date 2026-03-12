@@ -4,7 +4,7 @@ import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
 import 'package:brewmaster/presentation/screens/auth/login_screen.dart';
 import 'package:brewmaster/presentation/screens/auth/email_verification_screen.dart';
 import 'package:brewmaster/presentation/screens/auth/profile_setup_screen.dart';
-import 'package:brewmaster/presentation/screens/dashboard/dashboard_screen.dart';
+import 'package:brewmaster/presentation/widgets/common/home_shell.dart';
 
 /// Routes to the appropriate screen based on the current [AuthState].
 class AuthGate extends StatelessWidget {
@@ -15,7 +15,7 @@ class AuthGate extends StatelessWidget {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         if (state is AuthAuthenticated) {
-          return const DashboardScreen();
+          return HomeShell(profile: state.profile);
         }
         if (state is AuthNeedsProfile) {
           return ProfileSetupScreen(
