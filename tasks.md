@@ -594,17 +594,17 @@ These tasks establish the foundation that all other developers depend on. Estima
 
 #### Performance Optimization
 
-- [ ] 31. Implement performance optimizations (Developer 6)
-  - [ ] 31.1 Add pagination to all lists (FirebaseListingRepository, FirebaseMessageRepository, FirebasePaymentRepository)
-  - [ ]* 31.2 Write property test for pagination
-  - [ ] 31.3 Implement Firestore batching with BatchWriteService
-  - [ ]* 31.4 Write property test for batching
-  - [ ] 31.5 Optimize image loading (lazy loading, caching, thumbnails)
-  - [ ] 31.6 Profile app performance on low-end device (2GB RAM)
+- [x] 31. Implement performance optimizations (Developer 6)
+  - [x] 31.1 Add pagination to all lists (FirebaseListingRepository, FirebaseMessageRepository, FirebasePaymentRepository)
+  - [x]* 31.2 Write property test for pagination
+  - [x] 31.3 Implement Firestore batching with BatchWriteService
+  - [x]* 31.4 Write property test for batching
+  - [x] 31.5 Optimize image loading (lazy loading, caching, thumbnails)
+  - [x] 31.6 Profile app performance on low-end device (2GB RAM)
   - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5_
   - _Developer: Developer 6_
 
-- [ ] 32. Checkpoint - Performance optimizations complete (Developer 6 + All)
+- [x] 32. Checkpoint - Performance optimizations complete (Developer 6 + All)
   - _Developer: Developer 6 (lead), All developers test their features_
 
 #### Testing

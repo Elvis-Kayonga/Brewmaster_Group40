@@ -6,6 +6,7 @@
 
 import 'dart:io';
 import '../models/coffee_listing.dart';
+import '../models/paginated_result.dart';
 import '../models/search_filters.dart';
 
 abstract class ListingRepository {
@@ -30,4 +31,12 @@ abstract class ListingRepository {
 
   /// One-shot filtered search.
   Future<List<CoffeeListing>> searchListings(SearchFilters filters);
+
+  /// Paginated fetch of active listings ordered by createdAt descending.
+  /// Pass [startAfter] from the previous [PaginatedResult.cursor] to get
+  /// the next page.
+  Future<PaginatedResult<CoffeeListing>> getListingPage({
+    int pageSize = 20,
+    Object? startAfter,
+  });
 }

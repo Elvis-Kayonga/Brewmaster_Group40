@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:brewmaster/domain/models/coffee_listing.dart';
 import 'package:brewmaster/domain/models/search_filters.dart';
+import 'package:brewmaster/domain/models/paginated_result.dart';
 import 'package:brewmaster/domain/repositories/listing_repository.dart';
 import 'package:brewmaster/presentation/blocs/listing/listing_bloc.dart';
 import 'package:brewmaster/presentation/screens/search/search_screen.dart';
@@ -30,6 +31,12 @@ class _FakeListingRepository implements ListingRepository {
   @override
   Future<List<CoffeeListing>> searchListings(SearchFilters filters) async =>
       [];
+  @override
+  Future<PaginatedResult<CoffeeListing>> getListingPage({
+    int pageSize = 20,
+    Object? startAfter,
+  }) async =>
+      const PaginatedResult<CoffeeListing>(items: [], hasMore: false);
 }
 
 Widget _wrap(Widget child) => MaterialApp(

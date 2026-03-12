@@ -1,5 +1,6 @@
 import '../models/conversation.dart';
 import '../models/message.dart';
+import '../models/paginated_result.dart';
 
 /// Abstract interface for messaging operations.
 ///
@@ -29,4 +30,13 @@ abstract class MessageRepository {
 
   /// Total unread message count across all conversations.
   Future<int> getTotalUnreadCount();
+
+  /// Paginated fetch of messages in [conversationId] ordered by createdAt
+  /// descending. Pass [startAfter] from [PaginatedResult.cursor] for the
+  /// next page.
+  Future<PaginatedResult<Message>> getMessagePage({
+    required String conversationId,
+    int pageSize = 30,
+    Object? startAfter,
+  });
 }

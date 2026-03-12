@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../../domain/models/coffee_listing.dart';
+import '../../domain/models/paginated_result.dart';
 import '../../domain/models/search_filters.dart';
 import '../../domain/repositories/listing_repository.dart';
 
@@ -119,6 +120,31 @@ class FirebaseListingRepository implements ListingRepository {
     return snapshot.docs
         .map((d) => CoffeeListing.fromJson(d.data()))
         .toList();
+  }
+
+  @override
+  Future<PaginatedResult<CoffeeListing>> getListingPage({
+    int pageSize = 20,
+    Object? startAfter,
+  }) async {
+    Query<Map<String, dynamic>> query = _col
+        .where('status', isEqualTo: 'active')
+        .orderBy('createdAt', descending: true)
+        .limit(pageSize + 1); // fetch one extra to detect hasMore
+
+    if (startAfter is DocumentSnapshot) {
+      query = query.startAfterDocument(startAfter);
+    }
+
+    final snapshot = await query.get();
+    final hasMore = snapshot.docs.length > pageSize;
+    final docs = hasMore ? snapshot.docs.sublist(0, pageSize) : snapshot.docs;
+
+    return PaginatedResult<CoffeeListing>(
+      items: docs.map((d) => CoffeeListing.fromJson(d.data())).toList(),
+      hasMore: hasMore,
+      cursor: docs.isNotEmpty ? docs.last : null,
+    );
   }
 
   Future<List<String>> _uploadImages(

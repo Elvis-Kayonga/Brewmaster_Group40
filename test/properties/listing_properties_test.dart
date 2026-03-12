@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:brewmaster/domain/models/coffee_listing.dart';
 import 'package:brewmaster/domain/models/enums.dart';
 import 'package:brewmaster/domain/models/search_filters.dart';
+import 'package:brewmaster/domain/models/paginated_result.dart';
 import 'package:brewmaster/domain/repositories/listing_repository.dart';
 import 'package:brewmaster/domain/validators/coffee_listing_validator.dart';
 
@@ -88,6 +89,13 @@ class FakeListingRepository implements ListingRepository {
       return true;
     }).toList();
   }
+
+  @override
+  Future<PaginatedResult<CoffeeListing>> getListingPage({
+    int pageSize = 20,
+    Object? startAfter,
+  }) async =>
+      PaginatedResult<CoffeeListing>(items: List.from(_store), hasMore: false);
 
   List<CoffeeListing> get all => List.unmodifiable(_store);
 }

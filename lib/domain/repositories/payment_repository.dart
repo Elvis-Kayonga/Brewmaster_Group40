@@ -1,5 +1,6 @@
 import 'package:brewmaster/domain/models/escrow_transaction.dart';
 import 'package:brewmaster/domain/models/enums.dart';
+import 'package:brewmaster/domain/models/paginated_result.dart';
 
 /// Abstract interface for escrow payment operations.
 abstract class PaymentRepository {
@@ -38,4 +39,13 @@ abstract class PaymentRepository {
 
   /// Fetch aggregated statistics for a farmer user.
   Future<Map<String, dynamic>> getUserStatistics(String userId);
+
+  /// Paginated fetch of transactions for [userId] ordered by createdAt
+  /// descending. Pass [startAfter] from [PaginatedResult.cursor] for the
+  /// next page.
+  Future<PaginatedResult<Transaction>> getTransactionPage({
+    required String userId,
+    int pageSize = 20,
+    Object? startAfter,
+  });
 }

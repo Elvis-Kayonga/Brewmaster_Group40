@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../domain/models/conversation.dart';
 import '../../domain/models/message.dart';
+import '../../domain/models/paginated_result.dart';
 import '../../domain/repositories/message_repository.dart';
 
 /// Firebase implementation of [MessageRepository].
@@ -155,6 +156,34 @@ class FirebaseMessageRepository implements MessageRepository {
         .set(convo.toJson());
 
     return convo;
+  }
+
+  @override
+  Future<PaginatedResult<Message>> getMessagePage({
+    required String conversationId,
+    int pageSize = 30,
+    Object? startAfter,
+  }) async {
+    Query<Map<String, dynamic>> query = _firestore
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .orderBy('createdAt', descending: true)
+        .limit(pageSize + 1);
+
+    if (startAfter is DocumentSnapshot) {
+      query = query.startAfterDocument(startAfter);
+    }
+
+    final snapshot = await query.get();
+    final hasMore = snapshot.docs.length > pageSize;
+    final docs = hasMore ? snapshot.docs.sublist(0, pageSize) : snapshot.docs;
+
+    return PaginatedResult<Message>(
+      items: docs.map((d) => Message.fromJson(d.data())).toList(),
+      hasMore: hasMore,
+      cursor: docs.isNotEmpty ? docs.last : null,
+    );
   }
 
   @override
