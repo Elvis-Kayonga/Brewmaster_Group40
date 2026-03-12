@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:brewmaster/domain/models/escrow_transaction.dart' as models;
 import 'package:brewmaster/domain/models/enums.dart';
+import 'package:brewmaster/domain/models/paginated_result.dart';
 import 'package:brewmaster/domain/repositories/payment_repository.dart';
 
 /// Firebase/Firestore implementation of [PaymentRepository].
@@ -234,5 +235,31 @@ class FirebasePaymentRepository implements PaymentRepository {
 
     await _transactions.doc(transaction.id).update(updated.toFirestore());
     return updated;
+  }
+
+  @override
+  Future<PaginatedResult<models.Transaction>> getTransactionPage({
+    required String userId,
+    int pageSize = 20,
+    Object? startAfter,
+  }) async {
+    Query<Map<String, dynamic>> query = _transactions
+        .where('buyerId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .limit(pageSize + 1);
+
+    if (startAfter is DocumentSnapshot) {
+      query = query.startAfterDocument(startAfter);
+    }
+
+    final snapshot = await query.get();
+    final hasMore = snapshot.docs.length > pageSize;
+    final docs = hasMore ? snapshot.docs.sublist(0, pageSize) : snapshot.docs;
+
+    return PaginatedResult<models.Transaction>(
+      items: docs.map((d) => models.Transaction.fromFirestore(d)).toList(),
+      hasMore: hasMore,
+      cursor: docs.isNotEmpty ? docs.last : null,
+    );
   }
 }

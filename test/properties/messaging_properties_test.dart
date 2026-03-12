@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:brewmaster/domain/models/conversation.dart';
 import 'package:brewmaster/domain/models/message.dart';
+import 'package:brewmaster/domain/models/paginated_result.dart';
 import 'package:brewmaster/domain/repositories/message_repository.dart';
 import 'package:brewmaster/domain/repositories/notification_repository.dart';
 
@@ -88,6 +89,15 @@ class FakeMessageRepository implements MessageRepository {
   Future<int> getTotalUnreadCount() async {
     return _conversations.fold<int>(0, (acc, c) => acc + c.unreadCount);
   }
+
+  @override
+  Future<PaginatedResult<Message>> getMessagePage({
+    required String conversationId,
+    int pageSize = 30,
+    Object? startAfter,
+  }) async =>
+      PaginatedResult<Message>(
+          items: List.from(_messages[conversationId] ?? []), hasMore: false);
 
   List<Message> get sentMessages => List.unmodifiable(_sent);
 }
