@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:brewmaster/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:brewmaster/app_router.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:brewmaster/data/repositories/firebase_auth_repository.dart';
 import 'package:brewmaster/data/repositories/firebase_user_repository.dart';
 import 'package:brewmaster/data/repositories/firebase_payment_repository.dart';
@@ -11,9 +14,13 @@ import 'package:brewmaster/data/repositories/firebase_message_repository.dart';
 import 'package:brewmaster/data/repositories/firebase_notification_repository.dart';
 import 'package:brewmaster/data/repositories/firebase_offline_sync_repository.dart';
 import 'package:brewmaster/data/repositories/firebase_verification_repository.dart';
+import 'package:brewmaster/data/repositories/firebase_dashboard_repository.dart';
+import 'package:brewmaster/data/repositories/firebase_market_price_repository.dart';
 import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
 import 'package:brewmaster/presentation/blocs/connectivity/connectivity_bloc.dart';
+import 'package:brewmaster/presentation/blocs/dashboard/dashboard_bloc.dart';
 import 'package:brewmaster/presentation/blocs/listing/listing_bloc.dart';
+import 'package:brewmaster/presentation/blocs/market_price/market_price_bloc.dart';
 import 'package:brewmaster/presentation/blocs/profile/profile_bloc.dart';
 import 'package:brewmaster/presentation/blocs/payment/payment_bloc.dart';
 import 'package:brewmaster/presentation/blocs/messaging/messaging_bloc.dart';
@@ -41,6 +48,8 @@ Future<void> main() async {
   final notificationRepository = FirebaseNotificationRepository();
   final offlineSyncRepository = FirebaseOfflineSyncRepository();
   final verificationRepository = FirebaseVerificationRepository();
+  final dashboardRepository = FirebaseDashboardRepository();
+  final marketPriceRepository = FirebaseMarketPriceRepository();
 
   runApp(
     MultiBlocProvider(
@@ -75,6 +84,13 @@ Future<void> main() async {
           create: (_) =>
               VerificationBloc(repository: verificationRepository),
         ),
+        BlocProvider<DashboardBloc>(
+          create: (_) => DashboardBloc(repository: dashboardRepository),
+        ),
+        BlocProvider<MarketPriceBloc>(
+          create: (_) =>
+              MarketPriceBloc(repository: marketPriceRepository),
+        ),
       ],
       child: const BrewMasterApp(),
     ),
@@ -92,6 +108,16 @@ class BrewMasterApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
         useMaterial3: true,
       ),
+      // Localization
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      // Named routes
+      onGenerateRoute: generateRoute,
       home: const AuthGate(),
     );
   }
