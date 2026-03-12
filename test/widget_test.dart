@@ -1,30 +1,68 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// Smoke test: verifies the app's unauthenticated entry point renders correctly.
 
-import 'package:brewmaster/presentation/screens/messaging/conversations_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb;
 
+import 'package:brewmaster/domain/repositories/auth_repository.dart';
+import 'package:brewmaster/domain/repositories/user_repository.dart';
+import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
+import 'package:brewmaster/presentation/blocs/profile/profile_bloc.dart';
+import 'package:brewmaster/presentation/screens/auth/auth_gate.dart';
+import 'package:brewmaster/presentation/screens/auth/login_screen.dart';
+
+class _FakeAuthRepository implements AuthRepository {
+  @override
+  fb.User? get currentUser => null;
+  @override
+  Stream<fb.User?> get authStateChanges => Stream.value(null);
+  @override
+  Future<fb.User?> register(String e, String p) async => null;
+  @override
+  Future<fb.User?> signIn(String e, String p) async => null;
+  @override
+  Future<fb.User?> signInWithGoogle() async => null;
+  @override
+  Future<void> signOut() async {}
+  @override
+  Future<void> sendPasswordResetEmail(String e) async {}
+  @override
+  Future<bool> sendEmailVerification() async => true;
+  @override
+  Future<bool> isEmailVerified() async => false;
+}
+
+class _FakeUserRepository implements UserRepository {
+  @override
+  dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
+}
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const ConversationsScreen ());
+  testWidgets('Smoke test: unauthenticated app shows AuthGate and LoginScreen',
+      (WidgetTester tester) async {
+    final authRepo = _FakeAuthRepository();
+    final userRepo = _FakeUserRepository();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>(
+            create: (_) => AuthBloc(
+              authRepository: authRepo,
+              userRepository: userRepo,
+            ),
+          ),
+          BlocProvider<ProfileBloc>(
+            create: (_) => ProfileBloc(userRepository: userRepo),
+          ),
+        ],
+        child: const MaterialApp(home: AuthGate()),
+      ),
+    );
+    await tester.pumpAndSettle();
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.byType(AuthGate), findsOneWidget);
+    expect(find.byType(LoginScreen), findsOneWidget);
   });
 }

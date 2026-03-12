@@ -24,6 +24,12 @@ class _FakeUser implements fb.User {
   final bool emailVerified;
   @override
   final List<fb.UserInfo> providerData = const [];
+  @override
+  String? get displayName => null;
+  @override
+  String? get photoURL => null;
+  @override
+  String? get phoneNumber => null;
 
   _FakeUser({
     required this.uid,

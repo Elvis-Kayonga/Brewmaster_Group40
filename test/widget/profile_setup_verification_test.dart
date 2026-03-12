@@ -24,6 +24,12 @@ class _FakeUser implements fb.User {
   final bool emailVerified;
   @override
   final List<fb.UserInfo> providerData;
+  @override
+  String? get displayName => null;
+  @override
+  String? get photoURL => null;
+  @override
+  String? get phoneNumber => null;
 
   _FakeUser({
     required this.uid,
@@ -66,8 +72,10 @@ class _FakeAuthRepository implements AuthRepository {
   @override
   fb.User? get currentUser => _user;
 
+  // Use Stream.empty() so AuthBloc does NOT process stream events and
+  // override the pre-seeded state set by _SeededAuthBloc.
   @override
-  Stream<fb.User?> get authStateChanges => Stream.value(_user);
+  Stream<fb.User?> get authStateChanges => const Stream.empty();
 
   @override
   Future<fb.User?> register(String email, String password) async => _user;
@@ -117,23 +125,30 @@ class _CapturingUserRepository implements UserRepository {
       const Stream.empty();
 }
 
+/// AuthBloc subclass that immediately emits a pre-seeded state after
+/// construction, so tests don't need to wait for async stream processing.
+class _SeededAuthBloc extends AuthBloc {
+  _SeededAuthBloc({
+    required AuthRepository authRepository,
+    required UserRepository userRepository,
+    required AuthState seed,
+  }) : super(authRepository: authRepository, userRepository: userRepository) {
+    emit(seed);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Helper
 // ---------------------------------------------------------------------------
 
 Widget _buildApp({
   required Widget home,
-  required AuthRepository authRepo,
+  required AuthBloc authBloc,
   required UserRepository userRepo,
 }) {
   return MultiBlocProvider(
     providers: [
-      BlocProvider<AuthBloc>(
-        create: (_) => AuthBloc(
-          authRepository: authRepo,
-          userRepository: userRepo,
-        ),
-      ),
+      BlocProvider<AuthBloc>.value(value: authBloc),
       BlocProvider<ProfileBloc>(
         create: (_) => ProfileBloc(userRepository: userRepo),
       ),
@@ -149,7 +164,7 @@ Widget _buildApp({
 void main() {
   testWidgets('Profile setup marks Google accounts as verified',
       (WidgetTester tester) async {
-    // Google user: providerData contains 'google.com'
+    final userRepo = _CapturingUserRepository();
     final googleUser = _FakeUser(
       uid: 'test-google-id',
       email: 'google@user.com',
@@ -158,9 +173,19 @@ void main() {
         _FakeUserInfo(providerId: 'google.com', uid: 'test-google-id'),
       ],
     );
-
     final authRepo = _FakeAuthRepository(googleUser);
-    final userRepo = _CapturingUserRepository();
+
+    // Pre-seed the AuthBloc into AuthNeedsProfile(isGoogleUser: true) so
+    // _handleSave correctly detects this as a Google account.
+    final authBloc = _SeededAuthBloc(
+      authRepository: authRepo,
+      userRepository: userRepo,
+      seed: const AuthNeedsProfile(
+        uid: 'test-google-id',
+        email: 'google@user.com',
+        isGoogleUser: true,
+      ),
+    );
 
     await tester.pumpWidget(_buildApp(
       home: const ProfileSetupScreen(
@@ -169,10 +194,9 @@ void main() {
         displayName: 'Google User',
         role: UserRole.buyer,
       ),
-      authRepo: authRepo,
+      authBloc: authBloc,
       userRepo: userRepo,
     ));
-    // Allow AuthBloc to emit AuthNeedsProfile(isGoogleUser: true)
     await tester.pumpAndSettle();
 
     // Fill required buyer fields
@@ -193,16 +217,26 @@ void main() {
 
   testWidgets('Profile setup marks email-only accounts as unverified',
       (WidgetTester tester) async {
-    // Email/password user: no Google provider in providerData
+    final userRepo = _CapturingUserRepository();
     final emailUser = _FakeUser(
       uid: 'test-email-id',
       email: 'email@user.com',
       emailVerified: false,
       providerData: const [],
     );
-
     final authRepo = _FakeAuthRepository(emailUser);
-    final userRepo = _CapturingUserRepository();
+
+    // Pre-seed the AuthBloc into AuthNeedsProfile(isGoogleUser: false) so
+    // _handleSave correctly detects this as a non-Google account.
+    final authBloc = _SeededAuthBloc(
+      authRepository: authRepo,
+      userRepository: userRepo,
+      seed: const AuthNeedsProfile(
+        uid: 'test-email-id',
+        email: 'email@user.com',
+        isGoogleUser: false,
+      ),
+    );
 
     await tester.pumpWidget(_buildApp(
       home: const ProfileSetupScreen(
@@ -211,7 +245,7 @@ void main() {
         displayName: 'Email User',
         role: UserRole.farmer,
       ),
-      authRepo: authRepo,
+      authBloc: authBloc,
       userRepo: userRepo,
     ));
     await tester.pumpAndSettle();

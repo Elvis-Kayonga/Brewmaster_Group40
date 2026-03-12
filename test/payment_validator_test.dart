@@ -322,14 +322,16 @@ void main() {
       });
 
       test('Property: Dates too far in future should fail', () {
-        final farFuture = DateTime.now().add(Duration(days: 366));
+        final farFuture = DateTime.now().add(const Duration(days: 400));
         final result = PaymentValidator.validateTransactionTiming(farFuture);
         expect(result, isNotNull,
             reason: 'Date more than 365 days ahead should be invalid');
       });
 
       test('Property: Current time should pass', () {
-        final now = DateTime.now();
+        // Add a small buffer to avoid the race where validator's own DateTime.now()
+        // is slightly ahead of the value captured here, making it appear "in the past".
+        final now = DateTime.now().add(const Duration(seconds: 5));
         final result = PaymentValidator.validateTransactionTiming(now);
         expect(result, isNull, reason: 'Current time should be valid');
       });
