@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation plan breaks down the BrewMaster mobile application into discrete coding tasks for a team of 6 developers working in parallel. The plan follows clean architecture principles (Models → Services → Providers → UI) and prioritizes offline-first functionality with Firebase integration.
+This implementation plan breaks down the BrewMaster mobile application into discrete coding tasks for a team of 6 developers working in parallel. The plan follows clean architecture principles (Models → Repositories → BLoCs → UI) and prioritizes offline-first functionality with Firebase integration.
 
 **CRITICAL: This plan uses a foundation-first approach. Phase 0 MUST be completed before any other work begins to prevent conflicts, blockers, and friction between developers.**
 
@@ -21,7 +21,7 @@ This implementation plan breaks down the BrewMaster mobile application into disc
 
 - **presentation/**: UI layer (screens, widgets)
 - **domain/**: Business logic layer (models, validators)
-- **data/**: Data layer (services, providers, repositories)
+- **data/**: Data layer (Firebase repository implementations)
 - **config/**: App-wide configuration (theme, constants, routes)
 - **utils/**: Helper utilities
 
@@ -42,7 +42,7 @@ See **EXECUTION_ORDER.md** and **PHASE_0_CHECKLIST.md** for detailed guidance on
 These tasks establish the foundation that all other developers depend on. Estimated time: 2 days.
 
 - [x] 0.1 Project initialization and Firebase configuration (Developer 1) - **BLOCKING TASK**
-  - Create Flutter project with required dependencies (provider, firebase_core, firebase_auth, cloud_firestore, firebase_storage, firebase_messaging, image_picker, intl, connectivity_plus)
+  - Create Flutter project with required dependencies (flutter_bloc, equatable, firebase_core, firebase_auth, cloud_firestore, firebase_storage, firebase_messaging, google_sign_in, image_picker, intl, connectivity_plus, shared_preferences)
   - Set up Firebase project in Firebase Console (Firestore, Authentication, Storage, FCM)
   - Configure Firebase for Android (download google-services.json)
   - Generate firebase_options.dart using FlutterFire CLI
@@ -53,8 +53,9 @@ These tasks establish the foundation that all other developers depend on. Estima
     ```bash
     mkdir -p lib/presentation/screens/{auth,listings,search,messaging,payments,dashboard,profile}
     mkdir -p lib/presentation/widgets/{common,listing,message,dashboard}
-    mkdir -p lib/domain/{models,validators}
-    mkdir -p lib/data/{services,providers,repositories}
+    mkdir -p lib/presentation/blocs/{auth,listings,search,messaging,payments,dashboard,market_price,settings}
+    mkdir -p lib/domain/{models,validators,repositories}
+    mkdir -p lib/data/repositories
     mkdir -p lib/config/localization
     mkdir -p lib/utils
     mkdir -p test/{unit,properties,widgets}
@@ -184,55 +185,88 @@ These tasks establish the foundation that all other developers depend on. Estima
 
 #### Authentication & Profiles (Developer 1)
 
-- [ ] 1. Implement authentication system (Developer 1)
-  - [ ] 1.1 Create AuthService
-    - Create lib/data/services/auth_service.dart
-    - Implement signUpWithEmail() and signUpWithPhone()
-    - Implement signInWithEmail() and signInWithPhone()
-    - Implement signOut() and password reset
-    - Expose authStateChanges stream
-    - _Requirements: 1.2, 1.7, 16.1 (Clean Architecture)_
+- [x] 1. Implement authentication system (Developer 1)
+  - [x] 1.1 Create AuthRepository interface and FirebaseAuthRepository implementation
+    - Create lib/domain/repositories/auth_repository.dart (abstract interface — no Firebase imports)
+      - Define: `signIn()`, `register()`, `signInWithGoogle()`, `signOut()`, `sendEmailVerification()`, `getCurrentUserProfile()`, `createProfileFromCurrentUser()`, `authStateChanges` stream
+    - Create lib/data/repositories/firebase_auth_repository.dart (implements AuthRepository)
+      - Import FirebaseAuth, GoogleSignIn — **never imported in UI or BLoC**
+      - Expose `authStateChanges` as `Stream<User?>`
+    - _Requirements: 1.2, 1.7, 16.1 (Clean Architecture), 16.3 (BLoC — UI never touches Firebase directly)_
     - _Developer: Developer 1_
-  
-  - [ ]* 1.2 Write property test for authentication methods
+
+  - [x]* 1.2 Write property test for authentication methods
     - **Property 1: Authentication Method Support**
     - **Validates: Requirements 1.2**
     - _Developer: Developer 1_
-  
-  - [ ] 1.3 Create AuthProvider for state management
-    - Create lib/data/providers/auth_provider.dart
-    - Implement ChangeNotifier with currentUser state
-    - Add loading and error state management
-    - Implement signUp(), signIn(), signOut() methods
-    - _Requirements: 1.2, 1.7, 16.1 (Clean Architecture), 16.2 (Provider state management)_
+
+  - [x] 1.3 Create AuthBloc (auth_bloc.dart, auth_event.dart, auth_state.dart)
+    - Create lib/presentation/blocs/auth/auth_event.dart
+      - Events: `AuthCheckRequested`, `AuthSignInRequested`, `AuthRegisterRequested`, `AuthGoogleSignInRequested`, `AuthVerificationEmailRequested`, `AuthSignOutRequested`
+    - Create lib/presentation/blocs/auth/auth_state.dart
+      - States (all extend Equatable): `AuthInitial`, `AuthLoading`, `AuthAuthenticated(UserProfile)`, `AuthUnauthenticated`, `AuthEmailNotVerified`, `AuthVerificationEmailSent`, `AuthFailure(message)`
+    - Create lib/presentation/blocs/auth/auth_bloc.dart
+      - Constructor receives `AuthRepository` (not Firebase directly)
+      - Subscribe to `authRepository.authStateChanges` via `StreamSubscription`
+      - On `AuthCheckRequested`: subscribe to auth state stream
+      - On `_AuthUserChanged`: call `user.reload()`, check `emailVerified`, emit appropriate state
+      - On `AuthRegisterRequested`: call `register()` + `sendEmailVerification()`, emit `AuthEmailNotVerified`
+      - On `AuthSignInRequested`: call `signIn()`, check `emailVerified`, emit `AuthAuthenticated` or `AuthEmailNotVerified`
+      - Map `FirebaseAuthException` codes to user-friendly messages
+    - _Requirements: 1.2, 1.7, 16.1 (Clean Architecture), 16.3 (BLoC state management)_
     - _Developer: Developer 1_
-  
-  - [ ]* 1.4 Write property test for session persistence
+
+  - [x]* 1.4 Write property test for session persistence
     - **Property 3: Session State Persistence**
     - **Validates: Requirements 1.7**
     - _Developer: Developer 1_
 
-- [ ] 2. Build authentication UI screens (Developer 1)
-  - [ ] 2.1 Create LoginScreen
+- [x] 2. Build authentication UI screens (Developer 1)
+  - [x] 2.1 Create LoginScreen
     - Create lib/presentation/screens/auth/login_screen.dart
-    - Build email/phone input forms with validation using CustomTextField from Phase 0
+    - Build email input form with validation using CustomTextField from Phase 0
+    - Add Google sign-in button
     - Add sign-in button with loading state using CustomButton from Phase 0
     - Add navigation to SignupScreen
     - Implement error message display using ErrorStateWidget from Phase 0
     - _Requirements: 1.2, 10.7, 16.1 (Clean Architecture)_
     - _Developer: Developer 1_
   
-  - [ ] 2.2 Create SignupScreen
+  - [x] 2.2 Create SignupScreen
     - Create lib/presentation/screens/auth/signup_screen.dart
     - Build registration form with role selection (farmer/buyer) using CustomDropdown from Phase 0
     - Implement 3-step registration flow with icons
     - Add form validation
-    - Navigate to ProfileSetupScreen after signup
-    - Use CustomTextField and CustomButton from Phase 0
-    - _Requirements: 1.1, 1.2, 16.1 (Clean Architecture)_
+    - Dispatch `AuthRegisterRequested` event via BLoC; listen for `AuthEmailNotVerified` state → navigate to `EmailVerificationScreen`
+    - Use CustomTextField and CustomButton from Phase 0; **do NOT call Firebase directly**
+    - _Requirements: 1.1, 1.2, 16.1 (Clean Architecture), 16.3 (BLoC — no direct Firebase calls from UI)_
+    - _Developer: Developer 1_
+
+  - [x] 2.4 Create EmailVerificationScreen (KigaliConnect-style flow)
+    - Create lib/presentation/screens/auth/email_verification_screen.dart
+    - Use `Timer.periodic(Duration(seconds: 3))` to poll: call `FirebaseAuth.instance.currentUser?.reload()`, check `emailVerified`
+    - When verified: dispatch `AuthCheckRequested` to `AuthBloc`; call `Navigator.of(context).pop()` if `canPop()`
+    - Use `BlocConsumer` to show SnackBar on `AuthVerificationEmailSent` and `AuthFailure` states
+    - "Resend Email" button dispatches `AuthVerificationEmailRequested` event
+    - "Sign Out" button dispatches `AuthSignOutRequested` event
+    - Display loading state from `AuthLoading`; show message "This screen updates automatically once verified."
+    - Cancel timer in `dispose()`
+    - _Requirements: 1.1, 1.2 (AC9, AC10, AC11), 16.1 (Clean Architecture), 16.3 (BLoC — no direct Firebase calls from UI)_
+    - _Developer: Developer 1_
+
+  - [x] 2.5 Create AuthGate (routes based on AuthBloc state)
+    - Create lib/presentation/screens/auth/auth_gate.dart
+    - Use `BlocBuilder<AuthBloc, AuthState>` to route:
+      - `AuthInitial` / `AuthLoading` → LoadingIndicator
+      - `AuthAuthenticated` → AppShell (main app navigation)
+      - `AuthUnauthenticated` → LoginScreen
+      - `AuthEmailNotVerified` → EmailVerificationScreen
+    - Dispatch `AuthCheckRequested` in `initState`
+    - Set as home widget in MaterialApp
+    - _Requirements: 1.2, 16.1 (Clean Architecture), 16.3 (BLoC)_
     - _Developer: Developer 1_
   
-  - [ ] 2.3 Create ProfileSetupScreen
+  - [x] 2.3 Create ProfileSetupScreen
     - Create lib/presentation/screens/auth/profile_setup_screen.dart
     - Build farmer profile form (farm size, location, varieties) using CustomTextField and CustomDropdown
     - Build buyer profile form (business name, type, volume)
@@ -241,30 +275,30 @@ These tasks establish the foundation that all other developers depend on. Estima
     - _Requirements: 1.3, 1.4, 1.5, 16.1 (Clean Architecture)_
     - _Developer: Developer 1_
 
-- [ ] 3. Implement user profile management (Developer 1)
-  - [ ] 3.1 Create UserService
-    - Create lib/data/services/user_service.dart
-    - Implement getUserProfile() and createUserProfile()
-    - Implement updateUserProfile()
-    - Implement uploadVerificationDocuments()
-    - Expose watchUserProfile() stream
-    - _Requirements: 1.6, 1.8, 7.2, 16.1 (Clean Architecture)_
+- [x] 3. Implement user profile management (Developer 1)
+  - [x] 3.1 Create UserRepository interface and FirebaseUserRepository implementation
+    - Create lib/domain/repositories/user_repository.dart (abstract interface)
+      - Define: `getUserProfile()`, `createUserProfile()`, `updateUserProfile()`, `uploadVerificationDocuments()`, `watchUserProfile()` stream
+    - Create lib/data/repositories/firebase_user_repository.dart (implements UserRepository)
+      - All Firestore/Firebase imports stay here — never in UI or BLoC
+    - _Requirements: 1.6, 1.8, 7.2, 16.1 (Clean Architecture), 16.3 (BLoC — UI never touches Firebase directly)_
     - _Developer: Developer 1_
-  
-  - [ ]* 3.2 Write property test for profile updates
+
+  - [x]* 3.2 Write property test for profile updates
     - **Property 4: Profile Update Synchronization**
     - **Validates: Requirements 1.8**
     - _Developer: Developer 1_
-  
-  - [ ] 3.3 Create UserProvider for state management
-    - Create lib/data/providers/user_provider.dart
-    - Manage user profile state
-    - Handle profile loading and updates
-    - Cache profile data for offline access
-    - _Requirements: 1.6, 1.8, 16.1 (Clean Architecture), 16.2 (Provider state management)_
+
+  - [x] 3.3 Create ProfileBloc (profile_bloc.dart, profile_event.dart, profile_state.dart)
+    - Create lib/presentation/blocs/auth/profile_bloc.dart (or separate blocs/profile/ folder)
+    - Constructor receives `UserRepository` (not Firebase directly)
+    - Events: `ProfileLoadRequested`, `ProfileUpdateRequested`, `ProfileDocumentUploadRequested`
+    - States: `ProfileInitial`, `ProfileLoading`, `ProfileLoaded(UserProfile)`, `ProfileUpdateSuccess`, `ProfileFailure(message)`
+    - Manage user profile state; handle profile loading and updates; cache profile data for offline access
+    - _Requirements: 1.6, 1.8, 16.1 (Clean Architecture), 16.3 (BLoC state management)_
     - _Developer: Developer 1_
   
-  - [ ] 3.4 Create ProfileScreen
+  - [x] 3.4 Create ProfileScreen
     - Create lib/presentation/screens/profile/profile_screen.dart
     - Display user profile information
     - Add edit profile functionality
@@ -273,12 +307,12 @@ These tasks establish the foundation that all other developers depend on. Estima
     - _Requirements: 7.1, 7.2, 16.1 (Clean Architecture)_
     - _Developer: Developer 1_
 
-  - [ ]* 3.5 Write property test for UserProfile serialization
+  - [x]* 3.5 Write property test for UserProfile serialization
     - **Property 2: Profile Data Persistence Round-Trip**
     - **Validates: Requirements 1.3, 1.4, 1.6**
     - _Developer: Developer 1_
 
-- [ ] 4. Checkpoint - Authentication and profiles complete (Developer 1 + Developer 6)
+- [x] 4. Checkpoint - Authentication and profiles complete (Developer 1 + Developer 6)
   - Ensure all authentication and profile tests pass
   - Verify offline profile caching works
   - Test on emulator/device
@@ -290,12 +324,18 @@ These tasks establish the foundation that all other developers depend on. Estima
 #### Listings & Search (Developer 2)
 
 - [ ] 5. Implement listing management system (Developer 2)
-  - [ ] 5.1 Create ListingService with CRUD operations, image upload, search with filters
-    - Create lib/data/services/listing_service.dart
+  - [ ] 5.1 Create ListingRepository interface and FirebaseListingRepository implementation
+    - Create lib/domain/repositories/listing_repository.dart (abstract interface)
+      - Define: `createListing()`, `updateListing()`, `deleteListing()`, `getListing()`, `getListings()`, `searchListings()`, `uploadListingImage()`, `watchListings()` stream
+    - Create lib/data/repositories/firebase_listing_repository.dart (implements ListingRepository)
+      - All Firestore/Storage imports stay here — never in UI or BLoC
   - [ ]* 5.2 Write property tests for listing creation, offline queue, updates
-  - [ ] 5.3 Create ListingProvider for state management
-    - Create lib/data/providers/listing_provider.dart
-  - _Requirements: 2.1, 2.2, 2.5, 2.7, 2.8, 4.2, 4.8, 16.1 (Clean Architecture), 16.2 (Provider state management)_
+  - [ ] 5.3 Create ListingBloc (listing_bloc.dart, listing_event.dart, listing_state.dart)
+    - Create lib/presentation/blocs/listings/listing_bloc.dart
+    - Constructor receives `ListingRepository` (not Firebase directly)
+    - Events: `ListingLoadRequested`, `ListingCreateRequested`, `ListingUpdateRequested`, `ListingDeleteRequested`, `ListingSearchRequested`
+    - States: `ListingInitial`, `ListingLoading`, `ListingLoaded(listings)`, `ListingOperationSuccess`, `ListingFailure(message)`
+  - _Requirements: 2.1, 2.2, 2.5, 2.7, 2.8, 4.2, 4.8, 16.1 (Clean Architecture), 16.3 (BLoC state management)_
   - _Developer: Developer 2_
 
 - [ ] 6. Build listing management UI (Developer 2)
@@ -324,29 +364,42 @@ These tasks establish the foundation that all other developers depend on. Estima
 
 #### Messaging & Notifications (Developer 3)
 
-- [ ] 9. Implement messaging system (Developer 3)
-  - [ ] 9.1 Create MessageService with conversation management, offline queue
-    - Create lib/data/services/message_service.dart
-  - [ ]* 9.2 Write property tests for message delivery, unread counts, read status
-  - [ ] 9.3 Create MessageProvider for state management
-    - Create lib/data/providers/message_provider.dart
-  - _Requirements: 5.2, 5.3, 5.5, 5.6, 16.1 (Clean Architecture), 16.2 (Provider state management)_
+- [x] 9. Implement messaging system (Developer 3)
+  - [x] 9.1 Create MessageRepository interface and FirebaseMessageRepository implementation
+    - Create lib/domain/repositories/message_repository.dart (abstract interface)
+      - Define: `sendMessage()`, `getConversations()`, `getMessages()`, `markAsRead()`, `watchConversations()` stream, `watchMessages()` stream
+    - Create lib/data/repositories/firebase_message_repository.dart (implements MessageRepository)
+      - All Firestore imports stay here — never in UI or BLoC
+  - [x]* 9.2 Write property tests for message delivery, unread counts, read status
+  - [x] 9.3 Create MessagingBloc (messaging_bloc.dart, messaging_event.dart, messaging_state.dart)
+    - Create lib/presentation/blocs/messaging/messaging_bloc.dart
+    - Constructor receives `MessageRepository` (not Firebase directly)
+    - Events: `ConversationsLoadRequested`, `MessagesLoadRequested`, `MessageSendRequested`, `MessagesMarkReadRequested`
+    - States: `MessagingInitial`, `MessagingLoading`, `ConversationsLoaded(conversations)`, `MessagesLoaded(messages)`, `MessagingFailure(message)`
+  - _Requirements: 5.2, 5.3, 5.5, 5.6, 16.1 (Clean Architecture), 16.3 (BLoC state management)_
   - _Developer: Developer 3_
 
-- [ ] 10. Build messaging UI (Developer 3)
-  - [ ] 10.1 Create ConversationsScreen using common widgets from Phase 0
+- [x] 10. Build messaging UI (Developer 3)
+  - [x] 10.1 Create ConversationsScreen using common widgets from Phase 0
     - Create lib/presentation/screens/messaging/conversations_screen.dart
-  - [ ] 10.2 Create ChatScreen with message bubbles, voice input placeholder
+  - [x] 10.2 Create ChatScreen with message bubbles, voice input placeholder
     - Create lib/presentation/screens/messaging/chat_screen.dart
-  - [ ]* 10.3 Write property test for listing references
+  - [x]* 10.3 Write property test for listing references
   - _Requirements: 5.2, 5.5, 5.6, 5.7, 5.8, 16.1 (Clean Architecture)_
   - _Developer: Developer 3_
 
-- [ ] 11. Implement notification system (Developer 3)
-  - [ ] 11.1 Create NotificationService with FCM integration
-  - [ ] 11.2 Create NotificationProvider
-  - [ ]* 11.3 Write property test for notification preferences
-  - [ ] 11.4 Integrate notifications with messaging
+- [x] 11. Implement notification system (Developer 3)
+  - [x] 11.1 Create NotificationRepository interface and FirebaseNotificationRepository implementation
+    - Create lib/domain/repositories/notification_repository.dart (abstract interface)
+      - Define: `requestPermission()`, `getToken()`, `watchNotifications()` stream
+    - Create lib/data/repositories/firebase_notification_repository.dart with FCM integration
+  - [x] 11.2 Create NotificationBloc (notification_bloc.dart, notification_event.dart, notification_state.dart)
+    - Create lib/presentation/blocs/messaging/notification_bloc.dart
+    - Constructor receives `NotificationRepository` (not FCM/Firebase directly)
+    - Events: `NotificationPermissionRequested`, `NotificationReceived`
+    - States: `NotificationInitial`, `NotificationGranted`, `NotificationDenied`, `NotificationFailure(message)`
+  - [x]* 11.3 Write property test for notification preferences
+  - [x] 11.4 Integrate notifications with messaging
   - _Requirements: 5.4, 12.1, 12.2, 12.3, 12.6, 12.7_
   - _Developer: Developer 3_
 
@@ -358,9 +411,16 @@ These tasks establish the foundation that all other developers depend on. Estima
 #### Payments & Escrow (Developer 4)
 
 - [x] 13. Implement payment integration (Developer 4)
-  - [x] 13.1 Create PaymentService with escrow, M-Pesa/MTN integration, retry logic
+  - [x] 13.1 Create PaymentRepository interface and FirebasePaymentRepository implementation
+    - Create lib/domain/repositories/payment_repository.dart (abstract interface)
+      - Define: `initiateEscrow()`, `confirmDelivery()`, `confirmReceipt()`, `raiseDispute()`, `getTransaction()`, `getTransactionHistory()`, `watchTransaction()` stream
+    - Create lib/data/repositories/firebase_payment_repository.dart with M-Pesa/MTN integration, escrow logic, retry logic
   - [ ]* 13.2 Write property tests for transactions, status transitions, fund release, disputes, retry
-  - [x] 13.3 Create PaymentProvider for state management
+  - [x] 13.3 Create PaymentBloc (payment_bloc.dart, payment_event.dart, payment_state.dart)
+    - Create lib/presentation/blocs/payments/payment_bloc.dart
+    - Constructor receives `PaymentRepository` (not Firebase directly)
+    - Events: `PaymentInitiateRequested`, `PaymentDeliveryConfirmed`, `PaymentReceiptConfirmed`, `PaymentDisputeRaised`, `TransactionHistoryLoadRequested`
+    - States: `PaymentInitial`, `PaymentLoading`, `PaymentSuccess(transaction)`, `TransactionHistoryLoaded(transactions)`, `PaymentFailure(message)`
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8_
   - _Developer: Developer 4_
 
@@ -385,30 +445,44 @@ These tasks establish the foundation that all other developers depend on. Estima
 
 #### Dashboard & Market Prices (Developer 5)
 
-- [ ] 17. Implement market price system (Developer 5)
-  - [ ] 17.1 Create MarketPriceService with daily sync, offline caching
-  - [ ]* 17.2 Write property tests for market price structure, offline caching
-  - [ ] 17.3 Create MarketPriceProvider
+- [x] 17. Implement market price system (Developer 5)
+  - [x] 17.1 Create MarketPriceRepository interface and FirebaseMarketPriceRepository implementation
+    - Create lib/domain/repositories/market_price_repository.dart (abstract interface)
+      - Define: `getMarketPrices()`, `syncDailyPrices()`, `watchMarketPrices()` stream
+    - Create lib/data/repositories/firebase_market_price_repository.dart with daily sync and offline caching
+  - [x]* 17.2 Write property tests for market price structure, offline caching
+  - [x] 17.3 Create MarketPriceBloc (market_price_bloc.dart, market_price_event.dart, market_price_state.dart)
+    - Create lib/presentation/blocs/market_price/market_price_bloc.dart
+    - Constructor receives `MarketPriceRepository` (not Firebase directly)
+    - Events: `MarketPricesLoadRequested`, `MarketPricesSyncRequested`
+    - States: `MarketPriceInitial`, `MarketPriceLoading`, `MarketPricesLoaded(prices)`, `MarketPriceFailure(message)`
   - _Requirements: 3.1, 3.2, 3.4, 3.5_
   - _Developer: Developer 5_
 
-- [ ] 18. Build market price UI (Developer 5)
-  - [ ] 18.1 Create MarketPricesScreen using common widgets from Phase 0
-  - [ ] 18.2 Create PriceGuidanceWidget
-  - [ ]* 18.3 Write property test for price deviation warning
+- [x] 18. Build market price UI (Developer 5)
+  - [x] 18.1 Create MarketPricesScreen using common widgets from Phase 0
+  - [x] 18.2 Create PriceGuidanceWidget
+  - [x]* 18.3 Write property test for price deviation warning
   - _Requirements: 3.1, 3.2, 3.3, 3.5, 3.6_
   - _Developer: Developer 5_
 
-- [ ] 19. Implement dashboard system (Developer 5)
-  - [ ] 19.1 Create DashboardService with metrics aggregation, trends, analytics
-  - [ ]* 19.2 Write property tests for dashboard calculations, trends, caching
-  - [ ] 19.3 Create DashboardProvider
+- [x] 19. Implement dashboard system (Developer 5)
+  - [x] 19.1 Create DashboardRepository interface and FirebaseDashboardRepository implementation
+    - Create lib/domain/repositories/dashboard_repository.dart (abstract interface)
+      - Define: `getFarmerDashboard()`, `getBuyerDashboard()`, `watchDashboard()` stream
+    - Create lib/data/repositories/firebase_dashboard_repository.dart with metrics aggregation, trends, analytics
+  - [x]* 19.2 Write property tests for dashboard calculations, trends, caching
+  - [x] 19.3 Create DashboardBloc (dashboard_bloc.dart, dashboard_event.dart, dashboard_state.dart)
+    - Create lib/presentation/blocs/dashboard/dashboard_bloc.dart
+    - Constructor receives `DashboardRepository` (not Firebase directly)
+    - Events: `DashboardLoadRequested`
+    - States: `DashboardInitial`, `DashboardLoading`, `FarmerDashboardLoaded(FarmerDashboard)`, `BuyerDashboardLoaded(BuyerDashboard)`, `DashboardFailure(message)`
   - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
   - _Developer: Developer 5_
 
-- [ ] 20. Build dashboard UI (Developer 5)
-  - [ ] 20.1 Create FarmerDashboardScreen using StatusBadge, LoadingIndicator from Phase 0
-  - [ ] 20.2 Create BuyerDashboardScreen
+- [x] 20. Build dashboard UI (Developer 5)
+  - [x] 20.1 Create FarmerDashboardScreen using StatusBadge, LoadingIndicator from Phase 0
+  - [x] 20.2 Create BuyerDashboardScreen
   - _Requirements: 11.1, 11.2, 11.3, 11.4_
   - _Developer: Developer 5_
 
@@ -420,9 +494,16 @@ These tasks establish the foundation that all other developers depend on. Estima
 #### Offline Sync (Developer 6)
 
 - [ ] 22. Implement offline sync system (Developer 6)
-  - [ ] 22.1 Create OfflineSyncService with queue, retry logic, conflict resolution
+  - [ ] 22.1 Create OfflineSyncRepository interface and FirebaseOfflineSyncRepository implementation
+    - Create lib/domain/repositories/offline_sync_repository.dart (abstract interface)
+      - Define: `enqueueOperation()`, `processPendingQueue()`, `clearQueue()`, `watchConnectivity()` stream
+    - Create lib/data/repositories/firebase_offline_sync_repository.dart with queue, retry logic, conflict resolution
   - [ ]* 22.2 Write property tests for offline queue, conflict resolution, sync timestamp
-  - [ ] 22.3 Create ConnectivityProvider
+  - [ ] 22.3 Create ConnectivityBloc (connectivity_bloc.dart, connectivity_event.dart, connectivity_state.dart)
+    - Create lib/presentation/blocs/settings/connectivity_bloc.dart
+    - Constructor receives `OfflineSyncRepository` (not connectivity_plus directly)
+    - States extend `Equatable`: `ConnectivityOnline`, `ConnectivityOffline`, `ConnectivityUnknown`
+    - Events: `ConnectivityCheckRequested`, `ConnectivityChanged`
   - _Requirements: 9.2, 9.3, 9.4, 9.5, 9.6_
   - _Developer: Developer 6_
 
@@ -445,9 +526,16 @@ These tasks establish the foundation that all other developers depend on. Estima
 #### Verification System
 
 - [ ] 25. Implement verification system (Developer 1)
-  - [ ] 25.1 Create VerificationService with document upload
+  - [ ] 25.1 Create VerificationRepository interface and FirebaseVerificationRepository implementation
+    - Create lib/domain/repositories/verification_repository.dart (abstract interface)
+      - Define: `submitVerificationRequest()`, `uploadDocument()`, `getVerificationStatus()`, `watchVerificationStatus()` stream
+    - Create lib/data/repositories/firebase_verification_repository.dart with document upload logic
   - [ ]* 25.2 Write property tests for verification status, document collection
-  - [ ] 25.3 Create VerificationProvider
+  - [ ] 25.3 Create VerificationBloc (verification_bloc.dart, verification_event.dart, verification_state.dart)
+    - Create lib/presentation/blocs/auth/verification_bloc.dart
+    - Constructor receives `VerificationRepository` (not Firebase directly)
+    - Events: `VerificationStatusLoadRequested`, `VerificationDocumentSubmitted`
+    - States: `VerificationInitial`, `VerificationLoading`, `VerificationStatusLoaded(status)`, `VerificationSubmitSuccess`, `VerificationFailure(message)`
   - _Requirements: 7.1, 7.2, 7.3_
   - _Developer: Developer 1_
 
@@ -490,7 +578,11 @@ These tasks establish the foundation that all other developers depend on. Estima
 - [ ] 30. Create main app integration (Developer 6 + Developer 1)
   - [ ] 30.1 Implement navigation structure with named routes, deep linking
   - [ ] 30.2 Create main app scaffold with navigation
-  - [ ] 30.3 Wire all providers in main.dart (Developer 6 + Developer 1 for Firebase init)
+  - [ ] 30.3 Wire all BLoCs in main.dart using `MultiBlocProvider` (Developer 6 + Developer 1 for Firebase init)
+    - Provide `AuthBloc`, `ProfileBloc`, `ListingBloc`, `MessagingBloc`, `NotificationBloc`, `PaymentBloc`, `DashboardBloc`, `MarketPriceBloc`, `ConnectivityBloc`, `VerificationBloc`
+    - Each BLoC receives its corresponding repository via constructor injection
+    - Instantiate Firebase repository implementations and inject into BLoCs at app root
+    - Set `AuthGate` as home widget so routing is driven by `AuthBloc` state
   - [ ] 30.4 Connect all screens to navigation
   - [ ] 30.5 Integrate offline sync across all features
   - _Requirements: 9.1, 9.2, 9.3, 9.5, 10.1, 11.6_
@@ -503,7 +595,7 @@ These tasks establish the foundation that all other developers depend on. Estima
 #### Performance Optimization
 
 - [ ] 31. Implement performance optimizations (Developer 6)
-  - [ ] 31.1 Add pagination to all lists (ListingService, MessageService, TransactionService)
+  - [ ] 31.1 Add pagination to all lists (FirebaseListingRepository, FirebaseMessageRepository, FirebasePaymentRepository)
   - [ ]* 31.2 Write property test for pagination
   - [ ] 31.3 Implement Firestore batching with BatchWriteService
   - [ ]* 31.4 Write property test for batching
@@ -750,9 +842,9 @@ These tasks establish the foundation that all other developers depend on. Estima
     - Write unit test for CoffeeListing toJson/fromJson (Developer 2)
     - Write unit test for UserProfileValidator (Developer 1)
     - Write unit test for CoffeeListingValidator (Developer 2)
-    - Write unit test for AuthService method (Developer 1)
-    - Write unit test for ListingService method (Developer 2)
-    - Write unit test for MessageService method (Developer 3)
+    - Write unit test for AuthBloc state transitions (Developer 1)
+    - Write unit test for FirebaseListingRepository method (Developer 2)
+    - Write unit test for MessagingBloc state transitions (Developer 3)
     - Ensure at least 3 unit tests total
     - _Requirements: 17.2_
     - _Developer: All developers write tests for their code_
@@ -859,7 +951,7 @@ These tasks establish the foundation that all other developers depend on. Estima
   - [ ] 51.1 Verify all academic requirements (Developer 6)
     - ERD created and matches Firestore exactly
     - Code organized into presentation/domain/data folders
-    - Provider used for state management (no setState)
+    - BLoC pattern used for all state management (flutter_bloc + equatable, no setState in production code, UI never calls Firebase directly)
     - Widget tests + 3 unit tests with ≥70% coverage
     - Three SharedPreferences implemented and tested
     - Flutter analyze shows 0 issues
@@ -994,7 +1086,7 @@ Each task and sub-task has been assigned to a specific developer to ensure clear
 ### Testing Strategy
 
 - Write tests alongside implementation (not after)
-- Test services and models thoroughly (80%+ coverage)
+- Test BLoCs (state transitions), repositories (Firebase integration), and models thoroughly (80%+ coverage)
 - Test UI components for rendering and interactions
 - Test integration points between components
 - Test offline-to-online transitions extensively
@@ -1004,7 +1096,7 @@ Each task and sub-task has been assigned to a specific developer to ensure clear
 
 - All 57 correctness properties validated
 - All 15 requirements fully implemented
-- 80%+ test coverage for services and models
+- 80%+ test coverage for BLoCs, repositories, and models
 - App runs smoothly on devices with 2GB RAM
 - Offline functionality works reliably
 - Payment integration tested in staging

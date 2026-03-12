@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../domain/models/enums.dart';
 import '../../../domain/validators/payment_validator.dart';
-import '../../providers/payment_provider.dart';
+import '../../blocs/payment/payment_bloc.dart';
 import '../../widgets/common/custom_text_field.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_dropdown.dart';
 
-/// Screen for initiating a payment transaction
+/// Screen for initiating a payment transaction.
 /// Requirements: 6.1, 6.2
 class PaymentScreen extends StatefulWidget {
   final String listingId;
@@ -35,6 +35,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   PaymentMethod _selectedMethod = PaymentMethod.mpesa;
   bool _agreedToTerms = false;
 
+
   @override
   void dispose() {
     _phoneController.dispose();
@@ -42,9 +43,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
     super.dispose();
   }
 
-  Future<void> _processPayment() async {
+  void _initiatePayment() {
     if (!_formKey.currentState!.validate()) return;
-
     if (!_agreedToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -55,57 +55,48 @@ class _PaymentScreenState extends State<PaymentScreen> {
       return;
     }
 
-    final provider = context.read<PaymentProvider>();
-
-    // Create transaction
-    final transaction = await provider.createTransaction(
-      buyerId: widget.buyerId,
-      farmerId: widget.farmerId,
-      listingId: widget.listingId,
-      amount: widget.amount,
-      paymentMethod: _selectedMethod,
-    );
-
-    if (transaction == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(provider.error ?? 'Failed to create transaction'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // Process payment
-    final success = await provider.processPayment(transaction.id);
-
-    if (!mounted) return;
-
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Payment successful! Funds are now held in escrow.'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.of(context).pop(true);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(provider.error ?? 'Payment failed'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+    context.read<PaymentBloc>().add(PaymentInitiateRequested(
+          buyerId: widget.buyerId,
+          farmerId: widget.farmerId,
+          listingId: widget.listingId,
+          amount: widget.amount,
+          paymentMethod: _selectedMethod,
+        ));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Make Payment'), centerTitle: true),
-      body: Consumer<PaymentProvider>(
-        builder: (context, provider, child) {
+      body: BlocConsumer<PaymentBloc, PaymentState>(
+        listener: (context, state) {
+          if (state is PaymentTransactionCreated) {
+            // Transaction created — immediately trigger payment processing
+            context
+                .read<PaymentBloc>()
+                .add(PaymentProcessRequested(state.transaction.id));
+          }
+          if (state is PaymentProcessed) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content:
+                    Text('Payment successful! Funds are now held in escrow.'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            Navigator.of(context).pop(true);
+          }
+          if (state is PaymentFailure) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        builder: (context, state) {
+          final isLoading = state is PaymentLoading;
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Form(
@@ -124,15 +115,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           const Text(
                             'Payment Summary',
                             style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                                fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 12),
-                          _buildSummaryRow(
-                            'Amount:',
-                            '\$${widget.amount.toStringAsFixed(2)}',
-                          ),
+                          _buildSummaryRow('Amount:',
+                              '\$${widget.amount.toStringAsFixed(2)}'),
                           _buildSummaryRow('Transaction Fee:', '\$0.00'),
                           const Divider(height: 20),
                           _buildSummaryRow(
@@ -149,18 +136,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   // Payment method selection
                   const Text(
                     'Select Payment Method',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 12),
                   CustomDropdown<PaymentMethod>(
                     value: _selectedMethod,
                     items: PaymentMethod.values
-                        .map(
-                          (method) => DropdownItem(
-                            value: method,
-                            label: _getPaymentMethodLabel(method),
-                          ),
-                        )
+                        .map((method) => DropdownItem(
+                              value: method,
+                              label: _getPaymentMethodLabel(method),
+                            ))
                         .toList(),
                     onChanged: (value) {
                       if (value != null) {
@@ -179,10 +165,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     hintText: _getPhoneHint(_selectedMethod),
                     prefixIcon: Icons.phone,
                     keyboardType: TextInputType.phone,
-                    validator: (value) => PaymentValidator.validatePhoneNumber(
-                      value,
-                      _selectedMethod,
-                    ),
+                    validator: (value) =>
+                        PaymentValidator.validatePhoneNumber(
+                            value, _selectedMethod),
                   ),
                   const SizedBox(height: 16),
 
@@ -230,15 +215,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       padding: const EdgeInsets.all(12.0),
                       child: Row(
                         children: [
-                          Icon(Icons.info_outline, color: Colors.blue.shade700),
+                          Icon(Icons.info_outline,
+                              color: Colors.blue.shade700),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               'Your payment will be held in escrow until delivery is confirmed by both parties.',
                               style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.blue.shade900,
-                              ),
+                                  fontSize: 13, color: Colors.blue.shade900),
                             ),
                           ),
                         ],
@@ -250,11 +234,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   // Submit button
                   CustomButton(
                     text: 'Process Payment',
-                    onPressed: provider.isLoading ? null : _processPayment,
+                    onPressed: isLoading ? null : _initiatePayment,
                     type: ButtonType.primary,
                     size: ButtonSize.large,
                     isFullWidth: true,
-                    isLoading: provider.isLoading,
+                    isLoading: isLoading,
                     leadingIcon: Icons.payment,
                   ),
                 ],
@@ -266,7 +250,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  Widget _buildSummaryRow(String label, String value, {bool isTotal = false}) {
+  Widget _buildSummaryRow(String label, String value,
+      {bool isTotal = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(

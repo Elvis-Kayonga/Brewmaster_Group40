@@ -10,11 +10,11 @@ class MessageBubble extends StatelessWidget {
   final VoidCallback? onTap;
 
   const MessageBubble({
-    Key? key,
+    super.key,
     required this.message,
     required this.isOutgoing,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +40,7 @@ class MessageBubble extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isOutgoing
                       ? AppTheme.primaryColor
-                      : Colors.grey.withOpacity(0.2),
+                      : Colors.grey.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(16),
                     topRight: const Radius.circular(16),
@@ -129,7 +129,7 @@ class _ListingReferenceContent extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: isOutgoing ? Colors.white.withOpacity(0.2) : Colors.grey,
+            color: isOutgoing ? Colors.white.withValues(alpha: 0.2) : Colors.grey,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -157,7 +157,7 @@ class _ListingReferenceContent extends StatelessWidget {
 class TypingIndicator extends StatefulWidget {
   final bool isVisible;
 
-  const TypingIndicator({Key? key, required this.isVisible}) : super(key: key);
+  const TypingIndicator({super.key, required this.isVisible});
 
   @override
   State<TypingIndicator> createState() => _TypingIndicatorState();
@@ -194,7 +194,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.grey.withOpacity(0.2),
+          color: Colors.grey.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(

@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../data/providers/message_provider.dart';
-import '../../../domain/models/conversation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../config/theme.dart';
-import '../../../presentation/widgets/common/loading_indicator.dart';
-import '../../../presentation/widgets/common/empty_state_widget.dart';
-import '../../../presentation/widgets/common/error_state_widget.dart';
+import '../../../domain/models/conversation.dart';
+import '../../blocs/messaging/messaging_bloc.dart';
+import '../../widgets/common/empty_state_widget.dart';
+import '../../widgets/common/error_state_widget.dart';
+import '../../widgets/common/loading_indicator.dart';
 import 'chat_screen.dart';
 
-/// Screen displaying all conversations for the current user
+/// Screen displaying all conversations for the current user.
+///
+/// Requirements: 5.2, 5.5, 5.6, 16.1 (Clean Architecture)
+/// Developer: Developer 3
 class ConversationsScreen extends StatefulWidget {
-  const ConversationsScreen({Key? key}) : super(key: key);
+  const ConversationsScreen({super.key});
 
   @override
   State<ConversationsScreen> createState() => _ConversationsScreenState();
@@ -23,12 +27,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<MessageProvider>(
-        context,
-        listen: false,
-      ).initConversationListener();
-    });
+    context.read<MessagingBloc>().add(const ConversationsLoadRequested());
   }
 
   @override
@@ -41,113 +40,99 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Messages'), elevation: 0),
-      body: Consumer<MessageProvider>(
-        builder: (context, messageProvider, child) {
-          if (messageProvider.isLoading &&
-              messageProvider.conversations.isEmpty) {
+      body: BlocBuilder<MessagingBloc, MessagingState>(
+        builder: (context, state) {
+          if (state is MessagingLoading || state is MessagingInitial) {
             return const LoadingIndicator();
           }
 
-          if (messageProvider.error != null &&
-              messageProvider.conversations.isEmpty) {
+          if (state is MessagingFailure) {
             return ErrorStateWidget(
-              message: messageProvider.error ?? 'Failed to load conversations',
-              onRetry: () {
-                messageProvider.initConversationListener();
-              },
+              message: state.message,
+              onRetry: () => context
+                  .read<MessagingBloc>()
+                  .add(const ConversationsLoadRequested()),
             );
           }
 
-          if (messageProvider.conversations.isEmpty) {
-            return const EmptyStateWidget(
-              title: 'No Messages',
-              description:
-                  'Start a conversation to connect with farmers or buyers',
-              icon: Icons.mail_outline,
-            );
-          }
+          if (state is ConversationsLoaded) {
+            if (state.conversations.isEmpty) {
+              return const EmptyStateWidget(
+                title: 'No Messages',
+                description:
+                    'Start a conversation to connect with farmers or buyers',
+                icon: Icons.mail_outline,
+              );
+            }
 
-          final conversations = _filterConversations(
-            messageProvider.conversations,
-          );
-
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'Search conversations...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() {
-                                _searchQuery = '';
-                              });
-                            },
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (v) => setState(() => _searchQuery = v),
+                    decoration: InputDecoration(
+                      hintText: 'Search conversations...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 16),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                   ),
                 ),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: conversations.length,
-                  itemBuilder: (context, index) {
-                    final conversation = conversations[index];
-                    return _ConversationTile(
-                      conversation: conversation,
-                      onTap: () {
-                        messageProvider.loadConversationMessages(
-                          conversation.conversationId,
-                        );
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                ChatScreen(conversation: conversation),
-                          ),
-                        );
-                      },
-                    );
-                  },
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: state.conversations.length,
+                    itemBuilder: (context, index) {
+                      final conversation = state.conversations[index];
+                      return _ConversationTile(
+                        conversation: conversation,
+                        onTap: () {
+                          context.read<MessagingBloc>().add(
+                              MessagesLoadRequested(
+                                  conversation.conversationId));
+                          context.read<MessagingBloc>().add(
+                              MessagesMarkReadRequested(
+                                  conversation.conversationId));
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  ChatScreen(conversation: conversation),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
-          );
+              ],
+            );
+          }
+
+          return const SizedBox.shrink();
         },
       ),
     );
   }
-
-  List<Conversation> _filterConversations(List<Conversation> conversations) {
-    if (_searchQuery.isEmpty) {
-      return conversations;
-    }
-    // Filter conversations based on search query
-    // In a real app, you would match against participant names
-    return conversations;
-  }
 }
 
-/// Widget representing a single conversation tile
 class _ConversationTile extends StatelessWidget {
+  const _ConversationTile({required this.conversation, required this.onTap});
+
   final Conversation conversation;
   final VoidCallback onTap;
-
-  const _ConversationTile({required this.conversation, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -158,7 +143,7 @@ class _ConversationTile extends StatelessWidget {
       onTap: onTap,
       leading: CircleAvatar(
         backgroundColor: AppTheme.primaryColor,
-        child: Text(
+        child: const Text(
           'US',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
@@ -208,22 +193,13 @@ class _ConversationTile extends StatelessWidget {
     );
   }
 
-  String _formatTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inSeconds < 60) {
-      return 'now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inDays == 1) {
-      return 'yesterday';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays}d ago';
-    } else {
-      return '${dateTime.month}/${dateTime.day}';
-    }
+  String _formatTime(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inSeconds < 60) return 'now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays == 1) return 'yesterday';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${dt.month}/${dt.day}';
   }
 }
