@@ -5,11 +5,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:brewmaster/domain/models/coffee_listing.dart';
-import 'package:brewmaster/domain/models/search_filters.dart';
+import 'package:brewmaster/domain/models/enums.dart';
+import 'package:brewmaster/domain/models/offline_sync_operation.dart';
 import 'package:brewmaster/domain/models/paginated_result.dart';
+import 'package:brewmaster/domain/models/search_filters.dart';
 import 'package:brewmaster/domain/repositories/listing_repository.dart';
+import 'package:brewmaster/domain/repositories/offline_sync_repository.dart';
+import 'package:brewmaster/presentation/blocs/connectivity/connectivity_bloc.dart';
 import 'package:brewmaster/presentation/blocs/listing/listing_bloc.dart';
 import 'package:brewmaster/presentation/screens/search/search_screen.dart';
+
+class _FakeOfflineSyncRepository implements OfflineSyncRepository {
+  @override
+  Future<void> enqueueOperation(OfflineSyncOperation op) async {}
+  @override
+  Future<int> processPendingQueue() async => 0;
+  @override
+  Future<void> clearQueue() async {}
+  @override
+  Stream<bool> watchConnectivity() => Stream.value(true);
+  @override
+  Future<List<OfflineSyncOperation>> getPendingOperations() async => [];
+}
 
 class _FakeListingRepository implements ListingRepository {
   @override
@@ -27,7 +44,25 @@ class _FakeListingRepository implements ListingRepository {
   Stream<List<CoffeeListing>> watchFarmerListings(String farmerId) =>
       Stream.value([]);
   @override
-  Stream<List<CoffeeListing>> watchActiveListings() => Stream.value([]);
+  Stream<List<CoffeeListing>> watchActiveListings() => Stream.value([
+        CoffeeListing(
+          listingId: 'test1',
+          farmerId: 'farmer1',
+          variety: 'Bourbon',
+          quantity: 100,
+          pricePerKg: 5.0,
+          processingMethod: ProcessingMethod.washed,
+          altitude: 1500,
+          harvestDate: DateTime(2024, 1, 1),
+          qualityScore: 80,
+          description: 'Test coffee',
+          images: [],
+          location: '0,0',
+          status: ListingStatus.active,
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+        )
+      ]);
   @override
   Future<List<CoffeeListing>> searchListings(SearchFilters filters) async =>
       [];
@@ -40,8 +75,16 @@ class _FakeListingRepository implements ListingRepository {
 }
 
 Widget _wrap(Widget child) => MaterialApp(
-      home: BlocProvider(
-        create: (_) => ListingBloc(repository: _FakeListingRepository()),
+      home: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (_) => ListingBloc(repository: _FakeListingRepository()),
+          ),
+          BlocProvider(
+            create: (_) => ConnectivityBloc(
+                repository: _FakeOfflineSyncRepository()),
+          ),
+        ],
         child: child,
       ),
     );

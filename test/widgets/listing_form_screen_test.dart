@@ -57,8 +57,11 @@ void main() {
     testWidgets('shows snackbar when required fields are empty',
         (tester) async {
       await tester.pumpWidget(_wrap(const ListingFormScreen()));
-      await tester.tap(find.text('Create Listing').last);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      final submitBtn = find.widgetWithText(ElevatedButton, 'Create Listing');
+      await tester.ensureVisible(submitBtn);
+      await tester.tap(submitBtn);
+      await tester.pump();
       expect(find.byType(SnackBar), findsOneWidget);
     });
 
