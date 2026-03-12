@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../config/theme.dart';
 import '../../../domain/models/enums.dart';
 import '../../../domain/validators/payment_validator.dart';
 import '../../blocs/payment/payment_bloc.dart';
@@ -49,7 +50,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please agree to terms and conditions'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppTheme.errorColor,
         ),
       );
       return;
@@ -81,7 +82,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               const SnackBar(
                 content:
                     Text('Payment successful! Funds are now held in escrow.'),
-                backgroundColor: Colors.green,
+                backgroundColor: AppTheme.successColor,
               ),
             );
             Navigator.of(context).pop(true);
@@ -90,7 +91,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
-                backgroundColor: Colors.red,
+                backgroundColor: AppTheme.errorColor,
               ),
             );
           }
@@ -210,19 +211,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
                   // Info card
                   Card(
-                    color: Colors.blue.shade50,
+                    color: AppTheme.primaryColor.withValues(alpha: 0.08),
                     child: Padding(
                       padding: const EdgeInsets.all(12.0),
                       child: Row(
                         children: [
                           Icon(Icons.info_outline,
-                              color: Colors.blue.shade700),
+                              color: AppTheme.primaryColor),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               'Your payment will be held in escrow until delivery is confirmed by both parties.',
                               style: TextStyle(
-                                  fontSize: 13, color: Colors.blue.shade900),
+                                  fontSize: 13, color: AppTheme.primaryColor),
                             ),
                           ),
                         ],

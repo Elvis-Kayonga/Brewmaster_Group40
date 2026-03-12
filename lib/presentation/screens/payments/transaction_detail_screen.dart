@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import '../../../config/theme.dart';
 import '../../../domain/models/escrow_transaction.dart' as models;
 import '../../../domain/models/enums.dart';
 import '../../../domain/validators/payment_validator.dart';
@@ -116,7 +117,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                         content: Text(error),
-                        backgroundColor: Colors.red));
+                        backgroundColor: AppTheme.errorColor));
                 return;
               }
               Navigator.pop(context, _disputeController.text);
@@ -144,7 +145,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Action completed successfully'),
-                backgroundColor: Colors.green,
+                backgroundColor: AppTheme.successColor,
               ),
             );
             // Reload transaction after an action
@@ -156,7 +157,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                   content: Text(state.message),
-                  backgroundColor: Colors.red),
+                  backgroundColor: AppTheme.errorColor),
             );
           }
         },

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import '../../../config/theme.dart';
 import '../../../domain/models/escrow_transaction.dart' as models;
 import '../../../domain/models/enums.dart';
 import '../../blocs/payment/payment_bloc.dart';
@@ -119,13 +120,13 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
               children: [
                 _buildStatItem('Total Earnings',
                     '\$${totalEarnings.toStringAsFixed(2)}',
-                    Icons.attach_money, Colors.green),
+                    Icons.attach_money, AppTheme.successColor),
                 _buildStatItem(
                     'Completed', completedCount.toString(),
-                    Icons.check_circle, Colors.blue),
+                    Icons.check_circle, AppTheme.secondaryColor),
                 _buildStatItem(
                     'Pending', pendingCount.toString(),
-                    Icons.pending, Colors.orange),
+                    Icons.pending, AppTheme.warningColor),
               ],
             ),
           ],
@@ -144,7 +145,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
             style: TextStyle(
                 fontSize: 20, fontWeight: FontWeight.bold, color: color)),
         Text(label,
-            style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
       ],
     );
   }
@@ -226,14 +227,14 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                   Icon(
                     isUserBuyer ? Icons.arrow_upward : Icons.arrow_downward,
                     size: 16,
-                    color: isUserBuyer ? Colors.red : Colors.green,
+                    color: isUserBuyer ? AppTheme.errorColor : AppTheme.successColor,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     isUserBuyer ? 'Payment Sent' : 'Payment Received',
                     style: TextStyle(
                         fontSize: 14,
-                        color: isUserBuyer ? Colors.red : Colors.green,
+                        color: isUserBuyer ? AppTheme.errorColor : AppTheme.successColor,
                         fontWeight: FontWeight.w500),
                   ),
                 ],
@@ -242,18 +243,18 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
               Row(
                 children: [
                   const Icon(Icons.calendar_today,
-                      size: 14, color: Colors.grey),
+                      size: 14, color: AppTheme.textSecondary),
                   const SizedBox(width: 4),
                   Text(dateFormat.format(transaction.createdAt),
                       style:
-                          const TextStyle(fontSize: 12, color: Colors.grey)),
+                          const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
                   const SizedBox(width: 16),
                   Icon(_getPaymentMethodIcon(transaction.paymentMethod),
-                      size: 14, color: Colors.grey),
+                      size: 14, color: AppTheme.textSecondary),
                   const SizedBox(width: 4),
                   Text(_getPaymentMethodLabel(transaction.paymentMethod),
                       style:
-                          const TextStyle(fontSize: 12, color: Colors.grey)),
+                          const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
                 ],
               ),
               if (transaction.retryCount > 0)
@@ -261,11 +262,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Row(
                     children: [
-                      const Icon(Icons.refresh, size: 14, color: Colors.orange),
+                      const Icon(Icons.refresh, size: 14, color: AppTheme.warningColor),
                       const SizedBox(width: 4),
                       Text('Retried ${transaction.retryCount} time(s)',
                           style: const TextStyle(
-                              fontSize: 12, color: Colors.orange)),
+                              fontSize: 12, color: AppTheme.warningColor)),
                     ],
                   ),
                 ),
@@ -274,10 +275,10 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Row(
                     children: const [
-                      Icon(Icons.flag, size: 14, color: Colors.red),
+                      Icon(Icons.flag, size: 14, color: AppTheme.errorColor),
                       SizedBox(width: 4),
                       Text('Under dispute',
-                          style: TextStyle(fontSize: 12, color: Colors.red)),
+                          style: TextStyle(fontSize: 12, color: AppTheme.errorColor)),
                     ],
                   ),
                 ),
