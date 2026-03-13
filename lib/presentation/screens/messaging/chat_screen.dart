@@ -145,8 +145,8 @@ class _MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isOutgoing = message.senderId == currentUserId;
     final bubbleColor =
-        isOutgoing ? AppTheme.primaryColor : Colors.grey.withValues(alpha: 0.2);
-    final textColor = isOutgoing ? Colors.white : Colors.black;
+        isOutgoing ? AppTheme.primaryColor : AppTheme.inputFillColor;
+    final textColor = isOutgoing ? AppTheme.onPrimaryColor : AppTheme.textPrimary;
 
     return Align(
       alignment:
@@ -174,8 +174,7 @@ class _MessageBubble extends StatelessWidget {
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 DateFormat('HH:mm').format(message.createdAt),
-                style:
-                    const TextStyle(fontSize: 12, color: Colors.grey),
+                style: AppTheme.caption,
               ),
             ),
           ],
@@ -202,9 +201,9 @@ class _MessageInputField extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(
           16, 12, 8, 12 + MediaQuery.of(context).viewInsets.bottom),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.surfaceColor,
         border:
-            Border(top: BorderSide(color: Colors.grey.withValues(alpha: 0.2))),
+            Border(top: BorderSide(color: AppTheme.textHint)),
       ),
       child: Row(
         children: [
@@ -220,7 +219,7 @@ class _MessageInputField extends StatelessWidget {
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
-                fillColor: Colors.grey.withValues(alpha: 0.1),
+                fillColor: AppTheme.inputFillColor,
                 contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16, vertical: 12),
                 prefixIcon: IconButton(
@@ -235,7 +234,7 @@ class _MessageInputField extends StatelessWidget {
           FloatingActionButton(
             mini: true,
             backgroundColor:
-                isComposing ? AppTheme.primaryColor : Colors.grey,
+                isComposing ? AppTheme.primaryColor : AppTheme.textSecondary,
             onPressed: isComposing ? onSend : null,
             child: const Icon(Icons.send, color: Colors.white),
           ),

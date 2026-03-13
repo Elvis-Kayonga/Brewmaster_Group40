@@ -89,11 +89,6 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                               },
                             )
                           : null,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 16),
                     ),
                   ),
                 ),
@@ -164,7 +159,7 @@ class _ConversationTile extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          color: isUnread ? Colors.black : Colors.grey,
+          color: isUnread ? AppTheme.textPrimary : AppTheme.textSecondary,
           fontWeight: isUnread ? FontWeight.w600 : FontWeight.normal,
         ),
       ),
@@ -174,7 +169,7 @@ class _ConversationTile extends StatelessWidget {
         children: [
           Text(
             _formatTime(conversation.updatedAt),
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
+            style: AppTheme.caption,
           ),
           if (isUnread)
             Container(

@@ -107,7 +107,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 children: [
                   // Payment summary card
                   Card(
-                    elevation: 2,
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
@@ -270,7 +269,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             style: TextStyle(
               fontSize: isTotal ? 18 : 14,
               fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
-              color: isTotal ? Colors.green.shade700 : null,
+              color: isTotal ? AppTheme.successColor : null,
             ),
           ),
         ],

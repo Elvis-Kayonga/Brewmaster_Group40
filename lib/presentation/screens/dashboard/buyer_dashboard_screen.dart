@@ -137,7 +137,6 @@ class _MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: AppTheme.borderRadiusLargeAll),
       child: InkWell(
         onTap: onTap,

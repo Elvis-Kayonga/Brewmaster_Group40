@@ -143,7 +143,6 @@ class _MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: AppTheme.borderRadiusLargeAll),
       child: Padding(
         padding: const EdgeInsets.all(AppTheme.padding12),
@@ -183,7 +182,6 @@ class _ResponseRateCard extends StatelessWidget {
             : StatusBadgeType.error;
 
     return Card(
-      elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: AppTheme.borderRadiusLargeAll),
       child: Padding(
         padding: const EdgeInsets.all(AppTheme.padding16),

@@ -166,7 +166,6 @@ class _PriceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: AppTheme.borderRadiusLargeAll),
       child: Padding(
         padding: const EdgeInsets.all(AppTheme.padding16),
