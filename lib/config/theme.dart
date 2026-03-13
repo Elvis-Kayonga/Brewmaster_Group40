@@ -26,8 +26,9 @@ class AppTheme {
   static const Color warningColor = Color(0xFFFBC02D); // Yellow
 
   /// Neutral colors
-  static const Color backgroundColor = Color(0xFFFAFAFA);
+  static const Color backgroundColor = Color(0xFFF5F0EB); // Warm cream (matches Figma)
   static const Color surfaceColor = Color(0xFFFFFFFF);
+  static const Color inputFillColor = Color(0xFFEDE8E1);  // Warm gray for inputs
   static const Color onPrimaryColor = Color(0xFFFFFFFF);
   static const Color onSecondaryColor = Color(0xFFFFFFFF);
   static const Color onBackgroundColor = Color(0xFF212121);
@@ -112,6 +113,7 @@ class AppTheme {
   static const double borderRadiusLarge = 12.0;
   static const double borderRadiusXLarge = 16.0;
   static const double borderRadiusRound = 24.0;
+  static const double borderRadiusPill = 28.0;
 
   /// Pre-built BorderRadius objects
   static final BorderRadius borderRadiusSmallAll = BorderRadius.circular(
@@ -128,6 +130,9 @@ class AppTheme {
   );
   static final BorderRadius borderRadiusRoundAll = BorderRadius.circular(
     borderRadiusRound,
+  );
+  static final BorderRadius borderRadiusPillAll = BorderRadius.circular(
+    borderRadiusPill,
   );
 
   // ==========================================================================
@@ -163,16 +168,17 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: backgroundColor,
       appBarTheme: const AppBarTheme(
-        backgroundColor: primaryColor,
-        foregroundColor: onPrimaryColor,
+        backgroundColor: backgroundColor,
+        foregroundColor: textPrimary,
         elevation: 0,
-        centerTitle: true,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
         titleTextStyle: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: onPrimaryColor,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: textPrimary,
         ),
-        iconTheme: IconThemeData(color: onPrimaryColor, size: iconSizeMedium),
+        iconTheme: IconThemeData(color: textPrimary, size: iconSizeMedium),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: surfaceColor,
@@ -238,27 +244,31 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
+          backgroundColor: primaryDark,
           foregroundColor: onPrimaryColor,
           textStyle: button,
           padding: const EdgeInsets.symmetric(
             horizontal: padding24,
             vertical: padding12,
           ),
-          shape: RoundedRectangleBorder(borderRadius: borderRadiusMediumAll),
-          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(borderRadiusPill)),
+          ),
+          elevation: 0,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: primaryColor,
-          textStyle: button.copyWith(color: primaryColor),
+          foregroundColor: primaryDark,
+          textStyle: button.copyWith(color: primaryDark),
           padding: const EdgeInsets.symmetric(
             horizontal: padding24,
             vertical: padding12,
           ),
-          shape: RoundedRectangleBorder(borderRadius: borderRadiusMediumAll),
-          side: const BorderSide(color: primaryColor, width: 1.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(borderRadiusPill)),
+          ),
+          side: const BorderSide(color: primaryDark, width: 1.5),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -279,30 +289,30 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: surfaceColor,
+        fillColor: inputFillColor,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: padding16,
           vertical: padding12,
         ),
         border: OutlineInputBorder(
-          borderRadius: borderRadiusMediumAll,
-          borderSide: const BorderSide(color: textHint),
+          borderRadius: BorderRadius.all(Radius.circular(borderRadiusLarge)),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: borderRadiusMediumAll,
-          borderSide: const BorderSide(color: textHint),
+          borderRadius: BorderRadius.all(Radius.circular(borderRadiusLarge)),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: borderRadiusMediumAll,
-          borderSide: const BorderSide(color: primaryColor, width: 2),
+          borderRadius: BorderRadius.all(Radius.circular(borderRadiusLarge)),
+          borderSide: const BorderSide(color: primaryColor, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: borderRadiusMediumAll,
+          borderRadius: BorderRadius.all(Radius.circular(borderRadiusLarge)),
           borderSide: const BorderSide(color: errorColor),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: borderRadiusMediumAll,
-          borderSide: const BorderSide(color: errorColor, width: 2),
+          borderRadius: BorderRadius.all(Radius.circular(borderRadiusLarge)),
+          borderSide: const BorderSide(color: errorColor, width: 1.5),
         ),
         labelStyle: body.copyWith(color: textSecondary),
         hintStyle: body.copyWith(color: textHint),
@@ -310,8 +320,11 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: surfaceColor,
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: borderRadiusMediumAll),
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(borderRadiusLarge)),
+        ),
         margin: const EdgeInsets.all(margin8),
       ),
       iconTheme: const IconThemeData(color: textPrimary, size: iconSizeMedium),

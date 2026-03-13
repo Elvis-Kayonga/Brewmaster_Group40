@@ -189,19 +189,19 @@ void main() {
       expect(find.byType(LoginScreen), findsOneWidget);
     });
 
-    testWidgets('LoginScreen shows "Welcome to BrewMaster" heading',
+    testWidgets('LoginScreen shows "Welcome Back" heading',
         (tester) async {
       await tester.pumpWidget(_buildApp(user: null, profile: null));
       await tester.pumpAndSettle();
 
-      expect(find.text('Welcome to BrewMaster'), findsOneWidget);
+      expect(find.text('Welcome Back'), findsOneWidget);
     });
 
-    testWidgets('LoginScreen shows "Sign In" button', (tester) async {
+    testWidgets('LoginScreen shows "Sign In as Buyer" button', (tester) async {
       await tester.pumpWidget(_buildApp(user: null, profile: null));
       await tester.pumpAndSettle();
 
-      expect(find.text('Sign In'), findsOneWidget);
+      expect(find.text('Sign In as Buyer'), findsOneWidget);
     });
 
     testWidgets('LoginScreen shows "Sign in with Google" button', (tester) async {
@@ -211,11 +211,11 @@ void main() {
       expect(find.text('Sign in with Google'), findsOneWidget);
     });
 
-    testWidgets('LoginScreen shows coffee icon', (tester) async {
+    testWidgets('LoginScreen shows bolt icon', (tester) async {
       await tester.pumpWidget(_buildApp(user: null, profile: null));
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.coffee), findsOneWidget);
+      expect(find.byIcon(Icons.bolt), findsOneWidget);
     });
   });
 
@@ -264,8 +264,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(LoginScreen), findsNothing);
-      expect(find.text('Welcome to BrewMaster'), findsNothing);
-      expect(find.text('Sign In'), findsNothing);
+      expect(find.text('Welcome Back'), findsNothing);
+      expect(find.text('Sign In as Buyer'), findsNothing);
       expect(find.text('Sign in with Google'), findsNothing);
     });
   });

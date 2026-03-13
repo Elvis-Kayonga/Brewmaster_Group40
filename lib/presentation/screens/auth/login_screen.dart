@@ -19,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _isBuyer = true;
 
   @override
   void dispose() {
@@ -56,7 +57,10 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppTheme.padding24),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTheme.padding24,
+              vertical: AppTheme.padding32,
+            ),
             child: BlocConsumer<AuthBloc, AuthState>(
               listener: (context, state) {
                 if (state is AuthFailure) {
@@ -84,58 +88,118 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Header
-                      Icon(
-                        Icons.coffee,
-                        size: AppTheme.iconSizeXLarge * 1.5,
-                        color: AppTheme.primaryColor,
+                      // App logo
+                      Center(
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryColor,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Icon(
+                            Icons.bolt,
+                            color: Colors.white,
+                            size: 44,
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: AppTheme.padding16),
-                      Text(
-                        'Welcome to BrewMaster',
-                        style: AppTheme.heading1,
+                      const SizedBox(height: AppTheme.padding24),
+
+                      // Heading
+                      const Text(
+                        'Welcome Back',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textPrimary,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: AppTheme.padding8),
-                      Text(
-                        'Sign in to continue',
+                      const Text(
+                        'Log in to your BrewMaster account.',
                         style: AppTheme.caption,
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: AppTheme.padding32),
 
-                      // Email field
-                      EmailTextField(
-                        controller: _emailController,
-                        labelText: 'Email',
-                        hintText: 'Enter your email',
-                        textInputAction: TextInputAction.next,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Email is required';
-                          }
-                          return null;
-                        },
+                      // Buyer / Seller role toggle
+                      _RoleToggle(
+                        isBuyer: _isBuyer,
+                        onChanged: (isBuyer) =>
+                            setState(() => _isBuyer = isBuyer),
+                      ),
+                      const SizedBox(height: AppTheme.padding24),
+
+                      // Form card
+                      Container(
+                        padding: const EdgeInsets.all(AppTheme.padding24),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceColor,
+                          borderRadius: BorderRadius.circular(
+                              AppTheme.borderRadiusXLarge),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Email field
+                            const Text('Email Address',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppTheme.textPrimary,
+                                )),
+                            const SizedBox(height: AppTheme.padding8),
+                            EmailTextField(
+                              controller: _emailController,
+                              hintText: 'hello@example.com',
+                              textInputAction: TextInputAction.next,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Email is required';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: AppTheme.padding16),
+
+                            // Password field
+                            const Text('Password',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppTheme.textPrimary,
+                                )),
+                            const SizedBox(height: AppTheme.padding8),
+                            PasswordTextField(
+                              controller: _passwordController,
+                              textInputAction: TextInputAction.done,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Password is required';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: AppTheme.padding24),
+
+                            // Sign in button
+                            CustomButton(
+                              text: _isBuyer
+                                  ? 'Sign In as Buyer'
+                                  : 'Sign In as Seller',
+                              isFullWidth: true,
+                              isLoading: isLoading,
+                              onPressed: _handleSignIn,
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: AppTheme.padding16),
 
-                      // Password field
-                      PasswordTextField(
-                        controller: _passwordController,
-                        labelText: 'Password',
-                        textInputAction: TextInputAction.done,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Password is required';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: AppTheme.padding8),
-
                       // Forgot password
-                      Align(
-                        alignment: Alignment.centerRight,
+                      Center(
                         child: CustomButton(
                           text: 'Forgot password?',
                           type: ButtonType.text,
@@ -143,33 +207,21 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: _handleForgotPassword,
                         ),
                       ),
-                      const SizedBox(height: AppTheme.padding24),
+                      const SizedBox(height: AppTheme.padding8),
 
-                      // Sign in button
-                      CustomButton(
-                        text: 'Sign In',
-                        isFullWidth: true,
-                        isLoading: isLoading,
-                        onPressed: _handleSignIn,
-                      ),
-                      const SizedBox(height: AppTheme.padding16),
-
-                      // Divider
+                      // OR divider + Google
                       Row(
                         children: [
                           const Expanded(child: Divider()),
                           Padding(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: AppTheme.padding16,
-                            ),
+                                horizontal: AppTheme.padding16),
                             child: Text('OR', style: AppTheme.caption),
                           ),
                           const Expanded(child: Divider()),
                         ],
                       ),
                       const SizedBox(height: AppTheme.padding16),
-
-                      // Google sign-in button
                       CustomButton(
                         text: 'Sign in with Google',
                         type: ButtonType.outlined,
@@ -188,18 +240,21 @@ class _LoginScreenState extends State<LoginScreen> {
                             "Don't have an account? ",
                             style: AppTheme.caption,
                           ),
-                          CustomButton(
-                            text: 'Sign Up',
-                            type: ButtonType.text,
-                            size: ButtonSize.small,
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const SignupScreen(),
-                                ),
-                              );
-                            },
+                          GestureDetector(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SignupScreen(),
+                              ),
+                            ),
+                            child: Text(
+                              'Create one',
+                              style: AppTheme.caption.copyWith(
+                                color: AppTheme.primaryColor,
+                                fontWeight: FontWeight.w600,
+                                decoration: TextDecoration.none,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -207,6 +262,77 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 );
               },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Pill-shaped role toggle: Buyer ↔ Seller (or custom labels).
+class _RoleToggle extends StatelessWidget {
+  final bool isBuyer;
+  final ValueChanged<bool> onChanged;
+
+  const _RoleToggle({required this.isBuyer, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 52,
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.borderRadiusXLarge),
+      ),
+      child: Row(
+        children: [
+          _Tab(
+            label: 'Buyer',
+            selected: isBuyer,
+            onTap: () => onChanged(true),
+          ),
+          _Tab(
+            label: 'Seller',
+            selected: !isBuyer,
+            onTap: () => onChanged(false),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Tab extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _Tab({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: selected ? AppTheme.primaryColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: selected ? Colors.white : AppTheme.textSecondary,
             ),
           ),
         ),

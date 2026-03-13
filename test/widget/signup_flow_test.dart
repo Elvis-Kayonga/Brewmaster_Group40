@@ -140,7 +140,7 @@ void main() {
         _buildApp(home: const SignupScreen(), authRepo: authRepo, userRepo: userRepo));
 
     expect(find.byType(TextFormField), findsWidgets);
-    expect(find.text('Sign Up'), findsAtLeastNWidgets(1));
+    expect(find.text('Sign up as Buyer'), findsAtLeastNWidgets(1));
   });
 
   testWidgets('LoginScreen renders email and password fields',
@@ -152,7 +152,7 @@ void main() {
         _buildApp(home: const LoginScreen(), authRepo: authRepo, userRepo: userRepo));
 
     expect(find.byType(TextFormField), findsWidgets);
-    expect(find.text('Sign In'), findsAtLeastNWidgets(1));
+    expect(find.text('Sign In as Buyer'), findsAtLeastNWidgets(1));
   });
 
   testWidgets(
@@ -166,13 +166,13 @@ void main() {
     await tester.pumpWidget(
         _buildApp(home: const SignupScreen(), authRepo: authRepo, userRepo: userRepo));
 
-    // Enter email, password, confirm password, display name
-    await tester.enterText(find.byType(TextFormField).at(0), 'test@example.com');
-    await tester.enterText(find.byType(TextFormField).at(1), 'Password1!');
+    // Field order: Full Name (0), Email (1), Password (2), Confirm Password (3)
+    await tester.enterText(find.byType(TextFormField).at(0), 'Test User');
+    await tester.enterText(find.byType(TextFormField).at(1), 'test@example.com');
     await tester.enterText(find.byType(TextFormField).at(2), 'Password1!');
-    await tester.enterText(find.byType(TextFormField).at(3), 'Test User');
+    await tester.enterText(find.byType(TextFormField).at(3), 'Password1!');
 
-    await tester.tap(find.text('Sign Up'));
+    await tester.tap(find.text('Sign up as Buyer'));
     await tester.pump();
 
     // No crash = the event was dispatched successfully

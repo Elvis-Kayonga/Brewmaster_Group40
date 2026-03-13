@@ -21,6 +21,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _confirmPasswordController = TextEditingController();
   final _displayNameController = TextEditingController();
   PasswordStrength _passwordStrength = PasswordStrength.none;
+  bool _isBuyer = true;
 
   @override
   void initState() {
@@ -58,10 +59,12 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Account')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppTheme.padding24),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.padding24,
+            vertical: AppTheme.padding32,
+          ),
           child: BlocConsumer<AuthBloc, AuthState>(
             listener: (context, state) {
               if (state is AuthFailure) {
@@ -74,9 +77,6 @@ class _SignupScreenState extends State<SignupScreen> {
               } else if (state is AuthNeedsProfile ||
                   state is AuthEmailNotVerified ||
                   state is AuthAuthenticated) {
-                // Pop SignupScreen so AuthGate's updated content becomes visible.
-                // canPop() guard prevents double-pop if both the manual
-                // _AuthUserChanged dispatch and the stream fire.
                 if (Navigator.of(context).canPop()) {
                   Navigator.of(context).pop();
                 }
@@ -89,22 +89,161 @@ class _SignupScreenState extends State<SignupScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    ..._buildEmailPasswordStep(),
-                    const SizedBox(height: AppTheme.padding16),
-                    CustomTextField(
-                      controller: _displayNameController,
-                      labelText: 'Display name',
-                      validator: (v) =>
-                          v == null || v.trim().isEmpty ? 'Required' : null,
+                    // App logo
+                    Center(
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryColor,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Icon(
+                          Icons.person_add_outlined,
+                          color: Colors.white,
+                          size: 40,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppTheme.padding24),
+
+                    // Heading
+                    const Text(
+                      'Join BrewMaster',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppTheme.padding8),
+                    const Text(
+                      'Choose your role and start your journey.',
+                      style: AppTheme.caption,
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppTheme.padding32),
-                    CustomButton(
-                      text: 'Sign Up',
-                      isFullWidth: true,
-                      isLoading: isLoading,
-                      onPressed: _handleSignUp,
+
+                    // Buy / Sell role toggle
+                    _RoleToggle(
+                      isBuyer: _isBuyer,
+                      onChanged: (isBuyer) =>
+                          setState(() => _isBuyer = isBuyer),
+                    ),
+                    const SizedBox(height: AppTheme.padding24),
+
+                    // Form card
+                    Container(
+                      padding: const EdgeInsets.all(AppTheme.padding24),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceColor,
+                        borderRadius: BorderRadius.circular(
+                            AppTheme.borderRadiusXLarge),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Full Name
+                          const Text('Full Name',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: AppTheme.textPrimary,
+                              )),
+                          const SizedBox(height: AppTheme.padding8),
+                          CustomTextField(
+                            controller: _displayNameController,
+                            hintText: 'Coffee enthusiast',
+                            prefixIcon: Icons.person_outline,
+                            validator: (v) =>
+                                v == null || v.trim().isEmpty
+                                    ? 'Name is required'
+                                    : null,
+                          ),
+                          const SizedBox(height: AppTheme.padding16),
+
+                          // Email
+                          const Text('Email Address',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: AppTheme.textPrimary,
+                              )),
+                          const SizedBox(height: AppTheme.padding8),
+                          EmailTextField(
+                            controller: _emailController,
+                            hintText: 'hello@example.com',
+                            textInputAction: TextInputAction.next,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Email is required';
+                              }
+                              if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
+                                  .hasMatch(value.trim())) {
+                                return 'Enter a valid email';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: AppTheme.padding16),
+
+                          // Password
+                          const Text('Password',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: AppTheme.textPrimary,
+                              )),
+                          const SizedBox(height: AppTheme.padding8),
+                          PasswordTextField(
+                            controller: _passwordController,
+                            textInputAction: TextInputAction.next,
+                            validator: (value) =>
+                                PasswordValidator.validate(value),
+                          ),
+                          const SizedBox(height: AppTheme.padding8),
+                          _buildPasswordStrengthIndicator(),
+                          const SizedBox(height: AppTheme.padding16),
+
+                          // Confirm password
+                          const Text('Confirm Password',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: AppTheme.textPrimary,
+                              )),
+                          const SizedBox(height: AppTheme.padding8),
+                          PasswordTextField(
+                            controller: _confirmPasswordController,
+                            textInputAction: TextInputAction.done,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please confirm your password';
+                              }
+                              if (value != _passwordController.text) {
+                                return 'Passwords do not match';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: AppTheme.padding24),
+
+                          // Sign up button
+                          CustomButton(
+                            text: _isBuyer
+                                ? 'Sign up as Buyer'
+                                : 'Sign up as Seller',
+                            isFullWidth: true,
+                            isLoading: isLoading,
+                            onPressed: _handleSignUp,
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: AppTheme.padding16),
+
+                    // OR + Google
                     Row(
                       children: [
                         const Expanded(child: Divider()),
@@ -126,16 +265,22 @@ class _SignupScreenState extends State<SignupScreen> {
                       onPressed: _handleGoogleSignUp,
                     ),
                     const SizedBox(height: AppTheme.padding24),
+
+                    // Sign in link
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text('Already have an account? ',
                             style: AppTheme.caption),
-                        CustomButton(
-                          text: 'Sign In',
-                          type: ButtonType.text,
-                          size: ButtonSize.small,
-                          onPressed: () => Navigator.pop(context),
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Text(
+                            'Sign In',
+                            style: AppTheme.caption.copyWith(
+                              color: AppTheme.primaryColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -147,46 +292,6 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
       ),
     );
-  }
-
-  List<Widget> _buildEmailPasswordStep() {
-    return [
-      EmailTextField(
-        controller: _emailController,
-        labelText: 'Email',
-        hintText: 'Enter your email',
-        textInputAction: TextInputAction.next,
-        validator: (value) {
-          if (value == null || value.trim().isEmpty) return 'Email is required';
-          if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value.trim())) {
-            return 'Enter a valid email';
-          }
-          return null;
-        },
-      ),
-      const SizedBox(height: AppTheme.padding16),
-      PasswordTextField(
-        controller: _passwordController,
-        labelText: 'Password',
-        textInputAction: TextInputAction.next,
-        validator: (value) => PasswordValidator.validate(value),
-      ),
-      const SizedBox(height: AppTheme.padding8),
-      _buildPasswordStrengthIndicator(),
-      const SizedBox(height: AppTheme.padding16),
-      PasswordTextField(
-        controller: _confirmPasswordController,
-        labelText: 'Confirm Password',
-        textInputAction: TextInputAction.done,
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Please confirm your password';
-          }
-          if (value != _passwordController.text) return 'Passwords do not match';
-          return null;
-        },
-      ),
-    ];
   }
 
   Widget _buildPasswordStrengthIndicator() {
@@ -201,8 +306,8 @@ class _SignupScreenState extends State<SignupScreen> {
                 child: LinearProgressIndicator(
                   value: _passwordStrength.index /
                       PasswordStrength.values.length,
-                  minHeight: 8,
-                  backgroundColor: Colors.grey[300],
+                  minHeight: 6,
+                  backgroundColor: AppTheme.inputFillColor,
                   valueColor: AlwaysStoppedAnimation<Color>(
                     _passwordStrength.color,
                   ),
@@ -219,48 +324,76 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
           ],
         ),
-        const SizedBox(height: AppTheme.padding8),
-        Text('Requirements:',
-            style: AppTheme.caption.copyWith(fontWeight: FontWeight.w600)),
-        _buildRequirement(
-            'At least 8 characters', _passwordController.text.length >= 8),
-        _buildRequirement('Uppercase letter (A-Z)',
-            _passwordController.text.contains(RegExp(r'[A-Z]'))),
-        _buildRequirement('Lowercase letter (a-z)',
-            _passwordController.text.contains(RegExp(r'[a-z]'))),
-        _buildRequirement(
-            'Number (0-9)', _passwordController.text.contains(RegExp(r'[0-9]'))),
-        _buildRequirement(
-            'Special character (!@#\$%^&*)', _hasSpecialCharacter()),
       ],
     );
   }
+}
 
-  bool _hasSpecialCharacter() {
-    const specialChars = '!@#\$%^&*()_+-=[]{}:;\'",.<>?/\\|`~';
-    return _passwordController.text
-        .split('')
-        .any((char) => specialChars.contains(char));
-  }
+class _RoleToggle extends StatelessWidget {
+  final bool isBuyer;
+  final ValueChanged<bool> onChanged;
 
-  Widget _buildRequirement(String text, bool met) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppTheme.padding4),
+  const _RoleToggle({required this.isBuyer, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 52,
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.borderRadiusXLarge),
+      ),
       child: Row(
         children: [
-          Icon(
-            met ? Icons.check_circle : Icons.radio_button_unchecked,
-            size: 16,
-            color: met ? Colors.green : Colors.grey,
+          _Tab(
+            label: 'I want to buy',
+            selected: isBuyer,
+            onTap: () => onChanged(true),
           ),
-          const SizedBox(width: AppTheme.padding8),
-          Text(
-            text,
-            style: AppTheme.body.copyWith(
-              color: met ? Colors.green : Colors.grey,
-            ),
+          _Tab(
+            label: 'I want to sell',
+            selected: !isBuyer,
+            onTap: () => onChanged(false),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _Tab extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _Tab({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: selected ? AppTheme.primaryColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: selected ? Colors.white : AppTheme.textSecondary,
+            ),
+          ),
+        ),
       ),
     );
   }
