@@ -3,12 +3,25 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../config/theme.dart';
 import '../../../domain/models/farmer_dashboard.dart';
+import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/dashboard/dashboard_bloc.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/loading_indicator.dart';
-import '../../widgets/common/status_badge.dart';
+import '../../widgets/common/profile_avatar_button.dart';
 
-/// Dashboard screen for farmers.
+String _currencySymbol(String? country) {
+  switch (country) {
+    case 'Kenya':     return 'KSh';
+    case 'Ethiopia':  return 'ETB';
+    case 'Uganda':    return 'USh';
+    case 'Tanzania':  return 'TSh';
+    case 'Rwanda':    return 'RWF';
+    case 'Burundi':   return 'BIF';
+    default:          return 'USD';
+  }
+}
+
+/// Dashboard screen for farmers — Farmer Command design.
 ///
 /// Requirements: 11.1, 11.3, 11.4, 11.5, 16.1 (Clean Architecture)
 /// Developer: Developer 5
@@ -33,16 +46,28 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('My Dashboard'),
+        backgroundColor: AppTheme.backgroundColor,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'Brew Master',
+          style: TextStyle(
+            color: AppTheme.primaryDark,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: AppTheme.primaryDark),
             tooltip: 'Refresh',
             onPressed: () => context
                 .read<DashboardBloc>()
                 .add(FarmerDashboardLoadRequested(widget.userId)),
           ),
+          const ProfileAvatarButton(),
         ],
       ),
       body: BlocBuilder<DashboardBloc, DashboardState>(
@@ -68,181 +93,259 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
   }
 }
 
-class _FarmerDashboardBody extends StatelessWidget {
+// ── Dashboard body ─────────────────────────────────────────────────────────
+
+class _FarmerDashboardBody extends StatefulWidget {
   const _FarmerDashboardBody({required this.dashboard});
 
   final FarmerDashboard dashboard;
 
   @override
+  State<_FarmerDashboardBody> createState() => _FarmerDashboardBodyState();
+}
+
+class _FarmerDashboardBodyState extends State<_FarmerDashboardBody> {
+  int _selectedTab = 0; // 0 = ANALYTICS, 1 = ORDERS, 2 = LISTINGS
+
+  static const _tabs = ['ANALYTICS', 'ORDERS', 'LISTINGS'];
+
+  @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(AppTheme.padding16),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
       children: [
-        _SectionHeader(title: 'Overview'),
-        const SizedBox(height: AppTheme.margin8),
-        GridView.count(
-          crossAxisCount: 2,
-          crossAxisSpacing: AppTheme.margin12,
-          mainAxisSpacing: AppTheme.margin12,
-          childAspectRatio: 1.4,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          children: [
-            _MetricCard(
-              icon: Icons.list_alt,
-              label: 'Active Listings',
-              value: dashboard.activeListings.toString(),
-              color: AppTheme.primaryColor,
-            ),
-            _MetricCard(
-              icon: Icons.attach_money,
-              label: 'Total Earnings',
-              value: 'USD ${dashboard.totalEarnings.toStringAsFixed(2)}',
-              color: AppTheme.successColor,
-            ),
-            _MetricCard(
-              icon: Icons.chat_bubble_outline,
-              label: 'Conversations',
-              value: dashboard.conversations.toString(),
-              color: AppTheme.secondaryColor,
-            ),
-            _MetricCard(
-              icon: Icons.visibility_outlined,
-              label: 'Total Views',
-              value: dashboard.views.toString(),
-              color: AppTheme.primaryDark,
+        // ── Page title ────────────────────────────────────────────────
+        const Text(
+          'Farmer\nCommand',
+          style: TextStyle(
+            fontSize: 36,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.primaryDark,
+            height: 1.1,
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Seller status row
+        Row(
+          children: const [
+            Icon(Icons.circle, size: 10, color: Color(0xFF4CAF50)),
+            SizedBox(width: 6),
+            Text(
+              'Active Seller | Link: Secured',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
-        const SizedBox(height: AppTheme.padding24),
-        _SectionHeader(title: 'Response Rate'),
-        const SizedBox(height: AppTheme.margin8),
-        _ResponseRateCard(rate: dashboard.responseRate),
-        const SizedBox(height: AppTheme.padding24),
-        _SectionHeader(title: 'Quick Actions'),
-        const SizedBox(height: AppTheme.margin8),
-        _QuickActionsRow(),
+        const SizedBox(height: 24),
+        // ── Tab row ───────────────────────────────────────────────────
+        Container(
+          decoration: BoxDecoration(
+            color: AppTheme.inputFillColor,
+            borderRadius: BorderRadius.circular(28),
+          ),
+          padding: const EdgeInsets.all(4),
+          child: Row(
+            children: List.generate(_tabs.length, (i) {
+              final selected = _selectedTab == i;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _selectedTab = i),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? AppTheme.primaryDark
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Center(
+                      child: Text(
+                        _tabs[i],
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.6,
+                          color: selected
+                              ? Colors.white
+                              : AppTheme.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+        const SizedBox(height: 20),
+        // ── Tab content ───────────────────────────────────────────────
+        if (_selectedTab == 0) _AnalyticsTab(dashboard: widget.dashboard),
+        if (_selectedTab == 1) _OrdersTab(dashboard: widget.dashboard),
+        if (_selectedTab == 2) const _ListingsTab(),
       ],
     );
   }
 }
 
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
+// ── Analytics tab ──────────────────────────────────────────────────────────
 
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
+class _AnalyticsTab extends StatelessWidget {
+  const _AnalyticsTab({required this.dashboard});
+
+  final FarmerDashboard dashboard;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: AppTheme.borderRadiusLargeAll),
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.padding12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final authState = context.read<AuthBloc>().state;
+    final country = authState is AuthAuthenticated
+        ? authState.profile.country
+        : null;
+    final symbol = _currencySymbol(country);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Metric cards row
+        Row(
           children: [
-            Icon(icon, color: color, size: AppTheme.iconSizeLarge),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(value,
-                    style: AppTheme.heading2.copyWith(color: color),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-                Text(label, style: AppTheme.caption),
-              ],
+            Expanded(
+              child: _MetricCard(
+                label: 'TOTAL REVENUE',
+                value: '$symbol ${dashboard.totalEarnings.toStringAsFixed(0)}',
+                change: '+12%',
+                changePositive: true,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _MetricCard(
+                label: 'ORDERS LOGGED',
+                value: dashboard.conversations.toString(),
+                change: '+5%',
+                changePositive: true,
+              ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ResponseRateCard extends StatelessWidget {
-  const _ResponseRateCard({required this.rate});
-
-  final double rate;
-
-  @override
-  Widget build(BuildContext context) {
-    final badgeType = rate >= 80
-        ? StatusBadgeType.success
-        : rate >= 50
-            ? StatusBadgeType.warning
-            : StatusBadgeType.error;
-
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: AppTheme.borderRadiusLargeAll),
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.padding16),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        const SizedBox(height: 12),
+        _MetricCard(
+          label: 'ACTIVE HUBS',
+          value: dashboard.activeListings.toString(),
+          wide: true,
+        ),
+        const SizedBox(height: 20),
+        // Velocity Command chart placeholder
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceColor,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'VELOCITY COMMAND',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.1,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                height: 100,
+                decoration: BoxDecoration(
+                  color: AppTheme.inputFillColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Center(
+                  child: Text(
+                    'Performance Chart',
+                    style: TextStyle(
+                        fontSize: 13, color: AppTheme.textHint),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('${rate.toStringAsFixed(0)} %', style: AppTheme.heading1),
-                  const SizedBox(height: 4),
                   Text(
-                    'You responded to ${rate.toStringAsFixed(0)} % of your conversations.',
-                    style: AppTheme.caption,
+                    'Views: ${dashboard.views}',
+                    style: const TextStyle(
+                        fontSize: 12, color: AppTheme.textSecondary),
+                  ),
+                  Text(
+                    'Rate: ${dashboard.responseRate.toStringAsFixed(0)}%',
+                    style: const TextStyle(
+                        fontSize: 12, color: AppTheme.textSecondary),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: AppTheme.margin8),
-            StatusBadge(
-              label: rate >= 80
-                  ? 'Excellent'
-                  : rate >= 50
-                      ? 'Good'
-                      : 'Needs Attention',
-              type: badgeType,
-              icon: Icons.chat,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _QuickActionsRow extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _ActionButton(
-            icon: Icons.add_circle_outline,
-            label: 'New Listing',
-            onTap: () => Navigator.of(context).pushNamed('/listings/new'),
+            ],
           ),
         ),
-        const SizedBox(width: AppTheme.margin12),
-        Expanded(
-          child: _ActionButton(
-            icon: Icons.show_chart,
-            label: 'Market Prices',
-            onTap: () => Navigator.of(context).pushNamed('/market-prices'),
+        const SizedBox(height: 16),
+        // Market Intelligence card
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryDark,
+            borderRadius: BorderRadius.circular(16),
           ),
-        ),
-        const SizedBox(width: AppTheme.margin12),
-        Expanded(
-          child: _ActionButton(
-            icon: Icons.message_outlined,
-            label: 'Messages',
-            onTap: () => Navigator.of(context).pushNamed('/messages'),
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'MARKET INTELLIGENCE',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.1,
+                  color: Colors.white70,
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Your response rate is strong. Consider listing new specialty '
+                'lots to capitalise on current buyer demand in origin hubs.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.white,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 14),
+              OutlinedButton(
+                onPressed: () {},
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.white54),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 10),
+                ),
+                child: const Text(
+                  'VIEW MARKET TRENDS',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -250,56 +353,226 @@ class _QuickActionsRow extends StatelessWidget {
   }
 }
 
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
+// ── Orders tab ─────────────────────────────────────────────────────────────
 
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
+class _OrdersTab extends StatelessWidget {
+  const _OrdersTab({required this.dashboard});
+
+  final FarmerDashboard dashboard;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: AppTheme.borderRadiusLargeAll,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: AppTheme.padding12),
+    if (dashboard.conversations == 0) {
+      return Container(
+        padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: AppTheme.primaryColor.withValues(alpha: 0.08),
-          borderRadius: AppTheme.borderRadiusLargeAll,
+          color: AppTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: AppTheme.primaryColor, size: AppTheme.iconSizeLarge),
-            const SizedBox(height: AppTheme.margin4),
-            Text(
-              label,
-              style: AppTheme.caption.copyWith(
-                color: AppTheme.primaryColor,
-                fontWeight: FontWeight.w600,
+        child: const Center(
+          child: Text(
+            'No active orders at this time.',
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+          ),
+        ),
+      );
+    }
+    return Column(
+      children: List.generate(
+        dashboard.conversations.clamp(0, 5),
+        (i) => Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceColor,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.receipt_long_outlined,
+                    color: AppTheme.primaryColor, size: 20),
               ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Order #${(1000 + i).toString()}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: AppTheme.primaryDark,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'In processing',
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right,
+                  color: AppTheme.textSecondary),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
+// ── Listings tab ───────────────────────────────────────────────────────────
 
-  final String title;
+class _ListingsTab extends StatelessWidget {
+  const _ListingsTab();
 
   @override
   Widget build(BuildContext context) {
-    return Text(title,
-        style: AppTheme.heading2.copyWith(color: AppTheme.primaryColor));
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Create New Listing',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primaryDark,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'List a new specialty coffee lot and connect with buyers directly.',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppTheme.textSecondary,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () =>
+                  Navigator.of(context).pushNamed('/listings/new'),
+              icon: const Icon(Icons.add, size: 18, color: Colors.white),
+              label: const Text(
+                '+ INITIALIZE LOT',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryDark,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Metric card ────────────────────────────────────────────────────────────
+
+class _MetricCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final String? change;
+  final bool changePositive;
+  final bool wide;
+
+  const _MetricCard({
+    required this.label,
+    required this.value,
+    this.change,
+    this.changePositive = true,
+    this.wide = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: wide ? double.infinity : null,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.0,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primaryDark,
+                ),
+              ),
+              if (change != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: changePositive
+                        ? const Color(0xFF4CAF50).withValues(alpha: 0.12)
+                        : AppTheme.errorColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    change!,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: changePositive
+                          ? const Color(0xFF388E3C)
+                          : AppTheme.errorColor,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

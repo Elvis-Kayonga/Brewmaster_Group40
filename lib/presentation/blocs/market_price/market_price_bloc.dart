@@ -28,8 +28,11 @@ class MarketPriceBloc extends Bloc<MarketPriceEvent, MarketPriceState> {
   ) async {
     emit(const MarketPriceLoading());
     try {
-      final prices = await _repository.getMarketPrices();
-      emit(MarketPricesLoaded(prices));
+      await emit.forEach<List<MarketPrice>>(
+        _repository.watchMarketPrices(),
+        onData: MarketPricesLoaded.new,
+        onError: (_, _) => const MarketPriceFailure('Failed to load prices'),
+      );
     } catch (e) {
       emit(MarketPriceFailure(e.toString()));
     }

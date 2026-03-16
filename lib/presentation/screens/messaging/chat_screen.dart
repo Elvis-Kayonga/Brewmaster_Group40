@@ -5,12 +5,13 @@ import 'package:intl/intl.dart';
 
 import '../../../config/theme.dart';
 import '../../../domain/models/conversation.dart';
+import '../../widgets/common/profile_avatar_button.dart';
 import '../../../domain/models/message.dart';
 import '../../blocs/messaging/messaging_bloc.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/loading_indicator.dart';
 
-/// Chat screen for a single conversation.
+/// Chat screen for a single conversation — direct messaging design.
 ///
 /// Requirements: 5.2, 5.5, 5.6, 5.7, 5.8, 16.1 (Clean Architecture)
 /// Developer: Developer 3
@@ -85,10 +86,26 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: Text(
-            'Chat #${widget.conversation.conversationId.substring(0, 8)}'),
+        backgroundColor: AppTheme.backgroundColor,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new,
+              size: 18, color: AppTheme.primaryDark),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text(
+          'Brew Master',
+          style: TextStyle(
+            color: AppTheme.primaryDark,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        actions: [
+          const ProfileAvatarButton(),
+        ],
       ),
       body: BlocBuilder<MessagingBloc, MessagingState>(
         builder: (context, state) {
@@ -108,21 +125,73 @@ class _ChatScreenState extends State<ChatScreen> {
               state is MessagesLoaded ? state.messages : <Message>[];
 
           return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  reverse: true,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) => _MessageBubble(
-                    message: messages[index],
-                    currentUserId: _currentUserId,
-                  ),
+              // ── Header ────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Direct\nMessaging',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryDark,
+                        height: 1.15,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'LIVE CHAT',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.8,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              _MessageInputField(
+              // ── Messages or empty state ───────────────────────────
+              Expanded(
+                child: messages.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surfaceColor,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Text(
+                            '"Ask about the coffee variety, processing method, altitude, or arrange a shipment directly with the producer."',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontStyle: FontStyle.italic,
+                              color: AppTheme.textSecondary,
+                              height: 1.6,
+                            ),
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        reverse: true,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        itemCount: messages.length,
+                        itemBuilder: (context, index) => _MessageBubble(
+                          message: messages[index],
+                          currentUserId: _currentUserId,
+                        ),
+                      ),
+              ),
+              // ── Input field ───────────────────────────────────────
+              _EliasInputField(
                 controller: _messageController,
                 isComposing: _isComposing,
                 onSend: _sendMessage,
@@ -144,37 +213,39 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isOutgoing = message.senderId == currentUserId;
-    final bubbleColor =
-        isOutgoing ? AppTheme.primaryColor : AppTheme.inputFillColor;
-    final textColor = isOutgoing ? AppTheme.onPrimaryColor : AppTheme.textPrimary;
 
     return Align(
-      alignment:
-          isOutgoing ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: isOutgoing ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
-        constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.75),
+        constraints:
+            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         child: Column(
-          crossAxisAlignment: isOutgoing
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
+          crossAxisAlignment:
+              isOutgoing ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: bubbleColor,
-                borderRadius: BorderRadius.circular(12),
+                color: isOutgoing ? AppTheme.primaryDark : AppTheme.surfaceColor,
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: Text(message.content,
-                  style: TextStyle(color: textColor, fontSize: 16)),
+              child: Text(
+                message.content,
+                style: TextStyle(
+                  color: isOutgoing ? Colors.white : AppTheme.textPrimary,
+                  fontSize: 15,
+                  height: 1.4,
+                ),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 DateFormat('HH:mm').format(message.createdAt),
-                style: AppTheme.caption,
+                style: const TextStyle(
+                    fontSize: 11, color: AppTheme.textSecondary),
               ),
             ),
           ],
@@ -184,8 +255,8 @@ class _MessageBubble extends StatelessWidget {
   }
 }
 
-class _MessageInputField extends StatelessWidget {
-  const _MessageInputField({
+class _EliasInputField extends StatelessWidget {
+  const _EliasInputField({
     required this.controller,
     required this.isComposing,
     required this.onSend,
@@ -199,46 +270,54 @@ class _MessageInputField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.fromLTRB(
-          16, 12, 8, 12 + MediaQuery.of(context).viewInsets.bottom),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        border:
-            Border(top: BorderSide(color: AppTheme.textHint)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              maxLines: null,
-              minLines: 1,
-              decoration: InputDecoration(
-                hintText: 'Type a message...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
+          16, 12, 16, 12 + MediaQuery.of(context).viewInsets.bottom),
+      color: AppTheme.backgroundColor,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(28),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 16),
+            Expanded(
+              child: TextField(
+                controller: controller,
+                maxLines: null,
+                minLines: 1,
+                decoration: const InputDecoration(
+                  hintText: 'Type a message...',
+                  hintStyle: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.textHint,
+                  ),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(vertical: 14),
                 ),
-                filled: true,
-                fillColor: AppTheme.inputFillColor,
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 12),
-                prefixIcon: IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: () {}, // attachment placeholder
+                textInputAction: TextInputAction.newline,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(6),
+              child: GestureDetector(
+                onTap: isComposing ? onSend : null,
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: isComposing
+                        ? AppTheme.primaryDark
+                        : AppTheme.textHint,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.arrow_upward,
+                      color: Colors.white, size: 18),
                 ),
               ),
-              textInputAction: TextInputAction.newline,
             ),
-          ),
-          const SizedBox(width: 8),
-          FloatingActionButton(
-            mini: true,
-            backgroundColor:
-                isComposing ? AppTheme.primaryColor : AppTheme.textSecondary,
-            onPressed: isComposing ? onSend : null,
-            child: const Icon(Icons.send, color: Colors.white),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

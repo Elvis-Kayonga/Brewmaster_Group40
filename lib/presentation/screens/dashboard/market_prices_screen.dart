@@ -8,6 +8,7 @@ import '../../../domain/models/market_price.dart';
 import '../../blocs/market_price/market_price_bloc.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/loading_indicator.dart';
+import '../../widgets/common/profile_avatar_button.dart';
 
 /// Displays current market prices for all coffee varieties.
 ///
@@ -37,16 +38,28 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Market Prices'),
+        backgroundColor: AppTheme.backgroundColor,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'Brew Master',
+          style: TextStyle(
+            color: AppTheme.primaryDark,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: AppTheme.primaryDark, size: 20),
             tooltip: 'Sync prices',
             onPressed: () => context
                 .read<MarketPriceBloc>()
                 .add(const MarketPricesSyncRequested()),
           ),
+          const ProfileAvatarButton(),
         ],
       ),
       body: BlocBuilder<MarketPriceBloc, MarketPriceState>(
@@ -76,7 +89,36 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
                     .toList();
 
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ── Page header ──────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Market\nPrices',
+                        style: TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryDark,
+                          height: 1.15,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'LIVE COMMODITY INDEX',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.8,
+                          color: AppTheme.primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 if (varieties.isNotEmpty)
                   _VarietyFilterRow(
                     varieties: varieties,
@@ -95,7 +137,7 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
                           ),
                         )
                       : ListView.separated(
-                          padding: const EdgeInsets.all(AppTheme.padding16),
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
                           itemCount: prices.length,
                           separatorBuilder: (_, _) =>
                               const SizedBox(height: AppTheme.margin8),

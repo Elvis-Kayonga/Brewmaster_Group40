@@ -1,5 +1,5 @@
 // Feature: brewmaster-marketplace
-// Screen displaying full details of a single coffee listing.
+// Screen displaying full details of a single coffee listing — "Heritage Ledger" design.
 //
 // Requirements: 2.1, 4.6, 8.1, 8.3, 16.1 (Clean Architecture)
 // Developer: Developer 2
@@ -9,7 +9,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../config/theme.dart';
 import '../../blocs/listing/listing_bloc.dart';
-import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/loading_indicator.dart';
 
@@ -32,7 +31,30 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Listing Details'), elevation: 0),
+      backgroundColor: const Color(0xFFF2F1EA),
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, size: 18, color: AppTheme.primaryDark),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: BlocBuilder<ListingBloc, ListingState>(
         builder: (context, state) {
           if (state is ListingLoading || state is ListingInitial) {
@@ -53,56 +75,165 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
           }
 
           final listing = state.listing;
+          final year = listing.harvestDate.year;
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(AppTheme.padding16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (listing.images.isNotEmpty)
-                  SizedBox(
-                    height: 200,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: listing.images.length,
-                      itemBuilder: (context, index) => Padding(
-                        padding:
-                            const EdgeInsets.only(right: AppTheme.padding8),
-                        child: ClipRRect(
-                          borderRadius: AppTheme.borderRadiusMediumAll,
-                          child: Image.network(
-                            listing.images[index],
+                // ── Hero image with overlay ─────────────────────────────
+                Stack(
+                  children: [
+                    listing.images.isNotEmpty
+                        ? Image.network(
+                            listing.images.first,
+                            height: 320,
+                            width: double.infinity,
                             fit: BoxFit.cover,
-                            width: 200,
-                          ),
+                            errorBuilder: (_, _, _) => _imagePlaceholder(),
+                          )
+                        : _imagePlaceholder(),
+                    // Dark gradient overlay
+                    Container(
+                      height: 320,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.2),
+                            Colors.black.withValues(alpha: 0.65),
+                          ],
                         ),
                       ),
                     ),
+                    // Overlay text
+                    Positioned(
+                      left: 20,
+                      bottom: 24,
+                      right: 60,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'COFFEE PROFILE',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 2.0,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            listing.variety,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              height: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Established c. $year',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                // ── THE STATION ─────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'PROCESSING STATION',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 2.0,
+                          color: AppTheme.primaryColor,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        '${listing.processingMethod.name.toUpperCase()} · ${listing.location}',
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryDark,
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        listing.description,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: AppTheme.textSecondary,
+                          height: 1.65,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // ── Details grid ──────────────────────────────────
+                      const Text(
+                        'SPECIFICATIONS',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 2.0,
+                          color: AppTheme.primaryColor,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _DetailCard(
+                        items: [
+                          _DetailItem('Altitude', '${listing.altitude} m'),
+                          _DetailItem('Processing', listing.processingMethod.name),
+                          _DetailItem('Harvest Year', '$year'),
+                          _DetailItem('Quality Score', '${listing.qualityScore}/100'),
+                          _DetailItem('Available', '${listing.quantity} kg'),
+                          _DetailItem('Price / kg', '\$${listing.pricePerKg.toStringAsFixed(2)}'),
+                        ],
+                      ),
+                      const SizedBox(height: 28),
+
+                      // ── Acquire button ────────────────────────────────
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryDark,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(28),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'CONTACT FARMER',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.5,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 36),
+                    ],
                   ),
-                const SizedBox(height: AppTheme.margin16),
-                Text(listing.variety, style: AppTheme.heading1),
-                const SizedBox(height: AppTheme.margin8),
-                Text('${listing.quantity} kg available',
-                    style: AppTheme.body),
-                const SizedBox(height: AppTheme.margin16),
-                _DetailRow('Price per kg', '\$${listing.pricePerKg}'),
-                _DetailRow('Processing Method',
-                    listing.processingMethod.name),
-                _DetailRow('Altitude', '${listing.altitude}m'),
-                _DetailRow('Harvest Date',
-                    listing.harvestDate.toIso8601String().split('T')[0]),
-                _DetailRow(
-                    'Quality Score', '${listing.qualityScore}/100'),
-                _DetailRow('Status', listing.status.name),
-                _DetailRow('Location', listing.location),
-                const SizedBox(height: AppTheme.margin16),
-                Text('Description', style: AppTheme.heading2),
-                const SizedBox(height: AppTheme.margin8),
-                Text(listing.description, style: AppTheme.body),
-                const SizedBox(height: AppTheme.margin24),
-                CustomButton(
-                  text: 'Contact Farmer',
-                  onPressed: () {},
                 ),
               ],
             ),
@@ -111,28 +242,69 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
       ),
     );
   }
+
+  Widget _imagePlaceholder() {
+    return Container(
+      height: 320,
+      width: double.infinity,
+      color: AppTheme.primaryDark,
+      child: const Center(
+        child: Icon(Icons.coffee, size: 64, color: Colors.white30),
+      ),
+    );
+  }
 }
 
-class _DetailRow extends StatelessWidget {
+class _DetailItem {
   final String label;
   final String value;
+  const _DetailItem(this.label, this.value);
+}
 
-  const _DetailRow(this.label, this.value);
+class _DetailCard extends StatelessWidget {
+  final List<_DetailItem> items;
+  const _DetailCard({required this.items});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppTheme.padding8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label,
-              style: AppTheme.body
-                  .copyWith(color: AppTheme.textSecondary)),
-          Text(value,
-              style:
-                  AppTheme.body.copyWith(fontWeight: FontWeight.w600)),
-        ],
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: List.generate(items.length, (i) {
+          final item = items[i];
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      item.label,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    Text(
+                      item.value,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.primaryDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (i < items.length - 1)
+                const Divider(height: 1, indent: 16, endIndent: 16),
+            ],
+          );
+        }),
       ),
     );
   }

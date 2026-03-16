@@ -24,6 +24,9 @@ class UserProfile {
   final String? businessType;
   final double? monthlyVolume;
 
+  // Country (used for currency display)
+  final String? country;
+
   // FCM token for notifications
   final String? fcmToken;
 
@@ -47,6 +50,7 @@ class UserProfile {
     this.businessName,
     this.businessType,
     this.monthlyVolume,
+    this.country,
     this.fcmToken,
     this.verificationStatus = VerificationStatus.unverified,
   });
@@ -70,6 +74,7 @@ class UserProfile {
       'businessName': businessName,
       'businessType': businessType,
       'monthlyVolume': monthlyVolume,
+      'country': country,
       'fcmToken': fcmToken,
       'verificationStatus': verificationStatus.toJson(),
     };
@@ -96,6 +101,7 @@ class UserProfile {
       businessName: json['businessName'] as String?,
       businessType: json['businessType'] as String?,
       monthlyVolume: json['monthlyVolume'] as double?,
+      country: json['country'] as String?,
       fcmToken: json['fcmToken'] as String?,
       verificationStatus: VerificationStatusExtension.fromJson(
         json['verificationStatus'] as String? ?? 'unverified',
@@ -121,6 +127,7 @@ class UserProfile {
     String? businessName,
     String? businessType,
     double? monthlyVolume,
+    String? country,
     String? fcmToken,
     VerificationStatus? verificationStatus,
   }) {
@@ -142,6 +149,7 @@ class UserProfile {
       businessName: businessName ?? this.businessName,
       businessType: businessType ?? this.businessType,
       monthlyVolume: monthlyVolume ?? this.monthlyVolume,
+      country: country ?? this.country,
       fcmToken: fcmToken ?? this.fcmToken,
       verificationStatus: verificationStatus ?? this.verificationStatus,
     );

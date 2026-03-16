@@ -11,7 +11,6 @@ import 'package:brewmaster/presentation/widgets/common/error_state_widget.dart';
 import 'package:brewmaster/presentation/widgets/common/status_badge.dart';
 import 'package:brewmaster/presentation/screens/profile/edit_profile_screen.dart';
 import 'package:brewmaster/presentation/screens/profile/verification_request_screen.dart';
-import 'package:brewmaster/presentation/screens/dashboard/dashboard_screen.dart';
 import 'package:brewmaster/presentation/widgets/common/verification_badge.dart';
 
 /// Profile screen displaying user information.
@@ -45,15 +44,6 @@ UserProfile? _profileFromState(ProfileState state) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
-        actions: [
-          IconButton(
-            tooltip: 'Dashboard',
-            icon: const Icon(Icons.dashboard),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const DashboardScreen()),
-            ),
-          ),
-        ],
       ),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, authState) {

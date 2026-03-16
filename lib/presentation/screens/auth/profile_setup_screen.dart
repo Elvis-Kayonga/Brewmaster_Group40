@@ -33,6 +33,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _formKey = GlobalKey<FormState>();
   late UserRole? _selectedRole;
 
+  // Shared fields
+  String? _selectedCountry;
+
   // Farmer fields
   final _farmSizeController = TextEditingController();
   final _farmLocationController = TextEditingController();
@@ -88,9 +91,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       createdAt: now,
       updatedAt: now,
       isVerified: isGoogleUser,
-      verificationStatus: isGoogleUser
-          ? VerificationStatus.verified
-          : VerificationStatus.unverified,
+      verificationStatus: VerificationStatus.unverified,
       farmSize: _selectedRole == UserRole.farmer &&
               _farmSizeController.text.isNotEmpty
           ? double.tryParse(_farmSizeController.text)
@@ -123,6 +124,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               _monthlyVolumeController.text.isNotEmpty
           ? double.tryParse(_monthlyVolumeController.text)
           : null,
+      country: _selectedCountry,
     );
 
     context.read<ProfileBloc>().add(ProfileCreateRequested(profile));
@@ -188,6 +190,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       ),
                       const SizedBox(height: AppTheme.padding16),
                     ],
+
+                    _buildCountryDropdown(),
+                    const SizedBox(height: AppTheme.padding16),
 
                     if (_selectedRole == UserRole.farmer) _buildFarmerFields(),
                     if (_selectedRole == UserRole.buyer) _buildBuyerFields(),
@@ -273,6 +278,45 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  static const _eastAfricanCountries = [
+    'Kenya',
+    'Ethiopia',
+    'Uganda',
+    'Tanzania',
+    'Rwanda',
+    'Burundi',
+    'Other',
+  ];
+
+  Widget _buildCountryDropdown() {
+    return DropdownButtonFormField<String>(
+      initialValue: _selectedCountry,
+      decoration: InputDecoration(
+        labelText: 'Country',
+        prefixIcon: const Icon(Icons.flag_outlined),
+        filled: true,
+        fillColor: AppTheme.inputFillColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
+          borderSide: const BorderSide(color: AppTheme.primaryColor, width: 1.5),
+        ),
+      ),
+      hint: const Text('Select your country'),
+      items: _eastAfricanCountries
+          .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+          .toList(),
+      onChanged: (v) => setState(() => _selectedCountry = v),
     );
   }
 

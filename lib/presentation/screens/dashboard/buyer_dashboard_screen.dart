@@ -3,11 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../config/theme.dart';
 import '../../../domain/models/buyer_dashboard.dart';
+import '../../widgets/common/profile_avatar_button.dart';
 import '../../blocs/dashboard/dashboard_bloc.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/loading_indicator.dart';
 
-/// Dashboard screen for buyers.
+/// Dashboard screen for buyers — Figma design.
 ///
 /// Requirements: 11.2, 11.5, 16.1 (Clean Architecture)
 /// Developer: Developer 5
@@ -32,16 +33,28 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('My Dashboard'),
+        backgroundColor: AppTheme.backgroundColor,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'Brew Master',
+          style: TextStyle(
+            color: AppTheme.primaryDark,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: AppTheme.primaryDark, size: 20),
             tooltip: 'Refresh',
             onPressed: () => context
                 .read<DashboardBloc>()
                 .add(BuyerDashboardLoadRequested(widget.userId)),
           ),
+          const ProfileAvatarButton(),
         ],
       ),
       body: BlocBuilder<DashboardBloc, DashboardState>(
@@ -75,45 +88,93 @@ class _BuyerDashboardBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(AppTheme.padding16),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
       children: [
-        _SectionHeader(title: 'Overview'),
-        const SizedBox(height: AppTheme.margin8),
-        GridView.count(
-          crossAxisCount: 2,
-          crossAxisSpacing: AppTheme.margin12,
-          mainAxisSpacing: AppTheme.margin12,
-          childAspectRatio: 1.4,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
+        // ── Page header ─────────────────────────────────────────────
+        const Text(
+          'My\nDashboard',
+          style: TextStyle(
+            fontSize: 36,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.primaryDark,
+            height: 1.15,
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Your coffee purchasing activity at a glance.',
+          style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+        ),
+        const SizedBox(height: 28),
+
+        // ── Metric cards ─────────────────────────────────────────────
+        Row(
           children: [
-            _MetricCard(
-              icon: Icons.shopping_bag_outlined,
-              label: 'Total Purchases',
-              value: dashboard.totalPurchases.toString(),
-              color: AppTheme.primaryColor,
-              onTap: () => Navigator.of(context).pushNamed('/transactions'),
+            Expanded(
+              child: _MetricCard(
+                label: 'TOTAL PURCHASES',
+                value: dashboard.totalPurchases.toString(),
+                onTap: () => Navigator.of(context).pushNamed('/transactions'),
+              ),
             ),
-            _MetricCard(
-              icon: Icons.chat_bubble_outline,
-              label: 'Conversations',
-              value: dashboard.conversations.toString(),
-              color: AppTheme.secondaryColor,
-              onTap: () => Navigator.of(context).pushNamed('/messages'),
-            ),
-            _MetricCard(
-              icon: Icons.bookmark_outline,
-              label: 'Saved Listings',
-              value: dashboard.savedListings.toString(),
-              color: AppTheme.primaryDark,
-              onTap: () => Navigator.of(context).pushNamed('/search'),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _MetricCard(
+                label: 'CONVERSATIONS',
+                value: dashboard.conversations.toString(),
+                onTap: () => Navigator.of(context).pushNamed('/messages'),
+              ),
             ),
           ],
         ),
-        const SizedBox(height: AppTheme.padding24),
-        _SectionHeader(title: 'Quick Actions'),
-        const SizedBox(height: AppTheme.margin8),
-        _QuickActionsRow(),
+        const SizedBox(height: 12),
+        _MetricCard(
+          label: 'SAVED LOTS',
+          value: dashboard.savedListings.toString(),
+          onTap: () => Navigator.of(context).pushNamed('/search'),
+          fullWidth: true,
+        ),
+        const SizedBox(height: 28),
+
+        // ── Quick actions ─────────────────────────────────────────────
+        const Text(
+          'QUICK ACCESS',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 2.0,
+            color: AppTheme.primaryColor,
+          ),
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(
+              child: _ActionTile(
+                icon: Icons.shopping_bag_outlined,
+                label: 'Browse\nShop',
+                onTap: () => Navigator.of(context).pushNamed('/search'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _ActionTile(
+                icon: Icons.show_chart,
+                label: 'Market\nPrices',
+                onTap: () =>
+                    Navigator.of(context).pushNamed('/market-prices'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _ActionTile(
+                icon: Icons.chat_bubble_outline,
+                label: 'Messages',
+                onTap: () => Navigator.of(context).pushNamed('/messages'),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -121,86 +182,58 @@ class _BuyerDashboardBody extends StatelessWidget {
 
 class _MetricCard extends StatelessWidget {
   const _MetricCard({
-    required this.icon,
     required this.label,
     required this.value,
-    required this.color,
     this.onTap,
+    this.fullWidth = false,
   });
 
-  final IconData icon;
   final String label;
   final String value;
-  final Color color;
   final VoidCallback? onTap;
+  final bool fullWidth;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: AppTheme.borderRadiusLargeAll),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppTheme.borderRadiusLargeAll,
-        child: Padding(
-          padding: const EdgeInsets.all(AppTheme.padding12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Icon(icon, color: color, size: AppTheme.iconSizeLarge),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(value,
-                      style: AppTheme.heading2.copyWith(color: color),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                  Text(label, style: AppTheme.caption),
-                ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: fullWidth ? double.infinity : null,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+                color: AppTheme.textSecondary,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.primaryDark,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _QuickActionsRow extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _ActionButton(
-            icon: Icons.search,
-            label: 'Browse Listings',
-            onTap: () => Navigator.of(context).pushNamed('/search'),
-          ),
-        ),
-        const SizedBox(width: AppTheme.margin12),
-        Expanded(
-          child: _ActionButton(
-            icon: Icons.show_chart,
-            label: 'Market Prices',
-            onTap: () => Navigator.of(context).pushNamed('/market-prices'),
-          ),
-        ),
-        const SizedBox(width: AppTheme.margin12),
-        Expanded(
-          child: _ActionButton(
-            icon: Icons.message_outlined,
-            label: 'Messages',
-            onTap: () => Navigator.of(context).pushNamed('/messages'),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
     required this.icon,
     required this.label,
     required this.onTap,
@@ -212,43 +245,32 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: AppTheme.borderRadiusLargeAll,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: AppTheme.padding12),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
-          color: AppTheme.primaryColor.withValues(alpha: 0.08),
-          borderRadius: AppTheme.borderRadiusLargeAll,
+          color: AppTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(14),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppTheme.primaryColor, size: AppTheme.iconSizeLarge),
-            const SizedBox(height: AppTheme.margin4),
+            Icon(icon, color: AppTheme.primaryColor, size: 24),
+            const SizedBox(height: 8),
             Text(
               label,
-              style: AppTheme.caption.copyWith(
-                color: AppTheme.primaryColor,
-                fontWeight: FontWeight.w600,
-              ),
               textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.primaryDark,
+                height: 1.3,
+              ),
             ),
           ],
         ),
       ),
     );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(title,
-        style: AppTheme.heading2.copyWith(color: AppTheme.primaryColor));
   }
 }

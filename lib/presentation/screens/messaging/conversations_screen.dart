@@ -3,14 +3,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../config/theme.dart';
 import '../../../domain/models/conversation.dart';
+import '../../widgets/common/profile_avatar_button.dart';
 import '../../blocs/messaging/messaging_bloc.dart';
 import '../../widgets/common/empty_state_widget.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/loading_indicator.dart';
-import '../../widgets/common/sync_status_indicator.dart';
 import 'chat_screen.dart';
 
-/// Screen displaying all conversations for the current user.
+/// Screen displaying all conversations — "Elias" messaging design.
 ///
 /// Requirements: 5.2, 5.5, 5.6, 16.1 (Clean Architecture)
 /// Developer: Developer 3
@@ -40,10 +40,22 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Messages'),
+        backgroundColor: AppTheme.backgroundColor,
         elevation: 0,
-        actions: const [SyncStatusIndicator()],
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'Brew Master',
+          style: TextStyle(
+            color: AppTheme.primaryDark,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        actions: [
+          const ProfileAvatarButton(),
+        ],
       ),
       body: BlocBuilder<MessagingBloc, MessagingState>(
         builder: (context, state) {
@@ -60,68 +72,125 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
             );
           }
 
-          if (state is ConversationsLoaded) {
-            if (state.conversations.isEmpty) {
-              return const EmptyStateWidget(
-                title: 'No Messages',
-                description:
-                    'Start a conversation to connect with farmers or buyers',
-                icon: Icons.mail_outline,
-              );
-            }
-
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (v) => setState(() => _searchQuery = v),
-                    decoration: InputDecoration(
-                      hintText: 'Search conversations...',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _searchQuery = '');
-                              },
-                            )
-                          : null,
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Header ─────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Messages',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryDark,
+                        height: 1.15,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'DIRECT MESSAGING',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.8,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _searchController,
+                      onChanged: (v) => setState(() => _searchQuery = v),
+                      decoration: InputDecoration(
+                        hintText: 'Search conversations...',
+                        hintStyle: const TextStyle(
+                          fontSize: 13,
+                          color: AppTheme.textHint,
+                        ),
+                        prefixIcon: const Icon(Icons.search,
+                            color: AppTheme.textSecondary, size: 20),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.close,
+                                    size: 18, color: AppTheme.textSecondary),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                              )
+                            : null,
+                        filled: true,
+                        fillColor: AppTheme.surfaceColor,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(28),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(28),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(28),
+                          borderSide: const BorderSide(
+                              color: AppTheme.primaryColor, width: 1.5),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: state.conversations.length,
-                    itemBuilder: (context, index) {
-                      final conversation = state.conversations[index];
-                      return _ConversationTile(
-                        conversation: conversation,
-                        onTap: () {
-                          context.read<MessagingBloc>().add(
-                              MessagesLoadRequested(
-                                  conversation.conversationId));
-                          context.read<MessagingBloc>().add(
-                              MessagesMarkReadRequested(
-                                  conversation.conversationId));
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  ChatScreen(conversation: conversation),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            );
-          }
+              ),
 
-          return const SizedBox.shrink();
+              // ── Conversation list ───────────────────────────────────
+              if (state is ConversationsLoaded)
+                state.conversations.isEmpty
+                    ? const Expanded(
+                        child: EmptyStateWidget(
+                          title: 'No Messages',
+                          description:
+                              'Start a conversation to connect with farmers or buyers',
+                          icon: Icons.chat_bubble_outline,
+                        ),
+                      )
+                    : Expanded(
+                        child: ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: state.conversations.length,
+                          itemBuilder: (context, index) {
+                            final conversation = state.conversations[index];
+                            if (_searchQuery.isNotEmpty &&
+                                !conversation.conversationId
+                                    .contains(_searchQuery)) {
+                              return const SizedBox.shrink();
+                            }
+                            return _ConversationTile(
+                              conversation: conversation,
+                              onTap: () {
+                                context.read<MessagingBloc>().add(
+                                    MessagesLoadRequested(
+                                        conversation.conversationId));
+                                context.read<MessagingBloc>().add(
+                                    MessagesMarkReadRequested(
+                                        conversation.conversationId));
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        ChatScreen(conversation: conversation),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      )
+              else
+                const SizedBox.shrink(),
+            ],
+          );
         },
       ),
     );
@@ -139,56 +208,97 @@ class _ConversationTile extends StatelessWidget {
     final lastMessage = conversation.lastMessage;
     final isUnread = conversation.unreadCount > 0;
 
-    return ListTile(
+    return GestureDetector(
       onTap: onTap,
-      leading: CircleAvatar(
-        backgroundColor: AppTheme.primaryColor,
-        child: const Text(
-          'US',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(14),
         ),
-      ),
-      title: Text(
-        'User #${conversation.conversationId.substring(0, 8)}',
-        style: TextStyle(
-          fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
-        ),
-      ),
-      subtitle: Text(
-        lastMessage?.content ?? 'No messages yet',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: isUnread ? AppTheme.textPrimary : AppTheme.textSecondary,
-          fontWeight: isUnread ? FontWeight.w600 : FontWeight.normal,
-        ),
-      ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            _formatTime(conversation.updatedAt),
-            style: AppTheme.caption,
-          ),
-          if (isUnread)
+        child: Row(
+          children: [
             Container(
-              margin: const EdgeInsets.only(top: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor,
-                borderRadius: BorderRadius.circular(10),
+                color: isUnread ? AppTheme.primaryDark : AppTheme.primaryColor,
+                shape: BoxShape.circle,
               ),
-              child: Text(
-                conversation.unreadCount.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+              child: const Center(
+                child: Text(
+                  'E',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Chat #${conversation.conversationId.substring(0, 8)}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight:
+                          isUnread ? FontWeight.bold : FontWeight.w600,
+                      color: AppTheme.primaryDark,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    lastMessage?.content ?? 'No messages yet',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isUnread
+                          ? AppTheme.textPrimary
+                          : AppTheme.textSecondary,
+                      fontWeight:
+                          isUnread ? FontWeight.w500 : FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  _formatTime(conversation.updatedAt),
+                  style: const TextStyle(
+                      fontSize: 11, color: AppTheme.textSecondary),
+                ),
+                if (isUnread) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      conversation.unreadCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -196,10 +306,10 @@ class _ConversationTile extends StatelessWidget {
   String _formatTime(DateTime dt) {
     final diff = DateTime.now().difference(dt);
     if (diff.inSeconds < 60) return 'now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
     if (diff.inDays == 1) return 'yesterday';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    if (diff.inDays < 7) return '${diff.inDays}d';
     return '${dt.month}/${dt.day}';
   }
 }
