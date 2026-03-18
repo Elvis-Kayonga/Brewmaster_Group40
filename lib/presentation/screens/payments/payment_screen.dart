@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../core/utils/currency_utils.dart';
 import '../../../config/theme.dart';
 import '../../../domain/models/enums.dart';
-import '../../../domain/validators/payment_validator.dart';
 import '../../blocs/payment/payment_bloc.dart';
-import '../../widgets/common/custom_text_field.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_dropdown.dart';
 
@@ -15,6 +15,7 @@ class PaymentScreen extends StatefulWidget {
   final String farmerId;
   final String buyerId;
   final double amount;
+  final String? farmerCountry;
 
   const PaymentScreen({
     super.key,
@@ -22,6 +23,7 @@ class PaymentScreen extends StatefulWidget {
     required this.farmerId,
     required this.buyerId,
     required this.amount,
+    this.farmerCountry,
   });
 
   @override
@@ -29,23 +31,22 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _phoneController = TextEditingController();
-  final _pinController = TextEditingController();
+  static final Uri _flutterwavePaymentUrl = Uri.parse(
+    'https://flutterwave.com/pay',
+  );
 
   PaymentMethod _selectedMethod = PaymentMethod.mpesa;
   bool _agreedToTerms = false;
-
+  bool _hasLaunchedPaymentLink = false;
+  late final String _currencyCode;
 
   @override
-  void dispose() {
-    _phoneController.dispose();
-    _pinController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _currencyCode = CurrencyUtils.codeFromCountry(widget.farmerCountry);
   }
 
-  void _initiatePayment() {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _openFlutterwaveLink() async {
     if (!_agreedToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -56,11 +57,34 @@ class _PaymentScreenState extends State<PaymentScreen> {
       return;
     }
 
+    final launched = await launchUrl(
+      _flutterwavePaymentUrl,
+      mode: LaunchMode.externalApplication,
+    );
+
+    if (!mounted) return;
+    if (!launched) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open Flutterwave payment link.'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _hasLaunchedPaymentLink = true);
+  }
+
+  void _confirmPaymentCompleted() {
+    if (!_hasLaunchedPaymentLink) return;
+
     context.read<PaymentBloc>().add(PaymentInitiateRequested(
           buyerId: widget.buyerId,
           farmerId: widget.farmerId,
           listingId: widget.listingId,
           amount: widget.amount,
+          currency: _currencyCode,
           paymentMethod: _selectedMethod,
         ));
   }
@@ -71,12 +95,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
       appBar: AppBar(title: const Text('Make Payment'), centerTitle: true),
       body: BlocConsumer<PaymentBloc, PaymentState>(
         listener: (context, state) {
-          if (state is PaymentTransactionCreated) {
-            // Transaction created — immediately trigger payment processing
-            context
-                .read<PaymentBloc>()
-                .add(PaymentProcessRequested(state.transaction.id));
-          }
           if (state is PaymentProcessed) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -100,9 +118,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           final isLoading = state is PaymentLoading;
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
+            child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Payment summary card
@@ -119,12 +135,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           ),
                           const SizedBox(height: 12),
                           _buildSummaryRow('Amount:',
-                              '\$${widget.amount.toStringAsFixed(2)}'),
-                          _buildSummaryRow('Transaction Fee:', '\$0.00'),
+                              CurrencyUtils.format(widget.amount, _currencyCode)),
+                          _buildSummaryRow(
+                            'Transaction Fee:',
+                            CurrencyUtils.format(0, _currencyCode),
+                          ),
                           const Divider(height: 20),
                           _buildSummaryRow(
                             'Total:',
-                            '\$${widget.amount.toStringAsFixed(2)}',
+                            CurrencyUtils.format(widget.amount, _currencyCode),
                             isTotal: true,
                           ),
                         ],
@@ -151,36 +170,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     onChanged: (value) {
                       if (value != null) {
                         setState(() => _selectedMethod = value);
-                        _phoneController.clear();
                       }
                     },
                     labelText: 'Payment Method',
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Phone number field
-                  CustomTextField(
-                    controller: _phoneController,
-                    labelText: 'Mobile Money Number',
-                    hintText: _getPhoneHint(_selectedMethod),
-                    prefixIcon: Icons.phone,
-                    keyboardType: TextInputType.phone,
-                    validator: (value) =>
-                        PaymentValidator.validatePhoneNumber(
-                            value, _selectedMethod),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // PIN field
-                  CustomTextField(
-                    controller: _pinController,
-                    labelText: 'Payment PIN',
-                    hintText: 'Enter 4-digit PIN',
-                    prefixIcon: Icons.lock_outline,
-                    obscureText: true,
-                    keyboardType: TextInputType.number,
-                    maxLength: 4,
-                    validator: PaymentValidator.validatePaymentPin,
                   ),
                   const SizedBox(height: 16),
 
@@ -231,18 +223,28 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Submit button
+                  // Step 1: Launch payment link
                   CustomButton(
-                    text: 'Process Payment',
-                    onPressed: isLoading ? null : _initiatePayment,
+                    text: 'Pay with Flutterwave',
+                    onPressed: isLoading ? null : _openFlutterwaveLink,
                     type: ButtonType.primary,
                     size: ButtonSize.large,
                     isFullWidth: true,
                     isLoading: isLoading,
                     leadingIcon: Icons.payment,
                   ),
+                  if (_hasLaunchedPaymentLink) ...[
+                    const SizedBox(height: 12),
+                    CustomButton(
+                      text: "I've completed payment",
+                      onPressed: isLoading ? null : _confirmPaymentCompleted,
+                      type: ButtonType.secondary,
+                      size: ButtonSize.large,
+                      isFullWidth: true,
+                      leadingIcon: Icons.verified,
+                    ),
+                  ],
                 ],
-              ),
             ),
           );
         },
@@ -283,15 +285,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
         return 'M-Pesa';
       case PaymentMethod.mtnMobileMoney:
         return 'MTN Mobile Money';
-    }
-  }
-
-  String _getPhoneHint(PaymentMethod method) {
-    switch (method) {
-      case PaymentMethod.mpesa:
-        return 'e.g., 0712345678';
-      case PaymentMethod.mtnMobileMoney:
-        return 'e.g., 0781234567';
     }
   }
 }

@@ -8,6 +8,24 @@ import 'package:brewmaster/domain/repositories/notification_repository.dart';
 import 'package:brewmaster/domain/repositories/payment_repository.dart';
 
 /// Firebase/Firestore implementation of [PaymentRepository].
+///
+/// Current flow:
+/// 1) Buyer opens the Flutterwave payment link.
+/// 2) Buyer taps "I've completed payment" in-app.
+/// 3) App creates transaction, then marks it as fundsHeld.
+/// 4) Farmer confirms delivery.
+/// 5) Buyer confirms receipt.
+/// 6) Transaction moves to completed and funds are released.
+///
+/// Intended production flow:
+/// 1) App starts a Flutterwave Charge API payment.
+/// 2) Flutterwave sends webhook events.
+/// 3) Cloud Function verifies webhook and updates Firestore.
+/// 4) Existing escrow state machine continues (fundsHeld -> delivered -> completed).
+///
+/// Security note:
+/// Real payment API keys must be stored in Cloud Function environment variables,
+/// never bundled in the Flutter application.
 class FirebasePaymentRepository implements PaymentRepository {
   final FirebaseFirestore _firestore;
   final NotificationRepository _notifications;
@@ -28,6 +46,7 @@ class FirebasePaymentRepository implements PaymentRepository {
     required String farmerId,
     required String listingId,
     required double amount,
+    String currency = 'USD',
     required PaymentMethod paymentMethod,
   }) async {
     final now = DateTime.now();
@@ -37,6 +56,7 @@ class FirebasePaymentRepository implements PaymentRepository {
       farmerId: farmerId,
       listingId: listingId,
       amount: amount,
+      currency: currency,
       status: TransactionStatus.pending,
       paymentMethod: paymentMethod,
       createdAt: now,
