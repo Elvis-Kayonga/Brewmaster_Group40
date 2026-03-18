@@ -110,7 +110,8 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(GestureDetector));
+      await tester.tap(find.text('Test message content'));
+      await tester.pump();
       expect(tapped, isTrue);
     });
   });
