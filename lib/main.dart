@@ -26,6 +26,7 @@ import 'package:brewmaster/presentation/blocs/payment/payment_bloc.dart';
 import 'package:brewmaster/presentation/blocs/messaging/messaging_bloc.dart';
 import 'package:brewmaster/presentation/blocs/messaging/notification_bloc.dart';
 import 'package:brewmaster/presentation/blocs/saved_lots/saved_lots_bloc.dart';
+import 'package:brewmaster/presentation/blocs/voice/voice_bloc.dart';
 import 'package:brewmaster/presentation/blocs/verification/verification_bloc.dart';
 import 'package:brewmaster/presentation/screens/auth/auth_gate.dart';
 
@@ -98,6 +99,9 @@ Future<void> main() async {
         ),
         BlocProvider<SavedLotsBloc>(
           create: (_) => SavedLotsBloc(),
+        ),
+        BlocProvider<VoiceAssistantBloc>(
+          create: (_) => VoiceAssistantBloc(),
         ),
       ],
       child: const BrewMasterApp(),
