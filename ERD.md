@@ -10,6 +10,8 @@ erDiagram
     users ||--|| verifications : "has"
     users }o--o{ conversations : "participates"
     users ||--o| userPreferences : "configures"
+    users ||--o{ savedLots : "saves"
+    savedLots }o--|| listings : "references"
     
     listings ||--o| transactions : "sold via"
     listings ||--o{ messages : "referenced in"
@@ -382,7 +384,31 @@ This document describes the Firestore database structure for the BrewMaster Coff
 
 ---
 
-### 9. users/{userId}/preferences (Subcollection — single doc: `notifications`)
+### 9. users/{userId}/savedLots (Subcollection)
+
+**Primary Key**: `listingId` (String — document ID matches the saved listing's ID)
+
+**Description**: Buyer's wishlist. Each document is a denormalised snapshot of a listing saved by the buyer. Stored as a subcollection so queries stay scoped to the authenticated user. Currently held in-memory (session only); this schema documents the intended Firestore structure for future persistence.
+
+| Field Name | Type | Required | Description |
+|------------|------|----------|-------------|
+| listingId | String | Yes | Document ID — foreign key to listings.id |
+| farmerId | String | Yes | Denormalized foreign key to users.id |
+| farmerName | String | No | Denormalized farmer display name |
+| variety | String | Yes | Coffee variety name (denormalized) |
+| pricePerKg | Number | Yes | Price per kg at time of saving (denormalized) |
+| availableQuantity | Number | Yes | Quantity in kg available at time of saving (denormalized) |
+| location | String | Yes | Farm/region location (denormalized) |
+| imageUrl | String | No | First image URL (denormalized) |
+| savedAt | Timestamp | Yes | When the buyer saved this lot |
+
+**Relationships**:
+- Many savedLots belong to one user (subcollection under users/{userId})
+- Each savedLot references one listing (N:1 with listings via listingId)
+
+---
+
+### 10. users/{userId}/preferences (Subcollection — single doc: `notifications`)
 
 **Primary Key**: `notifications` (fixed document ID)
 
@@ -408,8 +434,10 @@ This document describes the Firestore database structure for the BrewMaster Coff
 - users → conversations (via participantIds array)
 - users → transactions (via buyerId and farmerId)
 - users → notifications (via userId)
+- users → savedLots (subcollection under users/{userId}/savedLots)
 - conversations → messages (subcollection)
 - listings → messages (via listingId reference)
+- listings → savedLots (a listing can be saved by many buyers)
 
 ### One-to-One (1:1)
 - users ↔ verifications (via userId)
@@ -417,6 +445,7 @@ This document describes the Firestore database structure for the BrewMaster Coff
 
 ### Many-to-Many (N:M)
 - users ↔ conversations (via participantIds array)
+- users ↔ listings (buyers save many listings; a listing can be saved by many buyers — via savedLots subcollection)
 
 ---
 
@@ -469,6 +498,6 @@ This document describes the Firestore database structure for the BrewMaster Coff
 
 ---
 
-**Last Updated**: 2026-03-16 — ERD alignment pass (all collections now match implementation)
+**Last Updated**: 2026-03-18
 **Status**: In Sync with Implementation
-**Changes in this update**: Added `country` to users; aligned listings field names (coffeeVariety, quantityKg, askingPricePerKg, cuppingScore, flavorNotes, imageUrls) + added location/batchNumber/certifications; fixed conversations (unreadCount int, added participantNames/listingId/lastMessage); fixed messages (messageId PK, added conversationId/receiverId/senderName, type not messageType); fixed transactions (added currency/paymentReference/updatedAt/receiptNumber/traceabilityData); verifications aligned to 1:1 structure with userId as doc ID; notifications collection fully implemented.
+**Changes in this update**: Added `users/{userId}/savedLots` subcollection — buyer wishlist feature. Each document is a denormalised listing snapshot keyed by listingId, with savedAt timestamp. Currently session-only (in-memory via SavedLotsBloc); schema documents intended Firestore structure. Updated Mermaid diagram and relationship summary to reflect new 1:N and N:M relationships between users and listings via savedLots.

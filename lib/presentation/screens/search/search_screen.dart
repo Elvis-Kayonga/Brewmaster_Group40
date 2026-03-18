@@ -9,8 +9,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../config/theme.dart';
 import '../../../domain/models/coffee_listing.dart';
+import '../../../domain/models/saved_lot.dart';
 import '../../../domain/models/search_filters.dart';
 import '../../blocs/auth/auth_bloc.dart';
+import '../../blocs/saved_lots/saved_lots_bloc.dart';
 import '../../blocs/listing/listing_bloc.dart';
 import '../../blocs/messaging/messaging_bloc.dart';
 import '../../widgets/common/empty_state_widget.dart';
@@ -429,8 +431,13 @@ class _SearchScreenState extends State<SearchScreen> {
                   itemCount: listings.length,
                   itemBuilder: (context, index) {
                     final listing = listings[index];
+                    final savedState =
+                        context.watch<SavedLotsBloc>().state;
+                    final isSaved =
+                        savedState.contains(listing.listingId);
                     return _ListingCard(
                       listing: listing,
+                      inCart: isSaved,
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -441,6 +448,44 @@ class _SearchScreenState extends State<SearchScreen> {
                           ),
                         ),
                       ),
+                      onAddToCart: () {
+                        if (isSaved) {
+                          context.read<SavedLotsBloc>().add(
+                                SavedLotRemoved(listing.listingId),
+                              );
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  '${listing.variety} removed from saved lots'),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        } else {
+                          context.read<SavedLotsBloc>().add(
+                                SavedLotAdded(SavedLot(
+                                  listingId: listing.listingId,
+                                  farmerId: listing.farmerId,
+                                  farmerName: listing.farmerName,
+                                  variety: listing.variety,
+                                  pricePerKg: listing.pricePerKg,
+                                  availableQuantity: listing.quantity,
+                                  location: listing.location,
+                                  imageUrl: listing.images.isNotEmpty
+                                      ? listing.images.first
+                                      : null,
+                                  savedAt: DateTime.now(),
+                                )),
+                              );
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  '${listing.variety} saved to your wishlist'),
+                              duration: const Duration(seconds: 2),
+                              backgroundColor: AppTheme.secondaryColor,
+                            ),
+                          );
+                        }
+                      },
                       onMessage: () => context
                           .read<MessagingBloc>()
                           .add(StartConversationRequested(
@@ -484,12 +529,16 @@ class _ListingCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onMessage;
   final VoidCallback? onPay;
+  final VoidCallback? onAddToCart;
+  final bool inCart;
 
   const _ListingCard({
     required this.listing,
     required this.onTap,
     this.onMessage,
     this.onPay,
+    this.onAddToCart,
+    this.inCart = false,
   });
 
   @override
@@ -548,21 +597,26 @@ class _ListingCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Heart icon top-right
+                  // Save / unsave heart icon top-right
                   Positioned(
                     top: 10,
                     right: 10,
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.35),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.favorite_border,
-                        color: Colors.white,
-                        size: 18,
+                    child: GestureDetector(
+                      onTap: onAddToCart,
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: inCart
+                              ? Colors.red.withValues(alpha: 0.85)
+                              : Colors.black.withValues(alpha: 0.35),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          inCart ? Icons.favorite : Icons.favorite_border,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                       ),
                     ),
                   ),

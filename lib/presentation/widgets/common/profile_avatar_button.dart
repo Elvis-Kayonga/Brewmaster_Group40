@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../config/theme.dart';
+import '../../../domain/models/enums.dart';
 import '../../../domain/models/user_profile.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/profile/profile_bloc.dart';
+import '../../blocs/saved_lots/saved_lots_bloc.dart';
+import '../../screens/saved_lots/saved_lots_screen.dart';
 import 'notification_bell_button.dart';
 
 /// AppBar avatar that shows the signed-in user's initial (or photo) and
@@ -37,9 +40,30 @@ class ProfileAvatarButton extends StatelessWidget {
             final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
             final photoUrl = profile?.photoUrl;
 
+            final isBuyer = profile?.role == UserRole.buyer;
+
             return Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (isBuyer)
+                  BlocBuilder<SavedLotsBloc, SavedLotsState>(
+                    builder: (context, savedState) {
+                      return IconButton(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SavedLotsScreen(),
+                          ),
+                        ),
+                        icon: Badge(
+                          isLabelVisible: savedState.itemCount > 0,
+                          label: Text('${savedState.itemCount}'),
+                          child: const Icon(Icons.favorite_border),
+                        ),
+                        color: AppTheme.primaryDark,
+                      );
+                    },
+                  ),
                 const NotificationBellButton(),
                 Padding(
                   padding: const EdgeInsets.only(right: 16),
