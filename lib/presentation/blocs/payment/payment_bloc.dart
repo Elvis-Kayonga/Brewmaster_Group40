@@ -41,9 +41,11 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         farmerId: event.farmerId,
         listingId: event.listingId,
         amount: event.amount,
+        currency: event.currency,
         paymentMethod: event.paymentMethod,
       );
-      emit(PaymentTransactionCreated(tx));
+      final processed = await _paymentRepository.processPayment(tx.id);
+      emit(PaymentProcessed(processed));
     } catch (e) {
       emit(PaymentFailure(e.toString()));
     }

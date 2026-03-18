@@ -19,6 +19,7 @@ import 'package:brewmaster/domain/models/conversation.dart';
 import 'package:brewmaster/domain/models/message.dart';
 import 'package:brewmaster/domain/models/farmer_dashboard.dart';
 import 'package:brewmaster/domain/models/market_price.dart';
+import 'package:brewmaster/domain/models/notification.dart';
 import 'package:brewmaster/domain/repositories/dashboard_repository.dart';
 import 'package:brewmaster/domain/repositories/listing_repository.dart';
 import 'package:brewmaster/domain/repositories/market_price_repository.dart';
@@ -125,6 +126,12 @@ class _FakeNotificationRepository implements NotificationRepository {
   @override Stream<Map<String, dynamic>> watchNotifications() => Stream.value({});
   @override Future<Map<String, bool>> getPreferences() async => {};
   @override Future<void> updatePreferences(Map<String, bool> p) async {}
+  @override Future<void> saveNotification(AppNotification notification) async {}
+  @override Stream<List<AppNotification>> watchUserNotifications(String userId) =>
+      Stream.value(const []);
+  @override Future<void> markAsRead(String notificationId, String userId) async {}
+  @override Future<void> markAllAsRead(String userId) async {}
+  @override Future<int> getUnreadCount(String userId) async => 0;
   @override dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
 }
 

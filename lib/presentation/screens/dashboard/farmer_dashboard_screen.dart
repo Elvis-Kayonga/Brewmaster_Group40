@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/utils/currency_utils.dart';
 import '../../../config/theme.dart';
 import '../../../domain/models/coffee_listing.dart';
 import '../../../domain/models/enums.dart';
@@ -18,18 +19,6 @@ import '../../widgets/listing/listing_card.dart';
 import '../listings/listing_detail_screen.dart';
 import '../listings/listing_form_screen.dart';
 import '../payments/transaction_detail_screen.dart';
-
-String _currencySymbol(String? country) {
-  switch (country) {
-    case 'Kenya':     return 'KSh';
-    case 'Ethiopia':  return 'ETB';
-    case 'Uganda':    return 'USh';
-    case 'Tanzania':  return 'TSh';
-    case 'Rwanda':    return 'RWF';
-    case 'Burundi':   return 'BIF';
-    default:          return 'USD';
-  }
-}
 
 /// Dashboard screen for farmers — Farmer Command design.
 ///
@@ -268,10 +257,10 @@ class _AnalyticsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
-    final country = authState is AuthAuthenticated
-        ? authState.profile.country
-        : null;
-    final symbol = _currencySymbol(country);
+    final profile = authState is AuthAuthenticated ? authState.profile : null;
+    final symbol = CurrencyUtils.symbolFromCode(
+      CurrencyUtils.codeFromCountry(profile?.country),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,7 +322,10 @@ class _AnalyticsTab extends StatelessWidget {
               const SizedBox(height: 16),
               SizedBox(
                 height: 110,
-                child: _RevenueBarChart(dailyRevenue: dashboard.dailyRevenue),
+                child: _RevenueBarChart(
+                  dailyRevenue: dashboard.dailyRevenue,
+                  currencySymbol: symbol,
+                ),
               ),
               const SizedBox(height: 8),
               Row(
@@ -412,116 +404,153 @@ class _OrdersTabState extends State<_OrdersTab> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PaymentBloc, PaymentState>(
-      buildWhen: (_, curr) =>
-          curr is PaymentInitial ||
-          curr is PaymentLoading ||
-          curr is PaymentHistoryLoaded,
-      builder: (context, state) {
-        if (state is PaymentInitial || state is PaymentLoading) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        final transactions = state is PaymentHistoryLoaded
-            ? state.transactions
-                .where((t) => t.farmerId == widget.userId)
-                .toList()
-            : <Transaction>[];
-
-        if (transactions.isEmpty) {
-          return Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceColor,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Center(
-              child: Text(
-                'No orders yet.',
-                style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
-              ),
+    return BlocListener<PaymentBloc, PaymentState>(
+      listener: (context, state) {
+        if (state is PaymentActionSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Delivery confirmed successfully.'),
+              backgroundColor: AppTheme.successColor,
             ),
           );
+          context
+              .read<DashboardBloc>()
+              .add(FarmerDashboardLoadRequested(widget.userId));
+          context.read<PaymentBloc>().add(PaymentHistoryRequested(widget.userId));
         }
+      },
+      child: BlocBuilder<PaymentBloc, PaymentState>(
+        buildWhen: (_, curr) =>
+            curr is PaymentInitial ||
+            curr is PaymentLoading ||
+            curr is PaymentHistoryLoaded,
+        builder: (context, state) {
+          if (state is PaymentInitial || state is PaymentLoading) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
 
-        return Column(
-          children: transactions.map((t) {
-            final shortId =
-                'ORD-${t.id.substring(0, 6).toUpperCase()}';
-            return GestureDetector(
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => TransactionDetailScreen(
-                    transactionId: t.id,
-                    userId: widget.userId,
-                    isFarmer: true,
-                  ),
-                ),
+          final transactions = state is PaymentHistoryLoaded
+              ? state.transactions
+                  .where((t) => t.farmerId == widget.userId)
+                  .toList()
+              : <Transaction>[];
+
+          if (transactions.isEmpty) {
+            return Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor,
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceColor,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.receipt_long_outlined,
-                          color: AppTheme.primaryColor, size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            shortId,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                              color: AppTheme.primaryDark,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            _statusLabel(t.status),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: _statusColor(t.status),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      '\$${t.amount.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: AppTheme.primaryDark,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.chevron_right,
-                        color: AppTheme.textSecondary),
-                  ],
+              child: const Center(
+                child: Text(
+                  'No orders yet.',
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
                 ),
               ),
             );
-          }).toList(),
-        );
-      },
+          }
+
+          return Column(
+            children: transactions.map((t) {
+              final shortId = 'ORD-${t.id.substring(0, 6).toUpperCase()}';
+              return GestureDetector(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => TransactionDetailScreen(
+                      transactionId: t.id,
+                      userId: widget.userId,
+                      isFarmer: true,
+                    ),
+                  ),
+                ),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceColor,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.receipt_long_outlined,
+                            color: AppTheme.primaryColor, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              shortId,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                color: AppTheme.primaryDark,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _statusLabel(t.status),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _statusColor(t.status),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        CurrencyUtils.format(t.amount, t.currency),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: AppTheme.primaryDark,
+                        ),
+                      ),
+                      if (t.status == TransactionStatus.fundsHeld) ...[
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () => context
+                              .read<PaymentBloc>()
+                              .add(PaymentDeliveryConfirmed(t.id)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryDark,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text(
+                            'Confirm Delivery',
+                            style: TextStyle(fontSize: 11, color: Colors.white),
+                          ),
+                        ),
+                      ] else ...[
+                        const SizedBox(width: 8),
+                        const Icon(Icons.chevron_right,
+                            color: AppTheme.textSecondary),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          );
+        },
+      ),
     );
   }
 
@@ -801,9 +830,13 @@ class _MetricCard extends StatelessWidget {
 // ── Revenue bar chart ───────────────────────────────────────────────────────
 
 class _RevenueBarChart extends StatelessWidget {
-  const _RevenueBarChart({required this.dailyRevenue});
+  const _RevenueBarChart({
+    required this.dailyRevenue,
+    required this.currencySymbol,
+  });
 
   final List<double> dailyRevenue;
+  final String currencySymbol;
 
   @override
   Widget build(BuildContext context) {
@@ -825,8 +858,19 @@ class _RevenueBarChart extends StatelessWidget {
         ),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
-          leftTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 38,
+              interval: effectiveMax / 4,
+              getTitlesWidget: (value, _) => Text(
+                '$currencySymbol ${value.toStringAsFixed(0)}',
+                style: const TextStyle(
+                  fontSize: 8,
+                  color: AppTheme.textHint,
+                ),
+              ),
+            ),
           ),
           rightTitles: const AxisTitles(
             sideTitles: SideTitles(showTitles: false),
