@@ -2,7 +2,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:brewmaster/domain/models/escrow_transaction.dart' as models;
 import 'package:brewmaster/domain/models/enums.dart';
+import 'package:brewmaster/domain/models/notification.dart';
+import 'package:brewmaster/domain/repositories/notification_repository.dart';
 import 'package:brewmaster/data/repositories/firebase_payment_repository.dart';
+
+class _FakeNotificationRepository implements NotificationRepository {
+  @override Future<bool> requestPermission() async => false;
+  @override Future<String?> getToken() async => null;
+  @override Stream<Map<String, dynamic>> watchNotifications() => Stream.value({});
+  @override Future<void> updatePreferences(Map<String, bool> preferences) async {}
+  @override Future<Map<String, bool>> getPreferences() async => {};
+  @override Future<void> saveNotification(AppNotification notification) async {}
+  @override Stream<List<AppNotification>> watchUserNotifications(String userId) => Stream.value([]);
+  @override Future<void> markAsRead(String notificationId, String userId) async {}
+  @override Future<void> markAllAsRead(String userId) async {}
+  @override Future<int> getUnreadCount(String userId) async => 0;
+}
 
 void main() {
   group('FirebasePaymentRepository Property Tests', () {
@@ -11,7 +26,10 @@ void main() {
 
     setUp(() {
       fakeFirestore = FakeFirebaseFirestore();
-      repository = FirebasePaymentRepository(firestore: fakeFirestore);
+      repository = FirebasePaymentRepository(
+        firestore: fakeFirestore,
+        notificationRepository: _FakeNotificationRepository(),
+      );
     });
 
     group('Transaction Creation', () {
