@@ -94,7 +94,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     await _firestoreSub?.cancel();
     _firestoreSub = _repository.watchUserNotifications(event.userId).listen(
       (notifications) => add(_NotificationsUpdated(notifications)),
-      onError: (_) {},
+      onError: (_) => add(const _NotificationsUpdated([])),
     );
   }
 
