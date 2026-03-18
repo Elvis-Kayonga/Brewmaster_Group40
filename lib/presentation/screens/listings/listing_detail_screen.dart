@@ -4,13 +4,16 @@
 // Requirements: 2.1, 4.6, 8.1, 8.3, 16.1 (Clean Architecture)
 // Developer: Developer 2
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../config/theme.dart';
 import '../../blocs/listing/listing_bloc.dart';
+import '../../blocs/messaging/messaging_bloc.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/loading_indicator.dart';
+import '../messaging/chat_screen.dart';
 
 class ListingDetailScreen extends StatefulWidget {
   final String listingId;
@@ -55,8 +58,23 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
           ),
         ],
       ),
-      body: BlocBuilder<ListingBloc, ListingState>(
-        builder: (context, state) {
+      body: BlocConsumer<MessagingBloc, MessagingState>(
+        listenWhen: (_, s) => s is ConversationReady || s is MessagingFailure,
+        listener: (context, msgState) {
+          if (msgState is ConversationReady) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ChatScreen(conversation: msgState.conversation),
+              ),
+            );
+          } else if (msgState is MessagingFailure) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(msgState.message)),
+            );
+          }
+        },
+        builder: (context, msgState) => BlocBuilder<ListingBloc, ListingState>(
+          builder: (context, state) {
           if (state is ListingLoading || state is ListingInitial) {
             return const LoadingIndicator();
           }
@@ -207,11 +225,27 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                       ),
                       const SizedBox(height: 28),
 
-                      // ── Acquire button ────────────────────────────────
+                      // ── Contact button ────────────────────────────────
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () => Navigator.of(context).pop(),
+                          onPressed: msgState is MessagingLoading
+                              ? null
+                              : () {
+                                  final currentUid = FirebaseAuth
+                                      .instance.currentUser?.uid;
+                                  if (listing.farmerId == currentUid) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text(
+                                              'This is your own listing.')),
+                                    );
+                                    return;
+                                  }
+                                  context.read<MessagingBloc>().add(
+                                      StartConversationRequested(
+                                          listing.farmerId));
+                                },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryDark,
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -220,15 +254,24 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                             ),
                             elevation: 0,
                           ),
-                          child: const Text(
-                            'CONTACT FARMER',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1.5,
-                              color: Colors.white,
-                            ),
-                          ),
+                          child: msgState is MessagingLoading
+                              ? const SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'CONTACT FARMER',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.5,
+                                    color: Colors.white,
+                                  ),
+                                ),
                         ),
                       ),
                       const SizedBox(height: 36),
@@ -238,7 +281,8 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
               ],
             ),
           );
-        },
+          },
+        ),
       ),
     );
   }

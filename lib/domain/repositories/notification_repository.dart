@@ -1,3 +1,5 @@
+import '../models/notification.dart';
+
 /// Abstract interface for push notification operations.
 ///
 /// Requirements: 5.4, 12.1, 12.2, 12.3, 12.6, 12.7
@@ -17,4 +19,19 @@ abstract class NotificationRepository {
 
   /// Retrieve the current notification preferences for the current user.
   Future<Map<String, bool>> getPreferences();
+
+  /// Persist a notification record to Firestore.
+  Future<void> saveNotification(AppNotification notification);
+
+  /// Stream of all persisted Firestore notifications for [userId], newest first.
+  Stream<List<AppNotification>> watchUserNotifications(String userId);
+
+  /// Mark a single notification as read.
+  Future<void> markAsRead(String notificationId, String userId);
+
+  /// Mark all notifications for [userId] as read.
+  Future<void> markAllAsRead(String userId);
+
+  /// Get unread notification count for [userId].
+  Future<int> getUnreadCount(String userId);
 }

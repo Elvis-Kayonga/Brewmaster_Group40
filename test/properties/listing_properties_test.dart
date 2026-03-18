@@ -65,7 +65,10 @@ class FakeListingRepository implements ListingRepository {
   @override
   Future<List<CoffeeListing>> searchListings(SearchFilters filters) async {
     return _store.where((l) {
-      if (filters.variety != null && l.variety != filters.variety) {
+      if (filters.query != null &&
+          filters.query!.isNotEmpty &&
+          !l.variety.toLowerCase().contains(filters.query!.toLowerCase()) &&
+          !l.location.toLowerCase().contains(filters.query!.toLowerCase())) {
         return false;
       }
       if (filters.method != null &&
@@ -270,7 +273,7 @@ void main() {
 
     test('variety filter narrows results', () async {
       final results = await repo
-          .searchListings(const SearchFilters(variety: 'Bourbon'));
+          .searchListings(const SearchFilters(query: 'Bourbon'));
       expect(results.length, equals(1));
       expect(results.first.variety, equals('Bourbon'));
     });
@@ -306,7 +309,7 @@ void main() {
 
     test('filter returning no matches gives empty list', () async {
       final results = await repo
-          .searchListings(const SearchFilters(variety: 'SL28'));
+          .searchListings(const SearchFilters(query: 'SL28'));
       expect(results, isEmpty);
     });
   });

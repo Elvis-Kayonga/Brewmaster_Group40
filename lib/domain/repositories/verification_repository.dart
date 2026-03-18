@@ -24,4 +24,8 @@ abstract class VerificationRepository {
   /// Stream that emits the latest [VerificationStatus] for [userId] in
   /// real time (useful for showing pending → verified transitions).
   Stream<VerificationStatus> watchVerificationStatus(String userId);
+
+  /// Mirrors the verification status onto the user profile document so that
+  /// [AuthBloc] can read the correct status without querying this collection.
+  Future<void> syncStatusToUserProfile(String userId, VerificationStatus status);
 }

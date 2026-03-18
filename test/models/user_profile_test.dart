@@ -9,6 +9,7 @@
 ///
 /// Requirements: 1.1, 1.2, 16.1
 /// Developer: Developer 1
+library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';

@@ -26,11 +26,9 @@ class _InMemoryVerificationRepository implements VerificationRepository {
   ) async {
     final now = DateTime.now();
     final req = VerificationRequest(
-      id: 'req_$userId',
       userId: userId,
-      status: VerificationStatus.pending,
+      state: VerificationStatus.pending,
       documentUrls: documents.map((f) => 'https://fake/${f.path}').toList(),
-      submittedAt: now,
       updatedAt: now,
     );
     _store[userId] = req;
@@ -51,12 +49,17 @@ class _InMemoryVerificationRepository implements VerificationRepository {
         _statusOverrides[userId] ?? VerificationStatus.unverified,
       );
 
+  @override
+  Future<void> syncStatusToUserProfile(
+          String userId, VerificationStatus status) async =>
+      _statusOverrides[userId] = status;
+
   /// Test helper: set a user's status directly.
   void setStatus(String userId, VerificationStatus status) {
     _statusOverrides[userId] = status;
     final existing = _store[userId];
     if (existing != null) {
-      _store[userId] = existing.copyWith(status: status);
+      _store[userId] = existing.copyWith(state: status);
     }
   }
 }
@@ -66,21 +69,17 @@ class _InMemoryVerificationRepository implements VerificationRepository {
 // ---------------------------------------------------------------------------
 
 VerificationRequest _makeRequest({
-  String id = 'req1',
   String userId = 'user1',
   VerificationStatus status = VerificationStatus.pending,
   List<String>? documentUrls,
   String? rejectionReason,
-  DateTime? submittedAt,
   DateTime? updatedAt,
 }) =>
     VerificationRequest(
-      id: id,
       userId: userId,
-      status: status,
+      state: status,
       documentUrls: documentUrls ?? ['https://example.com/doc.pdf'],
       rejectionReason: rejectionReason,
-      submittedAt: submittedAt ?? DateTime(2024, 1, 1),
       updatedAt: updatedAt ?? DateTime(2024, 1, 2),
     );
 
@@ -93,15 +92,14 @@ void main() {
     test('toJson()/fromJson() round-trips for pending status', () {
       final req = _makeRequest(status: VerificationStatus.pending);
       final restored = VerificationRequest.fromJson(req.toJson());
-      expect(restored.id, req.id);
       expect(restored.userId, req.userId);
-      expect(restored.status, VerificationStatus.pending);
+      expect(restored.state, VerificationStatus.pending);
     });
 
     test('toJson()/fromJson() round-trips for verified status', () {
       final req = _makeRequest(status: VerificationStatus.verified);
       final restored = VerificationRequest.fromJson(req.toJson());
-      expect(restored.status, VerificationStatus.verified);
+      expect(restored.state, VerificationStatus.verified);
     });
 
     test('toJson()/fromJson() round-trips for rejected status', () {
@@ -110,22 +108,20 @@ void main() {
         rejectionReason: 'Documents unclear',
       );
       final restored = VerificationRequest.fromJson(req.toJson());
-      expect(restored.status, VerificationStatus.rejected);
+      expect(restored.state, VerificationStatus.rejected);
       expect(restored.rejectionReason, 'Documents unclear');
     });
 
     test('toJson()/fromJson() round-trips for unverified status', () {
       final req = _makeRequest(status: VerificationStatus.unverified);
       final restored = VerificationRequest.fromJson(req.toJson());
-      expect(restored.status, VerificationStatus.unverified);
+      expect(restored.state, VerificationStatus.unverified);
     });
 
     test('timestamps preserved as ISO-8601 through serialization', () {
-      final submitted = DateTime(2024, 3, 15, 9, 0, 0);
       final updated = DateTime(2024, 3, 16, 10, 30, 0);
-      final req = _makeRequest(submittedAt: submitted, updatedAt: updated);
+      final req = _makeRequest(updatedAt: updated);
       final restored = VerificationRequest.fromJson(req.toJson());
-      expect(restored.submittedAt.toIso8601String(), submitted.toIso8601String());
       expect(restored.updatedAt.toIso8601String(), updated.toIso8601String());
     });
 
@@ -148,21 +144,19 @@ void main() {
       expect(restored.rejectionReason, isNull);
     });
 
-    test('copyWith() updates status without mutating original', () {
+    test('copyWith() updates state without mutating original', () {
       final original = _makeRequest(status: VerificationStatus.pending);
-      final updated = original.copyWith(status: VerificationStatus.verified);
-      expect(updated.status, VerificationStatus.verified);
-      expect(original.status, VerificationStatus.pending);
+      final updated = original.copyWith(state: VerificationStatus.verified);
+      expect(updated.state, VerificationStatus.verified);
+      expect(original.state, VerificationStatus.pending);
     });
 
     test('copyWith() preserves all unchanged fields', () {
       final original = _makeRequest(
-        id: 'r1',
         userId: 'u1',
         documentUrls: ['doc.pdf'],
       );
-      final updated = original.copyWith(status: VerificationStatus.rejected);
-      expect(updated.id, 'r1');
+      final updated = original.copyWith(state: VerificationStatus.rejected);
       expect(updated.userId, 'u1');
       expect(updated.documentUrls, ['doc.pdf']);
     });
@@ -182,7 +176,7 @@ void main() {
       await repo.submitVerificationRequest('user1', []);
       final result = await repo.getVerificationStatus('user1');
       expect(result, isNotNull);
-      expect(result!.status, VerificationStatus.pending);
+      expect(result!.state, VerificationStatus.pending);
       expect(result.userId, 'user1');
     });
 
@@ -224,14 +218,14 @@ void main() {
       await repo.submitVerificationRequest('user5', []);
       repo.setStatus('user5', VerificationStatus.verified);
       final result = await repo.getVerificationStatus('user5');
-      expect(result!.status, VerificationStatus.verified);
+      expect(result!.state, VerificationStatus.verified);
     });
 
     test('status transitions from pending to rejected', () async {
       await repo.submitVerificationRequest('user6', []);
       repo.setStatus('user6', VerificationStatus.rejected);
       final result = await repo.getVerificationStatus('user6');
-      expect(result!.status, VerificationStatus.rejected);
+      expect(result!.state, VerificationStatus.rejected);
     });
 
     test('multiple users have independent verification states', () async {
@@ -242,15 +236,15 @@ void main() {
       final farmerStatus = await repo.getVerificationStatus('farmer1');
       final buyerStatus = await repo.getVerificationStatus('buyer1');
 
-      expect(farmerStatus!.status, VerificationStatus.verified);
-      expect(buyerStatus!.status, VerificationStatus.pending);
+      expect(farmerStatus!.state, VerificationStatus.verified);
+      expect(buyerStatus!.state, VerificationStatus.pending);
     });
 
     test('all VerificationStatus values serialize and restore correctly', () {
       for (final status in VerificationStatus.values) {
         final req = _makeRequest(status: status);
         final restored = VerificationRequest.fromJson(req.toJson());
-        expect(restored.status, status,
+        expect(restored.state, status,
             reason: 'Failed for status: ${status.name}');
       }
     });

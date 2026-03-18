@@ -24,6 +24,10 @@ class FirebaseDashboardRepository implements DashboardRepository {
 
   @override
   Future<FarmerDashboard> getFarmerDashboard(String farmerId) async {
+    final now = DateTime.now();
+    final thirtyDaysAgo = now.subtract(const Duration(days: 30));
+    final sixtyDaysAgo = now.subtract(const Duration(days: 60));
+
     final results = await Future.wait([
       _firestore
           .collection('listings')
@@ -52,17 +56,78 @@ class FirebaseDashboardRepository implements DashboardRepository {
       (acc, d) => acc + ((d.data()['viewCount'] as num?)?.toInt() ?? 0),
     );
 
-    final totalEarnings = txSnap.docs
-        .where((d) => d.data()['status'] == 'completed')
-        .fold<double>(
-          0.0,
-          (acc, d) => acc + ((d.data()['amount'] as num?)?.toDouble() ?? 0.0),
-        );
+    final completedTx =
+        txSnap.docs.where((d) => d.data()['status'] == 'completed').toList();
+
+    final totalEarnings = completedTx.fold<double>(
+      0.0,
+      (acc, d) => acc + ((d.data()['amount'] as num?)?.toDouble() ?? 0.0),
+    );
+
+    // Current 30-day window
+    final currentTx = completedTx.where((d) {
+      final ts = d.data()['createdAt'];
+      if (ts == null) return false;
+      final date = (ts as Timestamp).toDate();
+      return date.isAfter(thirtyDaysAgo);
+    }).toList();
+
+    final currentRevenue = currentTx.fold<double>(
+      0.0,
+      (acc, d) => acc + ((d.data()['amount'] as num?)?.toDouble() ?? 0.0),
+    );
+    final currentOrders = currentTx.length;
+
+    // Previous 30-day window
+    final prevTx = completedTx.where((d) {
+      final ts = d.data()['createdAt'];
+      if (ts == null) return false;
+      final date = (ts as Timestamp).toDate();
+      return date.isAfter(sixtyDaysAgo) && !date.isAfter(thirtyDaysAgo);
+    }).toList();
+
+    final prevRevenue = prevTx.fold<double>(
+      0.0,
+      (acc, d) => acc + ((d.data()['amount'] as num?)?.toDouble() ?? 0.0),
+    );
+    final prevOrders = prevTx.length;
+
+    double? revenueChangePct;
+    if (prevRevenue > 0) {
+      revenueChangePct = ((currentRevenue - prevRevenue) / prevRevenue) * 100;
+    } else if (currentRevenue > 0) {
+      revenueChangePct = 100.0; // first sales this period
+    }
+
+    double? ordersChangePct;
+    if (prevOrders > 0) {
+      ordersChangePct =
+          ((currentOrders - prevOrders) / prevOrders) * 100;
+    } else if (currentOrders > 0) {
+      ordersChangePct = 100.0;
+    }
+
+    // Daily revenue for the last 7 days (index 0 = 6 days ago, 6 = today)
+    final sevenDaysAgo = now.subtract(const Duration(days: 6));
+    final dailyRevenue = List<double>.filled(7, 0.0);
+    for (final d in completedTx) {
+      final ts = d.data()['createdAt'];
+      if (ts == null) continue;
+      final date = (ts as Timestamp).toDate();
+      if (date.isBefore(sevenDaysAgo)) continue;
+      final dayIndex = date
+          .difference(DateTime(sevenDaysAgo.year, sevenDaysAgo.month,
+              sevenDaysAgo.day))
+          .inDays
+          .clamp(0, 6);
+      dailyRevenue[dayIndex] +=
+          (d.data()['amount'] as num?)?.toDouble() ?? 0.0;
+    }
 
     final totalConversations = convoSnap.docs.length;
     final responded = convoSnap.docs.where((d) {
-      final unread = d.data()['unreadCounts'] as Map<String, dynamic>?;
-      return unread != null && (unread[farmerId] as num?)?.toInt() == 0;
+      final unreadCount = (d.data()['unreadCount'] as num?)?.toInt() ?? 0;
+      return unreadCount == 0;
     }).length;
     final responseRate = totalConversations == 0
         ? 0.0
@@ -74,6 +139,9 @@ class FirebaseDashboardRepository implements DashboardRepository {
       conversations: totalConversations,
       views: views,
       responseRate: responseRate,
+      revenueChangePct: revenueChangePct,
+      ordersChangePct: ordersChangePct,
+      dailyRevenue: dailyRevenue,
     );
   }
 

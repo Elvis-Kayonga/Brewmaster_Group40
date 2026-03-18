@@ -31,6 +31,9 @@ class Message {
   /// ID of the user who sent the message
   final String senderId;
 
+  /// Denormalized sender display name (ERD: senderName).
+  final String? senderName;
+
   /// ID of the user who receives the message
   final String receiverId;
 
@@ -54,6 +57,7 @@ class Message {
     required this.messageId,
     required this.conversationId,
     required this.senderId,
+    this.senderName,
     required this.receiverId,
     required this.content,
     required this.messageType,
@@ -68,24 +72,29 @@ class Message {
       messageId: json['messageId'] as String,
       conversationId: json['conversationId'] as String,
       senderId: json['senderId'] as String,
+      senderName: json['senderName'] as String?,
       receiverId: json['receiverId'] as String,
       content: json['content'] as String,
-      messageType: messageTypeFromString(json['messageType'] as String),
+      // ERD field is 'type'; fall back to legacy 'messageType'
+      messageType: messageTypeFromString(
+        (json['type'] ?? json['messageType']) as String,
+      ),
       listingId: json['listingId'] as String?,
       isRead: json['isRead'] as bool,
       createdAt: (json['createdAt'] as Timestamp).toDate(),
     );
   }
 
-  /// Convert Message to JSON for Firestore
+  /// Convert Message to JSON for Firestore — field names match ERD.
   Map<String, dynamic> toJson() {
     return {
       'messageId': messageId,
       'conversationId': conversationId,
       'senderId': senderId,
+      'senderName': senderName,
       'receiverId': receiverId,
       'content': content,
-      'messageType': messageType.name,
+      'type': messageType.name,
       'listingId': listingId,
       'isRead': isRead,
       'createdAt': Timestamp.fromDate(createdAt),
@@ -93,11 +102,12 @@ class Message {
   }
 
   /// Create a copy of the message with updated fields
-  Message copyWith({bool? isRead, String? content}) {
+  Message copyWith({bool? isRead, String? content, String? senderName}) {
     return Message(
       messageId: messageId,
       conversationId: conversationId,
       senderId: senderId,
+      senderName: senderName ?? this.senderName,
       receiverId: receiverId,
       content: content ?? this.content,
       messageType: messageType,

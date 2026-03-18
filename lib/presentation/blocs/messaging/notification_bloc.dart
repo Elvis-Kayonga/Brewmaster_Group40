@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../domain/models/notification.dart';
 import '../../../domain/repositories/notification_repository.dart';
 
 part 'notification_event.dart';
@@ -17,6 +18,7 @@ part 'notification_state.dart';
 class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
   final NotificationRepository _repository;
   StreamSubscription<Map<String, dynamic>>? _notificationSub;
+  StreamSubscription<List<AppNotification>>? _firestoreSub;
 
   NotificationBloc({required NotificationRepository repository})
       : _repository = repository,
@@ -25,6 +27,10 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     on<NotificationReceived>(_onReceived);
     on<NotificationPreferencesLoadRequested>(_onLoadPreferences);
     on<NotificationPreferencesUpdateRequested>(_onUpdatePreferences);
+    on<NotificationsWatchRequested>(_onWatchNotifications);
+    on<_NotificationsUpdated>(_onNotificationsUpdated);
+    on<NotificationMarkAsReadRequested>(_onMarkAsRead);
+    on<NotificationMarkAllReadRequested>(_onMarkAllRead);
   }
 
   Future<void> _onRequestPermission(
@@ -81,9 +87,46 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     }
   }
 
+  Future<void> _onWatchNotifications(
+    NotificationsWatchRequested event,
+    Emitter<NotificationState> emit,
+  ) async {
+    await _firestoreSub?.cancel();
+    _firestoreSub = _repository.watchUserNotifications(event.userId).listen(
+      (notifications) => add(_NotificationsUpdated(notifications)),
+      onError: (_) {},
+    );
+  }
+
+  void _onNotificationsUpdated(
+    _NotificationsUpdated event,
+    Emitter<NotificationState> emit,
+  ) {
+    final unread = event.notifications.where((n) => !n.isRead).length;
+    emit(NotificationsLoaded(
+      notifications: event.notifications,
+      unreadCount: unread,
+    ));
+  }
+
+  Future<void> _onMarkAsRead(
+    NotificationMarkAsReadRequested event,
+    Emitter<NotificationState> emit,
+  ) async {
+    await _repository.markAsRead(event.notificationId, event.userId);
+  }
+
+  Future<void> _onMarkAllRead(
+    NotificationMarkAllReadRequested event,
+    Emitter<NotificationState> emit,
+  ) async {
+    await _repository.markAllAsRead(event.userId);
+  }
+
   @override
   Future<void> close() {
     _notificationSub?.cancel();
+    _firestoreSub?.cancel();
     return super.close();
   }
 }

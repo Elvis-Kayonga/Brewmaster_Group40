@@ -10,13 +10,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../config/theme.dart';
+import '../../../domain/models/enums.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/verification/verification_bloc.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/loading_indicator.dart';
 
 class VerificationRequestScreen extends StatefulWidget {
-  const VerificationRequestScreen({super.key});
+  /// When true, shown as an onboarding step by AuthGate.
+  /// On success, dispatches AuthCheckRequested instead of popping.
+  final bool isOnboarding;
+
+  const VerificationRequestScreen({super.key, this.isOnboarding = false});
 
   @override
   State<VerificationRequestScreen> createState() =>
@@ -27,16 +32,26 @@ class _VerificationRequestScreenState
     extends State<VerificationRequestScreen> {
   final List<File> _selectedFiles = [];
   final _picker = ImagePicker();
+  bool _showResubmitForm = false;
 
   @override
   void initState() {
     super.initState();
-    final authState = context.read<AuthBloc>().state;
-    if (authState is AuthAuthenticated) {
+    final userId = _userId(context.read<AuthBloc>().state);
+    if (userId != null) {
       context
           .read<VerificationBloc>()
-          .add(VerificationStatusLoadRequested(authState.profile.id));
+          .add(VerificationStatusLoadRequested(userId));
     }
+  }
+
+  /// Extracts the user ID from whichever auth state is currently active.
+  /// The screen is shown for both [AuthNeedsKycVerification] (onboarding) and
+  /// [AuthAuthenticated] (profile → verify from settings).
+  String? _userId(AuthState authState) {
+    if (authState is AuthAuthenticated) return authState.profile.id;
+    if (authState is AuthNeedsKycVerification) return authState.profile.id;
+    return null;
   }
 
   Future<void> _pickDocuments() async {
@@ -53,8 +68,8 @@ class _VerificationRequestScreenState
   }
 
   void _submit() {
-    final authState = context.read<AuthBloc>().state;
-    if (authState is! AuthAuthenticated) return;
+    final userId = _userId(context.read<AuthBloc>().state);
+    if (userId == null) return;
     if (_selectedFiles.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select at least one document.')),
@@ -63,7 +78,7 @@ class _VerificationRequestScreenState
     }
     context.read<VerificationBloc>().add(
           VerificationDocumentSubmitted(
-            userId: authState.profile.id,
+            userId: userId,
             documents: List.from(_selectedFiles),
           ),
         );
@@ -75,17 +90,35 @@ class _VerificationRequestScreenState
       appBar: AppBar(
         title: const Text('Verify Identity'),
         elevation: 0,
+        automaticallyImplyLeading: !widget.isOnboarding,
+        actions: widget.isOnboarding
+            ? [
+                TextButton(
+                  onPressed: () => context
+                      .read<AuthBloc>()
+                      .add(const AuthCheckRequested()),
+                  child: const Text('Skip for now'),
+                ),
+              ]
+            : null,
       ),
       body: BlocConsumer<VerificationBloc, VerificationState>(
         listener: (context, state) {
           if (state is VerificationSubmitSuccess) {
+            setState(() => _showResubmitForm = false);
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text(
                     'Documents submitted. We will review within 2 business days.'),
               ),
             );
-            Navigator.pop(context);
+            if (widget.isOnboarding) {
+              // Let AuthBloc re-read the profile (now pending) so AuthGate
+              // routes to HomeShell automatically.
+              context.read<AuthBloc>().add(const AuthCheckRequested());
+            } else {
+              Navigator.pop(context);
+            }
           }
           if (state is VerificationFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -101,9 +134,10 @@ class _VerificationRequestScreenState
             return const LoadingIndicator(message: 'Loading…');
           }
 
-          // Show current status if already submitted
+          // Show status view if a submission exists and we're not re-submitting
           if (state is VerificationStatusLoaded &&
-              state.request != null) {
+              state.status != VerificationStatus.unverified &&
+              !_showResubmitForm) {
             return _buildStatusView(state);
           }
 
@@ -146,16 +180,18 @@ class _VerificationRequestScreenState
           Text(statusText,
               textAlign: TextAlign.center, style: AppTheme.body),
           if (state.status.name == 'rejected') ...[
+            if (state.rejectionReason != null) ...[
+              const SizedBox(height: AppTheme.padding12),
+              Text(
+                'Reason: ${state.rejectionReason}',
+                textAlign: TextAlign.center,
+                style: AppTheme.caption.copyWith(color: AppTheme.errorColor),
+              ),
+            ],
             const SizedBox(height: AppTheme.padding24),
             CustomButton(
               text: 'Re-submit Documents',
-              onPressed: () => context.read<VerificationBloc>().add(
-                    VerificationStatusLoadRequested(
-                      (context.read<AuthBloc>().state as AuthAuthenticated)
-                          .profile
-                          .id,
-                    ),
-                  ),
+              onPressed: () => setState(() => _showResubmitForm = true),
             ),
           ],
         ],

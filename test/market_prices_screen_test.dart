@@ -2,17 +2,64 @@
 ///
 /// Requirements: 3.1, 3.2, 3.5, 16.1 (Clean Architecture)
 /// Developer: Developer 5 (refactored to BLoC by Developer 1)
+library;
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:brewmaster/domain/models/enums.dart';
 import 'package:brewmaster/domain/models/market_price.dart';
+import 'package:brewmaster/domain/models/user_profile.dart';
+import 'package:brewmaster/domain/repositories/auth_repository.dart';
 import 'package:brewmaster/domain/repositories/market_price_repository.dart';
+import 'package:brewmaster/domain/repositories/user_repository.dart';
+import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
 import 'package:brewmaster/presentation/blocs/market_price/market_price_bloc.dart';
+import 'package:brewmaster/presentation/blocs/profile/profile_bloc.dart';
 import 'package:brewmaster/presentation/screens/dashboard/market_prices_screen.dart';
 import 'package:brewmaster/presentation/widgets/common/loading_indicator.dart';
+
+class _FakeAuthRepository implements AuthRepository {
+  @override
+  Stream<User?> get authStateChanges => const Stream.empty();
+  @override
+  User? get currentUser => null;
+  @override
+  Future<User?> register(String email, String password) async => null;
+  @override
+  Future<User?> signIn(String email, String password) async => null;
+  @override
+  Future<User?> signInWithGoogle() async => null;
+  @override
+  Future<void> signOut() async {}
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {}
+  @override
+  Future<bool> sendEmailVerification() async => false;
+  @override
+  Future<bool> isEmailVerified() async => false;
+}
+
+class _FakeUserRepository implements UserRepository {
+  @override
+  Future<UserProfile?> getUserProfile(String userId) async => null;
+  @override
+  Future<UserProfile?> getUserProfileByEmail(String email) async => null;
+  @override
+  Future<void> createUserProfile(UserProfile profile) async {}
+  @override
+  Future<void> updateUserProfile(
+      String userId, Map<String, dynamic> updates) async {}
+  @override
+  Stream<UserProfile?> watchUserProfile(String userId) => Stream.value(null);
+}
+
+AuthBloc _makeAuthBloc() => AuthBloc(
+      authRepository: _FakeAuthRepository(),
+      userRepository: _FakeUserRepository(),
+    );
 
 class _FakeMarketPriceRepository implements MarketPriceRepository {
   @override
@@ -35,9 +82,15 @@ void main() {
   group('MarketPricesScreen Widget Tests', () {
     Widget createTestWidget() {
       return MaterialApp(
-        home: BlocProvider(
-          create: (_) =>
-              MarketPriceBloc(repository: _FakeMarketPriceRepository()),
+        home: MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (_) =>
+                  MarketPriceBloc(repository: _FakeMarketPriceRepository()),
+            ),
+            BlocProvider(create: (_) => _makeAuthBloc()),
+            BlocProvider(create: (_) => ProfileBloc(userRepository: _FakeUserRepository())),
+          ],
           child: const MarketPricesScreen(),
         ),
       );
@@ -61,7 +114,7 @@ void main() {
           await tester.pump();
 
           expect(find.byType(AppBar), findsOneWidget);
-          expect(find.text('Market Prices'), findsOneWidget);
+          expect(find.text('Brew Master'), findsOneWidget);
         },
       );
     });
@@ -73,7 +126,7 @@ void main() {
           await tester.pumpWidget(createTestWidget());
           await tester.pump();
 
-          expect(find.text('Market Prices'), findsOneWidget);
+          expect(find.text('Brew Master'), findsOneWidget);
         },
       );
 
@@ -241,10 +294,15 @@ void main() {
                     onPressed: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => BlocProvider(
-                          create: (_) => MarketPriceBloc(
-                            repository: _FakeMarketPriceRepository(),
-                          ),
+                        builder: (_) => MultiBlocProvider(
+                          providers: [
+                            BlocProvider(
+                              create: (_) => MarketPriceBloc(
+                                  repository: _FakeMarketPriceRepository()),
+                            ),
+                            BlocProvider(create: (_) => _makeAuthBloc()),
+            BlocProvider(create: (_) => ProfileBloc(userRepository: _FakeUserRepository())),
+                          ],
                           child: const MarketPricesScreen(),
                         ),
                       ),
@@ -259,9 +317,11 @@ void main() {
           await tester.tap(find.text('View Prices'));
           await tester.pumpAndSettle();
 
-          expect(find.text('Market Prices'), findsOneWidget);
+          expect(find.text('Brew Master'), findsOneWidget);
 
-          await tester.pageBack();
+          final NavigatorState navigator =
+              tester.state(find.byType(Navigator).first);
+          navigator.pop();
           await tester.pumpAndSettle();
 
           expect(find.text('View Prices'), findsOneWidget);

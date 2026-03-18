@@ -2,6 +2,7 @@
 ///
 /// Requirements: 6.1, 6.2
 /// Developer: Developer 5 (refactored to BLoC by Developer 1)
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,7 +15,6 @@ import 'package:brewmaster/domain/repositories/payment_repository.dart';
 import 'package:brewmaster/domain/validators/payment_validator.dart';
 import 'package:brewmaster/presentation/blocs/payment/payment_bloc.dart';
 import 'package:brewmaster/presentation/screens/payments/payment_screen.dart';
-import 'package:brewmaster/presentation/widgets/common/custom_button.dart';
 import 'package:brewmaster/presentation/widgets/common/custom_dropdown.dart';
 import 'package:brewmaster/presentation/widgets/common/custom_text_field.dart';
 

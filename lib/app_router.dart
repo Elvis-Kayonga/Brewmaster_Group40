@@ -23,6 +23,7 @@ import 'presentation/screens/messaging/conversations_screen.dart';
 import 'presentation/screens/payments/transaction_detail_screen.dart';
 import 'presentation/screens/payments/transaction_history_screen.dart';
 import 'presentation/screens/profile/profile_screen.dart';
+import 'presentation/screens/notifications/notifications_screen.dart';
 import 'presentation/screens/profile/verification_request_screen.dart';
 import 'presentation/screens/search/search_screen.dart';
 
@@ -50,6 +51,9 @@ abstract class AppRoutes {
   static const profile = '/profile';
   static const editProfile = '/profile/edit';
   static const verification = '/profile/verification';
+
+  // Notifications
+  static const notifications = '/notifications';
 }
 
 /// Pass to [MaterialApp.onGenerateRoute].
@@ -84,7 +88,8 @@ Route<dynamic>? generateRoute(RouteSettings settings) {
           MyListingsScreen(farmerId: args['farmerId'] as String? ?? ''));
 
     case AppRoutes.newListing:
-      return _page(const ListingFormScreen());
+      return _page(
+          ListingFormScreen(farmerId: args['farmerId'] as String? ?? ''));
 
     case AppRoutes.listingDetail:
       return _page(
@@ -116,6 +121,9 @@ Route<dynamic>? generateRoute(RouteSettings settings) {
 
     case AppRoutes.verification:
       return _page(const VerificationRequestScreen());
+
+    case AppRoutes.notifications:
+      return _page(const NotificationsScreen());
 
     default:
       return null;

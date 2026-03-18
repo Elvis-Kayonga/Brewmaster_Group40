@@ -54,6 +54,16 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   }
 
   @override
+  void didUpdateWidget(ProfileSetupScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If the role arrived late (auth stream race) and the user hasn't picked
+    // one manually yet, apply it now.
+    if (_selectedRole == null && widget.role != null) {
+      setState(() => _selectedRole = widget.role);
+    }
+  }
+
+  @override
   void dispose() {
     _farmSizeController.dispose();
     _farmLocationController.dispose();

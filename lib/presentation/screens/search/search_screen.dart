@@ -10,11 +10,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../config/theme.dart';
 import '../../../domain/models/coffee_listing.dart';
 import '../../../domain/models/search_filters.dart';
+import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/listing/listing_bloc.dart';
+import '../../blocs/messaging/messaging_bloc.dart';
 import '../../widgets/common/empty_state_widget.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/common/profile_avatar_button.dart';
 import '../listings/listing_detail_screen.dart';
+import '../messaging/chat_screen.dart';
+import '../payments/payment_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -30,8 +34,8 @@ class _SearchScreenState extends State<SearchScreen> {
   late TextEditingController _maxAltitudeController;
   late TextEditingController _searchController;
 
-  String? _selectedVariety;
   String? _selectedMethod;
+  String? _selectedCountry;
   bool _showFilters = false;
 
   @override
@@ -42,6 +46,8 @@ class _SearchScreenState extends State<SearchScreen> {
     _maxPriceController = TextEditingController();
     _minAltitudeController = TextEditingController();
     _maxAltitudeController = TextEditingController();
+    // Re-run search whenever the text bar changes
+    _searchController.addListener(() => setState(() {}));
     context.read<ListingBloc>().add(const ActiveListingsLoadRequested());
   }
 
@@ -57,8 +63,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _applyFilters() {
     final filters = SearchFilters(
-      variety: _selectedVariety,
       method: _selectedMethod,
+      country: _selectedCountry,
       minPrice: _minPriceController.text.isEmpty
           ? null
           : double.tryParse(_minPriceController.text),
@@ -78,8 +84,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _clearFilters() {
     setState(() {
-      _selectedVariety = null;
       _selectedMethod = null;
+      _selectedCountry = null;
       _minPriceController.clear();
       _maxPriceController.clear();
       _minAltitudeController.clear();
@@ -107,9 +113,20 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
         actions: const [ProfileAvatarButton()],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      body: BlocListener<MessagingBloc, MessagingState>(
+        listener: (context, state) {
+          if (state is ConversationReady) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    ChatScreen(conversation: state.conversation),
+              ),
+            );
+          }
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // ── Header ──────────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
@@ -210,7 +227,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'BEAN TYPE',
+                          'ORIGIN COUNTRY',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -219,17 +236,29 @@ class _SearchScreenState extends State<SearchScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        _FilterCheckbox(
-                          label: 'Artisanal Roasted Beans',
-                          value: _selectedVariety == 'roasted',
-                          onChanged: (v) => setState(() =>
-                              _selectedVariety = v == true ? 'roasted' : null),
-                        ),
-                        _FilterCheckbox(
-                          label: 'Green / Unroasted Lots',
-                          value: _selectedVariety == 'green',
-                          onChanged: (v) => setState(() =>
-                              _selectedVariety = v == true ? 'green' : null),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
+                            'All',
+                            'Kenya',
+                            'Ethiopia',
+                            'Uganda',
+                            'Tanzania',
+                            'Rwanda',
+                            'Burundi',
+                          ]
+                              .map((c) => _FilterChip(
+                                    label: c,
+                                    selected: c == 'All'
+                                        ? _selectedCountry == null
+                                        : _selectedCountry == c,
+                                    onSelected: (v) => setState(
+                                      () => _selectedCountry =
+                                          (c == 'All' || !v) ? null : c,
+                                    ),
+                                  ))
+                              .toList(),
                         ),
                         const SizedBox(height: 12),
                         const Text(
@@ -245,15 +274,13 @@ class _SearchScreenState extends State<SearchScreen> {
                         Wrap(
                           spacing: 8,
                           runSpacing: 4,
-                          children: ['Washed', 'Natural', 'Honey', 'Wet-Hulled']
+                          children: ['Washed', 'Natural', 'Honey']
                               .map((m) => _FilterChip(
                                     label: m,
-                                    selected: _selectedMethod ==
-                                        m.toLowerCase().replaceAll('-', '_'),
+                                    selected: _selectedMethod == m.toLowerCase(),
                                     onSelected: (v) => setState(
-                                      () => _selectedMethod = v
-                                          ? m.toLowerCase().replaceAll('-', '_')
-                                          : null,
+                                      () => _selectedMethod =
+                                          v ? m.toLowerCase() : null,
                                     ),
                                   ))
                               .toList(),
@@ -281,6 +308,34 @@ class _SearchScreenState extends State<SearchScreen> {
                             Expanded(
                               child: _CompactTextField(
                                 controller: _maxPriceController,
+                                hint: 'Max',
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'ALTITUDE RANGE (m)',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.1,
+                            color: AppTheme.primaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _CompactTextField(
+                                controller: _minAltitudeController,
+                                hint: 'Min',
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _CompactTextField(
+                                controller: _maxAltitudeController,
                                 hint: 'Max',
                               ),
                             ),
@@ -336,14 +391,29 @@ class _SearchScreenState extends State<SearchScreen> {
           // ── Listing Results ──────────────────────────────────────────────
           Expanded(
             child: BlocBuilder<ListingBloc, ListingState>(
+              buildWhen: (_, curr) =>
+                  curr is ListingInitial ||
+                  curr is ListingLoading ||
+                  curr is ActiveListingsLoaded,
               builder: (context, state) {
                 if (state is ListingLoading || state is ListingInitial) {
                   return const LoadingIndicator();
                 }
 
-                final listings = state is ActiveListingsLoaded
+                var listings = state is ActiveListingsLoaded
                     ? state.listings
                     : const <CoffeeListing>[];
+
+                // Client-side text search (variety, location, farmerName)
+                final q = _searchController.text.trim().toLowerCase();
+                if (q.isNotEmpty) {
+                  listings = listings
+                      .where((l) =>
+                          l.variety.toLowerCase().contains(q) ||
+                          l.location.toLowerCase().contains(q) ||
+                          (l.farmerName?.toLowerCase().contains(q) ?? false))
+                      .toList();
+                }
 
                 if (listings.isEmpty) {
                   return const EmptyStateWidget(
@@ -371,13 +441,37 @@ class _SearchScreenState extends State<SearchScreen> {
                           ),
                         ),
                       ),
+                      onMessage: () => context
+                          .read<MessagingBloc>()
+                          .add(StartConversationRequested(
+                              listing.farmerId)),
+                      onPay: () {
+                        final authState =
+                            context.read<AuthBloc>().state;
+                        final buyerId = authState is AuthAuthenticated
+                            ? authState.profile.id
+                            : '';
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PaymentScreen(
+                              listingId: listing.listingId,
+                              farmerId: listing.farmerId,
+                              buyerId: buyerId,
+                              amount: listing.pricePerKg *
+                                  listing.quantity,
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 );
               },
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -388,8 +482,15 @@ class _SearchScreenState extends State<SearchScreen> {
 class _ListingCard extends StatelessWidget {
   final CoffeeListing listing;
   final VoidCallback onTap;
+  final VoidCallback? onMessage;
+  final VoidCallback? onPay;
 
-  const _ListingCard({required this.listing, required this.onTap});
+  const _ListingCard({
+    required this.listing,
+    required this.onTap,
+    this.onMessage,
+    this.onPay,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -583,10 +684,8 @@ class _ListingCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   const SizedBox(height: 12),
-                  // Price + acquire button
+                  // Price row
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -609,26 +708,72 @@ class _ListingCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      ElevatedButton.icon(
-                        onPressed: onTap,
-                        icon: const Icon(Icons.add, size: 16,
-                            color: Colors.white),
-                        label: const Text(
-                          'Acquire Lot',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                      const Spacer(),
+                      Text(
+                        '${listing.quantity.toStringAsFixed(0)} kg available',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Action buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: onMessage,
+                          icon: const Icon(
+                            Icons.chat_bubble_outline,
+                            size: 14,
+                          ),
+                          label: const Text(
+                            'Message',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.primaryDark,
+                            side: const BorderSide(
+                                color: AppTheme.primaryDark),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
                           ),
                         ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryDark,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: onPay,
+                          icon: const Icon(
+                            Icons.payments_outlined,
+                            size: 14,
+                            color: Colors.white,
                           ),
-                          elevation: 0,
+                          label: const Text(
+                            'Direct Pay',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryDark,
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            elevation: 0,
+                          ),
                         ),
                       ),
                     ],
@@ -655,43 +800,6 @@ class _ListingCard extends StatelessWidget {
 }
 
 // ── Helper widgets ─────────────────────────────────────────────────────────
-
-class _FilterCheckbox extends StatelessWidget {
-  final String label;
-  final bool value;
-  final ValueChanged<bool?> onChanged;
-
-  const _FilterCheckbox({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 24,
-          height: 24,
-          child: Checkbox(
-            value: value,
-            onChanged: onChanged,
-            activeColor: AppTheme.primaryDark,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4)),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: const TextStyle(
-              fontSize: 13, color: AppTheme.textPrimary),
-        ),
-      ],
-    );
-  }
-}
 
 class _FilterChip extends StatelessWidget {
   final String label;

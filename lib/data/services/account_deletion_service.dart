@@ -46,7 +46,7 @@ class AccountDeletionService {
     // Collections with direct userId ownership
     final ownedCollections = [
       ('users', 'id'),
-      ('verification_requests', 'userId'),
+      ('verifications', 'userId'),
       ('offline_sync_queue', 'userId'),
       ('notifications', 'userId'),
     ];

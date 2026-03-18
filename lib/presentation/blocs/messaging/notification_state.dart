@@ -35,6 +35,17 @@ class NotificationPreferencesLoaded extends NotificationState {
   List<Object?> get props => [preferences];
 }
 
+class NotificationsLoaded extends NotificationState {
+  final List<AppNotification> notifications;
+  final int unreadCount;
+  const NotificationsLoaded({
+    required this.notifications,
+    required this.unreadCount,
+  });
+  @override
+  List<Object?> get props => [notifications, unreadCount];
+}
+
 class NotificationFailure extends NotificationState {
   final String message;
   const NotificationFailure(this.message);

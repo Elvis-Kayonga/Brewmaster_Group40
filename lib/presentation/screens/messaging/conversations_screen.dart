@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -162,26 +163,42 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                           itemCount: state.conversations.length,
                           itemBuilder: (context, index) {
                             final conversation = state.conversations[index];
-                            if (_searchQuery.isNotEmpty &&
-                                !conversation.conversationId
-                                    .contains(_searchQuery)) {
-                              return const SizedBox.shrink();
+                            if (_searchQuery.isNotEmpty) {
+                              final currentUid = FirebaseAuth
+                                  .instance.currentUser?.uid;
+                              final otherId =
+                                  conversation.participantIds.firstWhere(
+                                (id) => id != currentUid,
+                                orElse: () => '',
+                              );
+                              final otherName = (conversation
+                                          .participantNames[otherId] ??
+                                      '')
+                                  .toLowerCase();
+                              if (!otherName
+                                  .contains(_searchQuery.toLowerCase())) {
+                                return const SizedBox.shrink();
+                              }
                             }
                             return _ConversationTile(
                               conversation: conversation,
                               onTap: () {
                                 context.read<MessagingBloc>().add(
-                                    MessagesLoadRequested(
-                                        conversation.conversationId));
-                                context.read<MessagingBloc>().add(
                                     MessagesMarkReadRequested(
                                         conversation.conversationId));
-                                Navigator.of(context).push(
+                                Navigator.of(context)
+                                    .push(
                                   MaterialPageRoute(
                                     builder: (_) =>
                                         ChatScreen(conversation: conversation),
                                   ),
-                                );
+                                )
+                                    .then((_) {
+                                  if (context.mounted) {
+                                    context.read<MessagingBloc>().add(
+                                        const ConversationsLoadRequested());
+                                  }
+                                });
                               },
                             );
                           },
@@ -207,6 +224,17 @@ class _ConversationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final lastMessage = conversation.lastMessage;
     final isUnread = conversation.unreadCount > 0;
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    final otherId = conversation.participantIds.firstWhere(
+      (id) => id != currentUid,
+      orElse: () => '',
+    );
+    final otherName =
+        conversation.participantNames[otherId]?.trim() ?? '';
+    final displayName =
+        otherName.isNotEmpty ? otherName : 'Chat #${conversation.conversationId.substring(0, 8)}';
+    final avatarLetter =
+        otherName.isNotEmpty ? otherName[0].toUpperCase() : '?';
 
     return GestureDetector(
       onTap: onTap,
@@ -226,10 +254,10 @@ class _ConversationTile extends StatelessWidget {
                 color: isUnread ? AppTheme.primaryDark : AppTheme.primaryColor,
                 shape: BoxShape.circle,
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  'E',
-                  style: TextStyle(
+                  avatarLetter,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -243,7 +271,7 @@ class _ConversationTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Chat #${conversation.conversationId.substring(0, 8)}',
+                    displayName,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight:

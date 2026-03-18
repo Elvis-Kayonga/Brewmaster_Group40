@@ -4,6 +4,12 @@ class FarmerDashboard {
   final int conversations;
   final int views;
   final double responseRate;
+  /// Percentage change in revenue vs the previous 30-day window, e.g. 12.5
+  final double? revenueChangePct;
+  /// Percentage change in completed orders vs the previous 30-day window
+  final double? ordersChangePct;
+  /// Revenue per day for the last 7 days; index 0 = 6 days ago, index 6 = today
+  final List<double> dailyRevenue;
 
   const FarmerDashboard({
     required this.activeListings,
@@ -11,6 +17,9 @@ class FarmerDashboard {
     required this.conversations,
     required this.views,
     required this.responseRate,
+    this.revenueChangePct,
+    this.ordersChangePct,
+    this.dailyRevenue = const [0, 0, 0, 0, 0, 0, 0],
   });
 
   Map<String, dynamic> toJson() {
@@ -49,6 +58,9 @@ class FarmerDashboard {
     int? conversations,
     int? views,
     double? responseRate,
+    double? revenueChangePct,
+    double? ordersChangePct,
+    List<double>? dailyRevenue,
   }) {
     return FarmerDashboard(
       activeListings: activeListings ?? this.activeListings,
@@ -56,6 +68,9 @@ class FarmerDashboard {
       conversations: conversations ?? this.conversations,
       views: views ?? this.views,
       responseRate: responseRate ?? this.responseRate,
+      revenueChangePct: revenueChangePct ?? this.revenueChangePct,
+      ordersChangePct: ordersChangePct ?? this.ordersChangePct,
+      dailyRevenue: dailyRevenue ?? this.dailyRevenue,
     );
   }
 
@@ -68,7 +83,9 @@ class FarmerDashboard {
         other.totalEarnings == totalEarnings &&
         other.conversations == conversations &&
         other.views == views &&
-        other.responseRate == responseRate;
+        other.responseRate == responseRate &&
+        other.revenueChangePct == revenueChangePct &&
+        other.ordersChangePct == ordersChangePct;
   }
 
   @override
@@ -77,11 +94,13 @@ class FarmerDashboard {
         totalEarnings.hashCode ^
         conversations.hashCode ^
         views.hashCode ^
-        responseRate.hashCode;
+        responseRate.hashCode ^
+        revenueChangePct.hashCode ^
+        ordersChangePct.hashCode;
   }
 
   @override
   String toString() {
-    return 'FarmerDashboard(activeListings: $activeListings, totalEarnings: $totalEarnings, conversations: $conversations, views: $views, responseRate: $responseRate)';
+    return 'FarmerDashboard(activeListings: $activeListings, totalEarnings: $totalEarnings, conversations: $conversations, views: $views, responseRate: $responseRate, revenueChangePct: $revenueChangePct, ordersChangePct: $ordersChangePct, dailyRevenue: $dailyRevenue)';
   }
 }

@@ -8,6 +8,7 @@
 ///
 /// Requirements: 2.1, 2.6, 15.1
 /// Developer: Developer 2
+library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:brewmaster/domain/validators/coffee_listing_validator.dart';

@@ -8,9 +8,14 @@ class Transaction {
   final String farmerId;
   final String listingId;
   final double amount;
+  /// Currency code e.g. "KES", "USD" (ERD: currency).
+  final String currency;
   final TransactionStatus status;
   final PaymentMethod paymentMethod;
+  /// Reference returned by the payment provider e.g. M-Pesa code (ERD: paymentReference).
+  final String? paymentReference;
   final DateTime createdAt;
+  final DateTime? updatedAt;
   final DateTime? fundsHeldAt;
   final DateTime? deliveredAt;
   final DateTime? completedAt;
@@ -29,9 +34,12 @@ class Transaction {
     required this.farmerId,
     required this.listingId,
     required this.amount,
+    this.currency = 'USD',
     required this.status,
     required this.paymentMethod,
+    this.paymentReference,
     required this.createdAt,
+    this.updatedAt,
     this.fundsHeldAt,
     this.deliveredAt,
     this.completedAt,
@@ -52,10 +60,15 @@ class Transaction {
       farmerId: data['farmerId'] as String,
       listingId: data['listingId'] as String,
       amount: (data['amount'] as num).toDouble(),
+      currency: data['currency'] as String? ?? 'USD',
       status: TransactionStatusExtension.fromJson(data['status'] as String),
       paymentMethod:
           PaymentMethodExtension.fromJson(data['paymentMethod'] as String),
+      paymentReference: data['paymentReference'] as String?,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
+      updatedAt: data['updatedAt'] != null
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : null,
       fundsHeldAt: data['fundsHeldAt'] != null
           ? (data['fundsHeldAt'] as Timestamp).toDate()
           : null,
@@ -82,9 +95,12 @@ class Transaction {
       'farmerId': farmerId,
       'listingId': listingId,
       'amount': amount,
+      'currency': currency,
       'status': status.toJson(),
       'paymentMethod': paymentMethod.toJson(),
+      'paymentReference': paymentReference,
       'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
       'fundsHeldAt':
           fundsHeldAt != null ? Timestamp.fromDate(fundsHeldAt!) : null,
       'deliveredAt':
@@ -121,9 +137,12 @@ class Transaction {
     String? farmerId,
     String? listingId,
     double? amount,
+    String? currency,
     TransactionStatus? status,
     PaymentMethod? paymentMethod,
+    String? paymentReference,
     DateTime? createdAt,
+    DateTime? updatedAt,
     DateTime? fundsHeldAt,
     DateTime? deliveredAt,
     DateTime? completedAt,
@@ -140,9 +159,12 @@ class Transaction {
       farmerId: farmerId ?? this.farmerId,
       listingId: listingId ?? this.listingId,
       amount: amount ?? this.amount,
+      currency: currency ?? this.currency,
       status: status ?? this.status,
       paymentMethod: paymentMethod ?? this.paymentMethod,
+      paymentReference: paymentReference ?? this.paymentReference,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       fundsHeldAt: fundsHeldAt ?? this.fundsHeldAt,
       deliveredAt: deliveredAt ?? this.deliveredAt,
       completedAt: completedAt ?? this.completedAt,

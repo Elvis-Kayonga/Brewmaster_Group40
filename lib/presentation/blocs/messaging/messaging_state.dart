@@ -28,6 +28,13 @@ class MessagesLoaded extends MessagingState {
   List<Object?> get props => [messages];
 }
 
+class ConversationReady extends MessagingState {
+  final Conversation conversation;
+  const ConversationReady(this.conversation);
+  @override
+  List<Object?> get props => [conversation];
+}
+
 class MessagingFailure extends MessagingState {
   final String message;
   const MessagingFailure(this.message);

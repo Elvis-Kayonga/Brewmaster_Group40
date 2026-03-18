@@ -36,14 +36,16 @@ class AuthRegisterRequested extends AuthEvent {
   final String email;
   final String password;
   final String displayName;
+  final UserRole role;
   const AuthRegisterRequested({
     required this.email,
     required this.password,
     required this.displayName,
+    required this.role,
   });
 
   @override
-  List<Object?> get props => [email, password, displayName];
+  List<Object?> get props => [email, password, displayName, role];
 }
 
 /// Sign in with Google.

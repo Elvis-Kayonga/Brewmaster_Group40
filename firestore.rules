@@ -41,7 +41,7 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated()
         && request.resource.data.farmerId == request.auth.uid
-        && request.resource.data.keys().hasAll(['farmerId', 'variety', 'quantity', 'pricePerKg', 'status']);
+        && request.resource.data.keys().hasAll(['farmerId', 'coffeeVariety', 'quantityKg', 'askingPricePerKg', 'status']);
       allow update: if isAuthenticated()
         && resource.data.farmerId == request.auth.uid
         && request.resource.data.farmerId == request.auth.uid; // farmerId immutable
@@ -93,18 +93,6 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // Verification requests (our actual collection name)
-    // -------------------------------------------------------------------------
-    match /verification_requests/{requestId} {
-      allow read: if isAuthenticated()
-        && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated()
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.keys().hasAll(['userId', 'status', 'documentUrls', 'submittedAt']);
-      // Status updates are admin-only; users cannot self-approve
-    }
-
-    // -------------------------------------------------------------------------
     // Offline sync queue (per-device; owner only)
     // -------------------------------------------------------------------------
     match /offline_sync_queue/{operationId} {
@@ -123,11 +111,13 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // Legacy verifications path (kept for backwards compatibility)
+    // Verifications — 1:1 with users, keyed by userId (ERD §7)
+    // Status updates (pending → verified/rejected) are done server-side only.
     // -------------------------------------------------------------------------
     match /verifications/{userId} {
       allow read:   if isOwner(userId);
-      allow create: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasAll(['userId', 'state', 'documentUrls', 'updatedAt']);
       allow update: if isOwner(userId);
     }
   }

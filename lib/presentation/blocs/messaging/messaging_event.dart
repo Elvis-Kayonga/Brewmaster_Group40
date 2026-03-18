@@ -37,6 +37,13 @@ class MessageSendRequested extends MessagingEvent {
       [conversationId, receiverId, content, messageType, listingId];
 }
 
+class StartConversationRequested extends MessagingEvent {
+  final String otherUserId;
+  const StartConversationRequested(this.otherUserId);
+  @override
+  List<Object?> get props => [otherUserId];
+}
+
 class MessagesMarkReadRequested extends MessagingEvent {
   final String conversationId;
   const MessagesMarkReadRequested(this.conversationId);
@@ -57,4 +64,11 @@ class _MessagesUpdated extends MessagingEvent {
   const _MessagesUpdated(this.messages);
   @override
   List<Object?> get props => [messages];
+}
+
+class _StreamError extends MessagingEvent {
+  final String message;
+  const _StreamError(this.message);
+  @override
+  List<Object?> get props => [message];
 }

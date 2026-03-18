@@ -100,6 +100,7 @@ class _FakeNotificationRepository implements NotificationRepository {
   @override Stream<Map<String, dynamic>> watchNotifications() => Stream.value({});
   @override Future<Map<String, bool>> getPreferences() async => {};
   @override Future<void> updatePreferences(Map<String, bool> p) async {}
+  @override dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
 }
 
 class _FakeOfflineSyncRepository implements OfflineSyncRepository {

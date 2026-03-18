@@ -253,9 +253,9 @@ class _HeritageOrderCard extends StatelessWidget {
             const SizedBox(height: 16),
 
             // ── Title ────────────────────────────────────────────
-            const Text(
-              'In Transit',
-              style: TextStyle(
+            Text(
+              _cardTitle(transaction.status),
+              style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -290,6 +290,23 @@ class _HeritageOrderCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _cardTitle(TransactionStatus status) {
+    switch (status) {
+      case TransactionStatus.pending:
+        return 'Awaiting Payment';
+      case TransactionStatus.fundsHeld:
+        return 'In Escrow';
+      case TransactionStatus.delivered:
+        return 'In Transit';
+      case TransactionStatus.completed:
+        return 'Delivered';
+      case TransactionStatus.disputed:
+        return 'Under Dispute';
+      case TransactionStatus.cancelled:
+        return 'Cancelled';
+    }
   }
 
   String _statusLabel(TransactionStatus status) {

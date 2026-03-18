@@ -12,6 +12,12 @@ class Conversation {
   /// List of user IDs participating in the conversation
   final List<String> participantIds;
 
+  /// Map of userId → displayName for quick rendering (ERD: participantNames).
+  final Map<String, String> participantNames;
+
+  /// Related listing, if the conversation was started from a listing (ERD: listingId).
+  final String? listingId;
+
   /// The most recent message in the conversation
   final Message? lastMessage;
 
@@ -28,6 +34,8 @@ class Conversation {
   Conversation({
     required this.conversationId,
     required this.participantIds,
+    this.participantNames = const {},
+    this.listingId,
     this.lastMessage,
     required this.unreadCount,
     required this.createdAt,
@@ -39,21 +47,31 @@ class Conversation {
     return Conversation(
       conversationId: json['conversationId'] as String,
       participantIds: List<String>.from(json['participantIds'] as List),
+      participantNames: (json['participantNames'] as Map<String, dynamic>? ?? {})
+          .map((k, v) => MapEntry(k, v as String)),
+      listingId: json['listingId'] as String?,
       lastMessage: json['lastMessage'] != null
           ? Message.fromJson(Map<String, dynamic>.from(json['lastMessage']))
           : null,
-      unreadCount: json['unreadCount'] as int,
+      unreadCount: json['unreadCount'] as int? ?? 0,
       createdAt: (json['createdAt'] as Timestamp).toDate(),
       updatedAt: (json['updatedAt'] as Timestamp).toDate(),
     );
   }
 
-  /// Convert Conversation to JSON for Firestore
+  /// Convert Conversation to JSON — includes ERD fields for cross-platform compat.
   Map<String, dynamic> toJson() {
     return {
       'conversationId': conversationId,
       'participantIds': participantIds,
+      'participantNames': participantNames,
+      'listingId': listingId,
       'lastMessage': lastMessage?.toJson(),
+      // ERD also stores these as flat fields for quick reads
+      'lastMessageContent': lastMessage?.content,
+      'lastMessageAt': lastMessage != null
+          ? Timestamp.fromDate(lastMessage!.createdAt)
+          : null,
       'unreadCount': unreadCount,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
@@ -62,6 +80,8 @@ class Conversation {
 
   /// Create a copy of the conversation with updated fields
   Conversation copyWith({
+    Map<String, String>? participantNames,
+    String? listingId,
     Message? lastMessage,
     int? unreadCount,
     DateTime? updatedAt,
@@ -69,6 +89,8 @@ class Conversation {
     return Conversation(
       conversationId: conversationId,
       participantIds: participantIds,
+      participantNames: participantNames ?? this.participantNames,
+      listingId: listingId ?? this.listingId,
       lastMessage: lastMessage ?? this.lastMessage,
       unreadCount: unreadCount ?? this.unreadCount,
       createdAt: createdAt,

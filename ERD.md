@@ -9,6 +9,7 @@ erDiagram
     users ||--o{ notifications : "receives"
     users ||--|| verifications : "has"
     users }o--o{ conversations : "participates"
+    users ||--o| userPreferences : "configures"
     
     listings ||--o| transactions : "sold via"
     listings ||--o{ messages : "referenced in"
@@ -22,6 +23,7 @@ erDiagram
         string role "farmer|buyer"
         string displayName
         string photoUrl
+        string country "ISO country code e.g. KE UG TZ"
         boolean isVerified
         timestamp createdAt
         timestamp updatedAt
@@ -39,7 +41,7 @@ erDiagram
     listings {
         string id PK
         string farmerId FK
-        string farmerName
+        string farmerName "denormalized"
         string coffeeVariety
         number quantityKg
         number altitude "1000-2500m"
@@ -49,8 +51,11 @@ erDiagram
         array imageUrls "max 5"
         number cuppingScore "0-100"
         string flavorNotes
+        string location "farm/region location"
         string status "draft|active|sold|expired"
         number viewCount
+        string batchNumber "traceability"
+        array certifications "e.g. Organic FairTrade"
         timestamp createdAt
         timestamp updatedAt
     }
@@ -58,21 +63,24 @@ erDiagram
     conversations {
         string id PK
         array participantIds "2 users"
-        map participantNames
+        map participantNames "userId to displayName"
         string listingId FK
-        string lastMessageContent
-        timestamp lastMessageAt
-        map unreadCounts
+        map lastMessage "embedded Message object"
+        string lastMessageContent "denormalized for quick reads"
+        timestamp lastMessageAt "denormalized for quick reads"
+        number unreadCount "unread count for current user"
         timestamp createdAt
         timestamp updatedAt
     }
     
     messages {
-        string id PK
+        string messageId PK
+        string conversationId FK
         string senderId FK
-        string senderName
+        string senderName "denormalized"
+        string receiverId FK
         string content
-        string type "text|listingReference|system"
+        string type "text|listingReference"
         string listingId FK
         boolean isRead
         timestamp createdAt
@@ -95,6 +103,8 @@ erDiagram
         number retryCount
         string failureReason
         map statusHistory
+        string receiptNumber "compliance traceability"
+        map traceabilityData "certificationIds exportRef etc"
         timestamp createdAt
         timestamp updatedAt
     }
@@ -151,7 +161,8 @@ This document describes the Firestore database structure for the BrewMaster Coff
 | role | String | Yes | User role: "farmer" or "buyer" |
 | displayName | String | Yes | User's display name |
 | photoUrl | String | No | URL to profile photo |
-| isVerified | Boolean | Yes | Verification status (true/false) |
+| country | String | No | ISO country code e.g. "KE", "UG", "TZ" — drives currency display |
+| isVerified | Boolean | Yes | Email verification status (true/false) |
 | createdAt | Timestamp | Yes | Account creation timestamp |
 | updatedAt | Timestamp | Yes | Last update timestamp |
 | farmSize | Number | No | Farm size in hectares (farmers only) |
@@ -162,7 +173,7 @@ This document describes the Firestore database structure for the BrewMaster Coff
 | businessType | String | No | Type of business (buyers only) |
 | monthlyVolume | Number | No | Monthly purchase volume in kg (buyers only) |
 | fcmToken | String | No | Firebase Cloud Messaging token |
-| verificationStatus | String | Yes | Verification status: "unverified", "pending", "verified", "rejected" |
+| verificationStatus | String | Yes | KYC status: "unverified", "pending", "verified", "rejected" |
 
 **Relationships**:
 - One user can have many listings (1:N with listings)
@@ -180,9 +191,9 @@ This document describes the Firestore database structure for the BrewMaster Coff
 
 | Field Name | Type | Required | Description |
 |------------|------|----------|-------------|
-| id | String | Yes | Listing ID (auto-generated) |
+| id | String | Yes | Listing ID (auto-generated, stored as `listingId` in doc) |
 | farmerId | String | Yes | Foreign key to users.id |
-| farmerName | String | Yes | Farmer's display name (denormalized) |
+| farmerName | String | No | Farmer's display name (denormalized for quick reads) |
 | coffeeVariety | String | Yes | Coffee variety name |
 | quantityKg | Number | Yes | Quantity in kilograms |
 | altitude | Number | Yes | Altitude in meters (1000-2500) |
@@ -191,9 +202,12 @@ This document describes the Firestore database structure for the BrewMaster Coff
 | askingPricePerKg | Number | Yes | Asking price per kilogram |
 | imageUrls | Array<String> | Yes | Array of image URLs (max 5) |
 | cuppingScore | Number | No | Cupping score (0-100) |
-| flavorNotes | String | No | Flavor notes description |
+| flavorNotes | String | No | Flavor notes / tasting description |
+| location | String | No | Farm or region location |
 | status | String | Yes | Listing status: "draft", "active", "sold", "expired" |
-| viewCount | Number | Yes | Number of views (default 0) |
+| viewCount | Number | Yes | Number of times viewed (default 0) |
+| batchNumber | String | No | Traceability batch identifier |
+| certifications | Array(String) | No | e.g. "Organic", "Fair Trade" |
 | createdAt | Timestamp | Yes | Creation timestamp |
 | updatedAt | Timestamp | Yes | Last update timestamp |
 
@@ -217,13 +231,14 @@ This document describes the Firestore database structure for the BrewMaster Coff
 
 | Field Name | Type | Required | Description |
 |------------|------|----------|-------------|
-| id | String | Yes | Conversation ID (auto-generated) |
-| participantIds | Array<String> | Yes | Array of user IDs (2 participants) |
-| participantNames | Map<String, String> | Yes | Map of userId -> displayName |
-| listingId | String | No | Related listing ID (if conversation started from listing) |
-| lastMessageContent | String | No | Content of last message |
-| lastMessageAt | Timestamp | No | Timestamp of last message |
-| unreadCounts | Map<String, Number> | Yes | Map of userId -> unread count |
+| conversationId | String | Yes | Conversation ID (auto-generated) |
+| participantIds | Array(String) | Yes | Array of user IDs (2 participants) |
+| participantNames | Map(String,String) | Yes | Map of userId → displayName (denormalized) |
+| listingId | String | No | Related listing ID (if conversation started from a listing) |
+| lastMessage | Map | No | Embedded last Message object for quick display |
+| lastMessageContent | String | No | Denormalized content of last message |
+| lastMessageAt | Timestamp | No | Denormalized timestamp of last message |
+| unreadCount | Number | Yes | Unread message count for the current user (default 0) |
 | createdAt | Timestamp | Yes | Creation timestamp |
 | updatedAt | Timestamp | Yes | Last update timestamp |
 
@@ -245,11 +260,13 @@ This document describes the Firestore database structure for the BrewMaster Coff
 
 | Field Name | Type | Required | Description |
 |------------|------|----------|-------------|
-| id | String | Yes | Message ID (auto-generated) |
+| messageId | String | Yes | Message ID (auto-generated) |
+| conversationId | String | Yes | Foreign key to conversations.id |
 | senderId | String | Yes | Foreign key to users.id |
-| senderName | String | Yes | Sender's display name (denormalized) |
+| senderName | String | No | Sender's display name (denormalized) |
+| receiverId | String | Yes | Foreign key to users.id |
 | content | String | Yes | Message content |
-| type | String | Yes | Message type: "text", "listingReference", "system" |
+| type | String | Yes | Message type: "text", "listingReference" |
 | listingId | String | No | Referenced listing ID (if type is listingReference) |
 | isRead | Boolean | Yes | Read status (default false) |
 | createdAt | Timestamp | Yes | Creation timestamp |
@@ -284,9 +301,11 @@ This document describes the Firestore database structure for the BrewMaster Coff
 | disputeReason | String | No | Reason for dispute (if status is disputed) |
 | retryCount | Number | Yes | Number of payment retry attempts (default 0) |
 | failureReason | String | No | Reason for payment failure |
-| statusHistory | Map<String, Timestamp> | Yes | Complete audit trail of status transitions |
+| statusHistory | Map(String,Timestamp) | Yes | Complete audit trail of status transitions |
+| receiptNumber | String | No | Compliance/traceability receipt identifier |
+| traceabilityData | Map(String,String) | No | Extra traceability fields e.g. certificationIds, exportRef |
 | createdAt | Timestamp | Yes | Creation timestamp |
-| updatedAt | Timestamp | Yes | Last update timestamp |
+| updatedAt | Timestamp | No | Last status-change timestamp |
 
 **Relationships**:
 - Many transactions belong to one buyer (N:1 with users via buyerId)
@@ -363,6 +382,25 @@ This document describes the Firestore database structure for the BrewMaster Coff
 
 ---
 
+### 9. users/{userId}/preferences (Subcollection — single doc: `notifications`)
+
+**Primary Key**: `notifications` (fixed document ID)
+
+**Description**: Per-user notification preference settings. Stored as a subcollection so the main users doc stays lean.
+
+| Field Name | Type | Required | Description |
+|------------|------|----------|-------------|
+| messagesEnabled | Boolean | Yes | Receive new message notifications (default true) |
+| listingsEnabled | Boolean | Yes | Receive listing interest notifications (default true) |
+| paymentsEnabled | Boolean | Yes | Receive payment/escrow notifications (default true) |
+| promotionsEnabled | Boolean | Yes | Receive promotional notifications (default false) |
+| updatedAt | Timestamp | Yes | Last update timestamp |
+
+**Relationships**:
+- One-to-one with users (subcollection keyed by fixed doc ID `notifications`)
+
+---
+
 ## Relationship Summary
 
 ### One-to-Many (1:N)
@@ -431,6 +469,6 @@ This document describes the Firestore database structure for the BrewMaster Coff
 
 ---
 
-**Last Updated**: Phase 4 - Payment System (Developer 4 implementation sync)
-**Status**: Ready for Implementation
-**Approved By**: All Developers (pending Task 0.4.2 review)
+**Last Updated**: 2026-03-16 — ERD alignment pass (all collections now match implementation)
+**Status**: In Sync with Implementation
+**Changes in this update**: Added `country` to users; aligned listings field names (coffeeVariety, quantityKg, askingPricePerKg, cuppingScore, flavorNotes, imageUrls) + added location/batchNumber/certifications; fixed conversations (unreadCount int, added participantNames/listingId/lastMessage); fixed messages (messageId PK, added conversationId/receiverId/senderName, type not messageType); fixed transactions (added currency/paymentReference/updatedAt/receiptNumber/traceabilityData); verifications aligned to 1:1 structure with userId as doc ID; notifications collection fully implemented.

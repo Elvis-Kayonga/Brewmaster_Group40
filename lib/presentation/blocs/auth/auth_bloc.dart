@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:brewmaster/domain/models/enums.dart';
 import 'package:brewmaster/domain/models/user_profile.dart';
 import 'package:brewmaster/domain/repositories/auth_repository.dart';
 import 'package:brewmaster/domain/repositories/user_repository.dart';
@@ -15,6 +16,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
   final UserRepository _userRepository;
   late final StreamSubscription<User?> _authSubscription;
+
+  /// Role and display name from the signup form — stored here (not in state)
+  /// so they survive the race between _onRegister and _onAuthUserChanged.
+  UserRole? _pendingRegistrationRole;
+  String? _pendingDisplayName;
 
   AuthBloc({
     required AuthRepository authRepository,
@@ -66,24 +72,32 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final profile = await _userRepository.getUserProfile(fresh.uid);
 
     if (profile == null) {
-      // New user — needs to complete profile setup
+      // New user — needs to complete profile setup.
+      // Use _pendingRegistrationRole (set by _onRegister before the stream
+      // fires) so the signup pill selection survives any concurrent execution.
       final isGoogle = fresh.providerData
           .any((p) => p.providerId == 'google.com');
       emit(AuthNeedsProfile(
         uid: fresh.uid,
         email: fresh.email,
-        displayName: fresh.displayName,
+        displayName: _pendingDisplayName ?? fresh.displayName,
         isGoogleUser: isGoogle,
+        role: _pendingRegistrationRole,
       ));
       return;
     }
+
+    // Profile exists — registration complete; clear pending registration data.
+    _pendingRegistrationRole = null;
+    _pendingDisplayName = null;
 
     if (!fresh.emailVerified && !_isGoogleUser(fresh)) {
       emit(const AuthEmailNotVerified());
       return;
     }
 
-    emit(AuthAuthenticated(await _syncVerifiedFlag(fresh, profile)));
+    final syncedProfile = await _syncVerifiedFlag(fresh, profile);
+    emit(_resolveAuthenticatedState(syncedProfile));
   }
 
   Future<void> _onAuthCheckRequested(
@@ -116,7 +130,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
 
     final fresh = _authRepository.currentUser ?? user;
-    emit(AuthAuthenticated(await _syncVerifiedFlag(fresh, profile)));
+    final syncedProfile = await _syncVerifiedFlag(fresh, profile);
+    emit(_resolveAuthenticatedState(syncedProfile));
   }
 
   Future<void> _onSignIn(
@@ -146,6 +161,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthRegisterRequested event,
     Emitter<AuthState> emit,
   ) async {
+    // Store role and display name BEFORE any async work so _onAuthUserChanged
+    // can read them even if it fires concurrently during register().
+    _pendingRegistrationRole = event.role;
+    _pendingDisplayName = event.displayName.isNotEmpty ? event.displayName : null;
     emit(const AuthLoading());
     try {
       final user = await _authRepository.register(event.email, event.password);
@@ -165,6 +184,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           email: user.email ?? event.email,
           displayName: event.displayName,
           isGoogleUser: false,
+          role: event.role,
         ));
       }
     } on FirebaseAuthException catch (e) {
@@ -213,6 +233,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthSignOutRequested event,
     Emitter<AuthState> emit,
   ) async {
+    _pendingRegistrationRole = null;
+    _pendingDisplayName = null;
     try {
       await _authRepository.signOut();
       // _AuthUserChanged(null) fires automatically
@@ -252,6 +274,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } catch (_) {}
     }
     return profile;
+  }
+
+  /// Routes users based on KYC verification status.
+  /// unverified/rejected → submit/resubmit form
+  /// pending            → blocking "Under Review" screen
+  /// verified           → HomeShell
+  AuthState _resolveAuthenticatedState(UserProfile profile) {
+    switch (profile.verificationStatus) {
+      case VerificationStatus.unverified:
+      case VerificationStatus.rejected:
+        return AuthNeedsKycVerification(profile);
+      case VerificationStatus.pending:
+        return AuthKycPending(profile);
+      case VerificationStatus.verified:
+        return AuthAuthenticated(profile);
+    }
   }
 
   bool _isGoogleUser(User user) =>

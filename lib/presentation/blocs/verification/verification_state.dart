@@ -27,6 +27,9 @@ class VerificationStatusLoaded extends VerificationState {
 
   const VerificationStatusLoaded({required this.status, this.request});
 
+  /// Convenience: rejection reason from the stored record, if any.
+  String? get rejectionReason => request?.rejectionReason;
+
   @override
   List<Object?> get props => [status, request];
 }

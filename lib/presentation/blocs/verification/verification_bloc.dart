@@ -18,6 +18,7 @@ part 'verification_state.dart';
 class VerificationBloc extends Bloc<VerificationEvent, VerificationState> {
   final VerificationRepository _repository;
   StreamSubscription<VerificationStatus>? _statusSub;
+  String? _watchedUserId;
 
   VerificationBloc({required VerificationRepository repository})
       : _repository = repository,
@@ -33,9 +34,9 @@ class VerificationBloc extends Bloc<VerificationEvent, VerificationState> {
   ) async {
     emit(const VerificationLoading());
     try {
+      _watchedUserId = event.userId;
       final request = await _repository.getVerificationStatus(event.userId);
-      final status =
-          request?.status ?? VerificationStatus.unverified;
+      final status = request?.state ?? VerificationStatus.unverified;
       emit(VerificationStatusLoaded(status: status, request: request));
 
       // Start watching real-time status updates
@@ -64,11 +65,22 @@ class VerificationBloc extends Bloc<VerificationEvent, VerificationState> {
     }
   }
 
-  void _onStatusChanged(
+  Future<void> _onStatusChanged(
     _VerificationStatusChanged event,
     Emitter<VerificationState> emit,
-  ) {
-    emit(VerificationStatusLoaded(status: event.status));
+  ) async {
+    final currentRequest = state is VerificationStatusLoaded
+        ? (state as VerificationStatusLoaded).request
+        : null;
+    emit(VerificationStatusLoaded(status: event.status, request: currentRequest));
+
+    // Sync the new status onto users/{userId}.verificationStatus so that
+    // AuthBloc reads the correct value when it next calls getUserProfile().
+    if (_watchedUserId != null) {
+      try {
+        await _repository.syncStatusToUserProfile(_watchedUserId!, event.status);
+      } catch (_) {}
+    }
   }
 
   @override

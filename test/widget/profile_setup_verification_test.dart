@@ -129,10 +129,10 @@ class _CapturingUserRepository implements UserRepository {
 /// construction, so tests don't need to wait for async stream processing.
 class _SeededAuthBloc extends AuthBloc {
   _SeededAuthBloc({
-    required AuthRepository authRepository,
-    required UserRepository userRepository,
+    required super.authRepository,
+    required super.userRepository,
     required AuthState seed,
-  }) : super(authRepository: authRepository, userRepository: userRepository) {
+  }) {
     emit(seed);
   }
 }
@@ -162,7 +162,7 @@ Widget _buildApp({
 // ---------------------------------------------------------------------------
 
 void main() {
-  testWidgets('Profile setup marks Google accounts as verified',
+  testWidgets('Profile setup marks Google accounts as email-verified but KYC-unverified',
       (WidgetTester tester) async {
     final userRepo = _CapturingUserRepository();
     final googleUser = _FakeUser(
@@ -211,7 +211,7 @@ void main() {
     expect(userRepo.lastCreated!.isVerified, isTrue);
     expect(
       userRepo.lastCreated!.verificationStatus,
-      equals(VerificationStatus.verified),
+      equals(VerificationStatus.unverified),
     );
   });
 

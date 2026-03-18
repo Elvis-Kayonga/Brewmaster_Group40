@@ -95,9 +95,17 @@ class _ChatScreenState extends State<ChatScreen> {
               size: 18, color: AppTheme.primaryDark),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'Brew Master',
-          style: TextStyle(
+        title: Text(
+          () {
+            final otherId = widget.conversation.participantIds.firstWhere(
+              (id) => id != _currentUserId,
+              orElse: () => '',
+            );
+            final name =
+                widget.conversation.participantNames[otherId]?.trim() ?? '';
+            return name.isNotEmpty ? name : 'Conversation';
+          }(),
+          style: const TextStyle(
             color: AppTheme.primaryDark,
             fontWeight: FontWeight.bold,
             fontSize: 18,

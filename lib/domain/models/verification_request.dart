@@ -1,5 +1,5 @@
 // Feature: brewmaster-verification
-// Model representing a user's verification request with submitted documents.
+// Model representing a user's verification record (1:1 with users per ERD).
 //
 // Requirements: 7.1, 7.2
 // Developer: Developer 1
@@ -7,65 +7,62 @@
 import 'enums.dart';
 
 class VerificationRequest {
-  final String id;
+  /// The user's ID — also the Firestore document ID in the verifications collection.
   final String userId;
-  final VerificationStatus status;
+  final VerificationStatus state;
   final List<String> documentUrls;
   final String? rejectionReason;
-  final DateTime submittedAt;
+  final DateTime? verifiedAt;
   final DateTime updatedAt;
 
   const VerificationRequest({
-    required this.id,
     required this.userId,
-    required this.status,
+    required this.state,
     required this.documentUrls,
     this.rejectionReason,
-    required this.submittedAt,
+    this.verifiedAt,
     required this.updatedAt,
   });
 
   Map<String, dynamic> toJson() => {
-        'id': id,
         'userId': userId,
-        'status': status.toJson(),
+        'state': state.toJson(),
         'documentUrls': documentUrls,
         'rejectionReason': rejectionReason,
-        'submittedAt': submittedAt.toIso8601String(),
+        'verifiedAt': verifiedAt?.toIso8601String(),
         'updatedAt': updatedAt.toIso8601String(),
       };
 
   factory VerificationRequest.fromJson(Map<String, dynamic> json) =>
       VerificationRequest(
-        id: json['id'] as String,
         userId: json['userId'] as String,
-        status: VerificationStatusExtension.fromJson(
-          json['status'] as String? ?? 'unverified',
+        state: VerificationStatusExtension.fromJson(
+          json['state'] as String? ?? 'unverified',
         ),
         documentUrls: (json['documentUrls'] as List<dynamic>? ?? [])
             .map((e) => e as String)
             .toList(),
         rejectionReason: json['rejectionReason'] as String?,
-        submittedAt: DateTime.parse(json['submittedAt'] as String),
+        verifiedAt: json['verifiedAt'] != null
+            ? DateTime.parse(json['verifiedAt'] as String)
+            : null,
         updatedAt: DateTime.parse(json['updatedAt'] as String),
       );
 
   VerificationRequest copyWith({
-    String? id,
     String? userId,
-    VerificationStatus? status,
+    VerificationStatus? state,
     List<String>? documentUrls,
     String? rejectionReason,
-    DateTime? submittedAt,
+    DateTime? verifiedAt,
     DateTime? updatedAt,
   }) =>
       VerificationRequest(
-        id: id ?? this.id,
         userId: userId ?? this.userId,
-        status: status ?? this.status,
+        state: state ?? this.state,
         documentUrls: documentUrls ?? this.documentUrls,
         rejectionReason: rejectionReason ?? this.rejectionReason,
-        submittedAt: submittedAt ?? this.submittedAt,
+        verifiedAt: verifiedAt ?? this.verifiedAt,
         updatedAt: updatedAt ?? this.updatedAt,
       );
 }

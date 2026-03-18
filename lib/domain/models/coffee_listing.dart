@@ -8,6 +8,8 @@ import 'enums.dart';
 class CoffeeListing {
   final String listingId;
   final String farmerId;
+  /// Denormalized farmer display name (ERD: farmerName).
+  final String? farmerName;
   final String variety;
   final double quantity; // in KG
   final double pricePerKg;
@@ -19,6 +21,8 @@ class CoffeeListing {
   final List<String> images;
   final String location;
   final ListingStatus status;
+  /// Number of times this listing has been viewed (ERD: viewCount).
+  final int viewCount;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -29,6 +33,7 @@ class CoffeeListing {
   const CoffeeListing({
     required this.listingId,
     required this.farmerId,
+    this.farmerName,
     required this.variety,
     required this.quantity,
     required this.pricePerKg,
@@ -40,28 +45,31 @@ class CoffeeListing {
     required this.images,
     required this.location,
     required this.status,
+    this.viewCount = 0,
     required this.createdAt,
     required this.updatedAt,
     this.batchNumber,
     this.certifications,
   });
 
-  /// Convert object to JSON (for Firebase / API)
+  /// Convert object to JSON — field names match ERD exactly.
   Map<String, dynamic> toJson() {
     return {
       'listingId': listingId,
       'farmerId': farmerId,
-      'variety': variety,
-      'quantity': quantity,
-      'pricePerKg': pricePerKg,
+      'farmerName': farmerName,
+      'coffeeVariety': variety,
+      'quantityKg': quantity,
+      'askingPricePerKg': pricePerKg,
       'processingMethod': processingMethod.name,
       'altitude': altitude,
       'harvestDate': harvestDate.toIso8601String(),
-      'qualityScore': qualityScore,
-      'description': description,
-      'images': images,
+      'cuppingScore': qualityScore,
+      'flavorNotes': description,
+      'imageUrls': images,
       'location': location,
       'status': status.name,
+      'viewCount': viewCount,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'batchNumber': batchNumber,
@@ -69,24 +77,26 @@ class CoffeeListing {
     };
   }
 
-  /// Create object from JSON
+  /// Create object from JSON — reads ERD field names with fallback to legacy keys.
   factory CoffeeListing.fromJson(Map<String, dynamic> json) {
     return CoffeeListing(
       listingId: json['listingId'] as String,
       farmerId: json['farmerId'] as String,
-      variety: json['variety'] as String,
-      quantity: (json['quantity'] as num).toDouble(),
-      pricePerKg: (json['pricePerKg'] as num).toDouble(),
+      farmerName: json['farmerName'] as String?,
+      variety: (json['coffeeVariety'] ?? json['variety']) as String,
+      quantity: ((json['quantityKg'] ?? json['quantity']) as num).toDouble(),
+      pricePerKg: ((json['askingPricePerKg'] ?? json['pricePerKg']) as num).toDouble(),
       processingMethod: ProcessingMethodExtension.fromJson(
         json['processingMethod'] as String,
       ),
       altitude: (json['altitude'] as num).toDouble(),
       harvestDate: DateTime.parse(json['harvestDate'] as String),
-      qualityScore: (json['qualityScore'] as num).toDouble(),
-      description: json['description'] as String,
-      images: List<String>.from(json['images'] as List),
+      qualityScore: ((json['cuppingScore'] ?? json['qualityScore']) as num).toDouble(),
+      description: (json['flavorNotes'] ?? json['description']) as String,
+      images: List<String>.from((json['imageUrls'] ?? json['images']) as List),
       location: json['location'] as String,
       status: ListingStatusExtension.fromJson(json['status'] as String),
+      viewCount: json['viewCount'] as int? ?? 0,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       batchNumber: json['batchNumber'] as String?,
@@ -99,6 +109,7 @@ class CoffeeListing {
   CoffeeListing copyWith({
     String? listingId,
     String? farmerId,
+    String? farmerName,
     String? variety,
     double? quantity,
     double? pricePerKg,
@@ -110,6 +121,7 @@ class CoffeeListing {
     List<String>? images,
     String? location,
     ListingStatus? status,
+    int? viewCount,
     DateTime? createdAt,
     DateTime? updatedAt,
     String? batchNumber,
@@ -118,6 +130,7 @@ class CoffeeListing {
     return CoffeeListing(
       listingId: listingId ?? this.listingId,
       farmerId: farmerId ?? this.farmerId,
+      farmerName: farmerName ?? this.farmerName,
       variety: variety ?? this.variety,
       quantity: quantity ?? this.quantity,
       pricePerKg: pricePerKg ?? this.pricePerKg,
@@ -129,6 +142,7 @@ class CoffeeListing {
       images: images ?? this.images,
       location: location ?? this.location,
       status: status ?? this.status,
+      viewCount: viewCount ?? this.viewCount,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       batchNumber: batchNumber ?? this.batchNumber,

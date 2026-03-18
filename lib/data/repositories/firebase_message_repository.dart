@@ -3,8 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../domain/models/conversation.dart';
 import '../../domain/models/message.dart';
+import '../../domain/models/notification.dart';
 import '../../domain/models/paginated_result.dart';
 import '../../domain/repositories/message_repository.dart';
+import '../../domain/repositories/notification_repository.dart';
 
 /// Firebase implementation of [MessageRepository].
 ///
@@ -15,11 +17,14 @@ class FirebaseMessageRepository implements MessageRepository {
   FirebaseMessageRepository({
     FirebaseFirestore? firestore,
     FirebaseAuth? auth,
+    required NotificationRepository notificationRepository,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth ?? FirebaseAuth.instance;
+        _auth = auth ?? FirebaseAuth.instance,
+        _notifications = notificationRepository;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
+  final NotificationRepository _notifications;
 
   String get _currentUserId {
     final uid = _auth.currentUser?.uid;
@@ -36,6 +41,7 @@ class FirebaseMessageRepository implements MessageRepository {
     String? listingId,
   }) async {
     final userId = _currentUserId;
+    final senderName = _auth.currentUser?.displayName ?? '';
     final messageId = _firestore.collection('messages').doc().id;
     final now = DateTime.now();
 
@@ -43,6 +49,7 @@ class FirebaseMessageRepository implements MessageRepository {
       messageId: messageId,
       conversationId: conversationId,
       senderId: userId,
+      senderName: senderName.isNotEmpty ? senderName : null,
       receiverId: receiverId,
       content: content,
       messageType: messageType,
@@ -53,6 +60,7 @@ class FirebaseMessageRepository implements MessageRepository {
 
     final batch = _firestore.batch();
 
+    // Write the message to the subcollection.
     batch.set(
       _firestore
           .collection('conversations')
@@ -62,15 +70,34 @@ class FirebaseMessageRepository implements MessageRepository {
       message.toJson(),
     );
 
-    batch.update(
+    // Update conversation with last message + increment unread count.
+    // Use set+merge so this never throws if the conversation doc is missing.
+    batch.set(
       _firestore.collection('conversations').doc(conversationId),
       {
         'lastMessage': message.toJson(),
+        'lastMessageContent': content,
+        'lastMessageAt': Timestamp.fromDate(now),
         'updatedAt': Timestamp.fromDate(now),
+        'unreadCount': FieldValue.increment(1),
       },
+      SetOptions(merge: true),
     );
 
     await batch.commit();
+
+    final notifId = _firestore.collection('notifications').doc().id;
+    _notifications.saveNotification(AppNotification(
+      id: notifId,
+      userId: receiverId,
+      title: senderName.isNotEmpty ? senderName : 'New Message',
+      body: content.length > 80 ? '${content.substring(0, 80)}…' : content,
+      type: NotificationType.newMessage,
+      data: {'conversationId': conversationId},
+      isRead: false,
+      createdAt: now,
+    ));
+
     return message;
   }
 
@@ -82,10 +109,13 @@ class FirebaseMessageRepository implements MessageRepository {
     return _firestore
         .collection('conversations')
         .where('participantIds', arrayContains: userId)
-        .orderBy('updatedAt', descending: true)
         .snapshots()
-        .map((snap) =>
-            snap.docs.map((d) => Conversation.fromJson(d.data())).toList());
+        .map((snap) {
+      final list =
+          snap.docs.map((d) => Conversation.fromJson(d.data())).toList();
+      list.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      return list;
+    });
   }
 
   @override
@@ -139,11 +169,24 @@ class FirebaseMessageRepository implements MessageRepository {
       if (convo.participantIds.contains(otherUserId)) return convo;
     }
 
+    // Fetch both display names so the conversation tile can show real names.
+    final currentUserName = _auth.currentUser?.displayName ?? '';
+    String otherUserName = '';
+    try {
+      final otherDoc =
+          await _firestore.collection('users').doc(otherUserId).get();
+      otherUserName = otherDoc.data()?['displayName'] as String? ?? '';
+    } catch (_) {}
+
     final conversationId = _firestore.collection('conversations').doc().id;
     final now = DateTime.now();
     final convo = Conversation(
       conversationId: conversationId,
       participantIds: [userId, otherUserId],
+      participantNames: {
+        userId: currentUserName,
+        otherUserId: otherUserName,
+      },
       lastMessage: null,
       unreadCount: 0,
       createdAt: now,

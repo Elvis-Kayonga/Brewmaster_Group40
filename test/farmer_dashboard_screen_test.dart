@@ -11,17 +11,65 @@
 ///
 /// Requirements: 11.1, 11.3, 11.4, 11.5, 16.1 (Clean Architecture)
 /// Developer: Developer 5 (refactored to BLoC by Developer 1)
+library;
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:brewmaster/domain/models/buyer_dashboard.dart';
 import 'package:brewmaster/domain/models/farmer_dashboard.dart';
+import 'package:brewmaster/domain/models/user_profile.dart';
+import 'package:brewmaster/domain/repositories/auth_repository.dart';
 import 'package:brewmaster/domain/repositories/dashboard_repository.dart';
+import 'package:brewmaster/domain/repositories/user_repository.dart';
+import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
 import 'package:brewmaster/presentation/blocs/dashboard/dashboard_bloc.dart';
+import 'package:brewmaster/presentation/blocs/profile/profile_bloc.dart';
 import 'package:brewmaster/presentation/screens/dashboard/farmer_dashboard_screen.dart';
 import 'package:brewmaster/presentation/widgets/common/loading_indicator.dart';
+
+class _FakeAuthRepository implements AuthRepository {
+  @override
+  Stream<User?> get authStateChanges => const Stream.empty();
+  @override
+  User? get currentUser => null;
+  @override
+  Future<User?> register(String email, String password) async => null;
+  @override
+  Future<User?> signIn(String email, String password) async => null;
+  @override
+  Future<User?> signInWithGoogle() async => null;
+  @override
+  Future<void> signOut() async {}
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {}
+  @override
+  Future<bool> sendEmailVerification() async => false;
+  @override
+  Future<bool> isEmailVerified() async => false;
+}
+
+class _FakeUserRepository implements UserRepository {
+  @override
+  Future<UserProfile?> getUserProfile(String userId) async => null;
+  @override
+  Future<UserProfile?> getUserProfileByEmail(String email) async => null;
+  @override
+  Future<void> createUserProfile(UserProfile profile) async {}
+  @override
+  Future<void> updateUserProfile(
+      String userId, Map<String, dynamic> updates) async {}
+  @override
+  Stream<UserProfile?> watchUserProfile(String userId) =>
+      Stream.value(null);
+}
+
+AuthBloc _makeAuthBloc() => AuthBloc(
+      authRepository: _FakeAuthRepository(),
+      userRepository: _FakeUserRepository(),
+    );
 
 class _FakeDashboardRepository implements DashboardRepository {
   @override
@@ -43,10 +91,15 @@ void main() {
     /// Helper function to create testable widget with BLoC
     Widget createTestWidget({String userId = 'test-farmer-123'}) {
       return MaterialApp(
-        home: BlocProvider(
-          create: (_) => DashboardBloc(
-            repository: _FakeDashboardRepository(),
-          ),
+        home: MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (_) =>
+                  DashboardBloc(repository: _FakeDashboardRepository()),
+            ),
+            BlocProvider(create: (_) => _makeAuthBloc()),
+            BlocProvider(create: (_) => ProfileBloc(userRepository: _FakeUserRepository())),
+          ],
           child: FarmerDashboardScreen(userId: userId),
         ),
       );
@@ -81,7 +134,7 @@ void main() {
           await tester.pump();
 
           expect(find.byType(AppBar), findsOneWidget);
-          expect(find.text('My Dashboard'), findsOneWidget);
+          expect(find.text('Brew Master'), findsOneWidget);
           expect(find.byIcon(Icons.refresh), findsOneWidget);
         },
       );
@@ -117,7 +170,7 @@ void main() {
           await tester.pumpWidget(createTestWidget());
           await tester.pump();
 
-          expect(find.text('My Dashboard'), findsOneWidget);
+          expect(find.text('Brew Master'), findsOneWidget);
           expect(find.byType(AppBar), findsOneWidget);
         },
       );
@@ -202,10 +255,15 @@ void main() {
                     onPressed: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => BlocProvider(
-                          create: (_) => DashboardBloc(
-                            repository: _FakeDashboardRepository(),
-                          ),
+                        builder: (_) => MultiBlocProvider(
+                          providers: [
+                            BlocProvider(
+                              create: (_) => DashboardBloc(
+                                  repository: _FakeDashboardRepository()),
+                            ),
+                            BlocProvider(create: (_) => _makeAuthBloc()),
+            BlocProvider(create: (_) => ProfileBloc(userRepository: _FakeUserRepository())),
+                          ],
                           child: const FarmerDashboardScreen(
                             userId: 'test-farmer-123',
                           ),
@@ -222,9 +280,11 @@ void main() {
           await tester.tap(find.text('Open Farmer Dashboard'));
           await tester.pumpAndSettle();
 
-          expect(find.text('My Dashboard'), findsOneWidget);
+          expect(find.text('Brew Master'), findsOneWidget);
 
-          await tester.pageBack();
+          final NavigatorState navigator =
+              tester.state(find.byType(Navigator).first);
+          navigator.pop();
           await tester.pumpAndSettle();
 
           expect(find.text('Open Farmer Dashboard'), findsOneWidget);
@@ -236,9 +296,15 @@ void main() {
         (WidgetTester tester) async {
           await tester.pumpWidget(
             MaterialApp(
-              home: BlocProvider(
-                create: (_) =>
-                    DashboardBloc(repository: _FakeDashboardRepository()),
+              home: MultiBlocProvider(
+                providers: [
+                  BlocProvider(
+                    create: (_) => DashboardBloc(
+                        repository: _FakeDashboardRepository()),
+                  ),
+                  BlocProvider(create: (_) => _makeAuthBloc()),
+            BlocProvider(create: (_) => ProfileBloc(userRepository: _FakeUserRepository())),
+                ],
                 child: const FarmerDashboardScreen(userId: 'test-farmer-123'),
               ),
             ),
@@ -246,7 +312,7 @@ void main() {
 
           await tester.pump();
 
-          expect(find.text('My Dashboard'), findsOneWidget);
+          expect(find.text('Brew Master'), findsOneWidget);
         },
       );
     });
@@ -281,9 +347,15 @@ void main() {
 
           await tester.pumpWidget(
             MaterialApp(
-              home: BlocProvider(
-                create: (_) =>
-                    DashboardBloc(repository: _FakeDashboardRepository()),
+              home: MultiBlocProvider(
+                providers: [
+                  BlocProvider(
+                    create: (_) => DashboardBloc(
+                        repository: _FakeDashboardRepository()),
+                  ),
+                  BlocProvider(create: (_) => _makeAuthBloc()),
+            BlocProvider(create: (_) => ProfileBloc(userRepository: _FakeUserRepository())),
+                ],
                 child: const FarmerDashboardScreen(userId: testUserId),
               ),
             ),
@@ -425,7 +497,7 @@ void main() {
       testWidgets(
         'Should handle very long userId',
         (WidgetTester tester) async {
-          final longUserId = 'farmer-' + '1234567890' * 10;
+          final longUserId = 'farmer-${'1234567890' * 10}';
 
           await tester.pumpWidget(createTestWidget(userId: longUserId));
           await tester.pump();

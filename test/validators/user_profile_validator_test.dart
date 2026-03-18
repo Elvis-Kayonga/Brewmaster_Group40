@@ -10,6 +10,7 @@
 ///
 /// Requirements: 1.1, 1.2
 /// Developer: Developer 1
+library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:brewmaster/domain/models/user_profile.dart';

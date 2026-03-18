@@ -29,8 +29,24 @@ class MessagingBloc extends Bloc<MessagingEvent, MessagingState> {
     on<MessagesLoadRequested>(_onLoadMessages);
     on<MessageSendRequested>(_onSendMessage);
     on<MessagesMarkReadRequested>(_onMarkRead);
+    on<StartConversationRequested>(_onStartConversation);
     on<_ConversationsUpdated>(_onConversationsUpdated);
     on<_MessagesUpdated>(_onMessagesUpdated);
+    on<_StreamError>(_onStreamError);
+  }
+
+  Future<void> _onStartConversation(
+    StartConversationRequested event,
+    Emitter<MessagingState> emit,
+  ) async {
+    emit(const MessagingLoading());
+    try {
+      final conversation =
+          await _repository.getOrCreateConversation(event.otherUserId);
+      emit(ConversationReady(conversation));
+    } catch (e) {
+      emit(MessagingFailure(e.toString()));
+    }
   }
 
   Future<void> _onLoadConversations(
@@ -41,7 +57,7 @@ class MessagingBloc extends Bloc<MessagingEvent, MessagingState> {
     await _conversationsSub?.cancel();
     _conversationsSub = _repository.watchConversations().listen(
       (convos) => add(_ConversationsUpdated(convos)),
-      onError: (e) => emit(MessagingFailure(e.toString())),
+      onError: (e) => add(_StreamError(e.toString())),
     );
   }
 
@@ -60,7 +76,7 @@ class MessagingBloc extends Bloc<MessagingEvent, MessagingState> {
     await _messagesSub?.cancel();
     _messagesSub = _repository.watchMessages(event.conversationId).listen(
       (msgs) => add(_MessagesUpdated(msgs)),
-      onError: (e) => emit(MessagingFailure(e.toString())),
+      onError: (e) => add(_StreamError(e.toString())),
     );
   }
 
@@ -86,6 +102,13 @@ class MessagingBloc extends Bloc<MessagingEvent, MessagingState> {
     } catch (e) {
       emit(MessagingFailure(e.toString()));
     }
+  }
+
+  void _onStreamError(
+    _StreamError event,
+    Emitter<MessagingState> emit,
+  ) {
+    emit(MessagingFailure(event.message));
   }
 
   Future<void> _onMarkRead(

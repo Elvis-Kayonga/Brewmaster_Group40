@@ -5,9 +5,11 @@
 // Requirements: 2.1, 2.2, 2.5, 2.7, 2.8, 4.1, 4.2, 4.3, 16.1 (Clean Architecture)
 // Developer: Developer 2
 
+import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:http/http.dart' as http;
+import '../../config/cloudinary_config.dart';
 import '../../domain/models/coffee_listing.dart';
 import '../../domain/models/paginated_result.dart';
 import '../../domain/models/search_filters.dart';
@@ -15,13 +17,9 @@ import '../../domain/repositories/listing_repository.dart';
 
 class FirebaseListingRepository implements ListingRepository {
   final FirebaseFirestore _firestore;
-  final FirebaseStorage _storage;
 
-  FirebaseListingRepository({
-    FirebaseFirestore? firestore,
-    FirebaseStorage? storage,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _storage = storage ?? FirebaseStorage.instance;
+  FirebaseListingRepository({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference<Map<String, dynamic>> get _col =>
       _firestore.collection('listings');
@@ -34,7 +32,7 @@ class FirebaseListingRepository implements ListingRepository {
     final docRef = await _col.add(listing.toJson());
     if (images != null && images.isNotEmpty) {
       final urls = await _uploadImages(images, docRef.id);
-      await docRef.update({'images': urls, 'listingId': docRef.id});
+      await docRef.update({'imageUrls': urls, 'listingId': docRef.id});
     } else {
       await docRef.update({'listingId': docRef.id});
     }
@@ -72,54 +70,79 @@ class FirebaseListingRepository implements ListingRepository {
   Stream<List<CoffeeListing>> watchFarmerListings(String farmerId) {
     return _col
         .where('farmerId', isEqualTo: farmerId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((s) =>
-            s.docs.map((d) => CoffeeListing.fromJson(d.data())).toList());
+        .map((s) {
+          final list =
+              s.docs.map((d) => CoffeeListing.fromJson(d.data())).toList();
+          list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return list;
+        });
   }
 
   @override
   Stream<List<CoffeeListing>> watchActiveListings() {
     return _col
         .where('status', isEqualTo: 'active')
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((s) =>
-            s.docs.map((d) => CoffeeListing.fromJson(d.data())).toList());
+        .map((s) {
+          final list =
+              s.docs.map((d) => CoffeeListing.fromJson(d.data())).toList();
+          list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return list;
+        });
   }
 
   @override
   Future<List<CoffeeListing>> searchListings(SearchFilters filters) async {
+    // Only use processingMethod as a Firestore filter (single equality —
+    // no composite index needed). All range and text filters are applied
+    // client-side to avoid Firestore index requirements.
     Query<Map<String, dynamic>> query =
         _col.where('status', isEqualTo: 'active');
 
-    if (filters.variety != null) {
-      query = query.where('variety', isEqualTo: filters.variety);
-    }
     if (filters.method != null) {
       query = query.where('processingMethod', isEqualTo: filters.method);
     }
-    if (filters.minPrice != null) {
-      query = query.where('pricePerKg',
-          isGreaterThanOrEqualTo: filters.minPrice);
-    }
-    if (filters.maxPrice != null) {
-      query =
-          query.where('pricePerKg', isLessThanOrEqualTo: filters.maxPrice);
-    }
-    if (filters.minAltitude != null) {
-      query = query.where('altitude',
-          isGreaterThanOrEqualTo: filters.minAltitude);
-    }
-    if (filters.maxAltitude != null) {
-      query =
-          query.where('altitude', isLessThanOrEqualTo: filters.maxAltitude);
-    }
 
-    final snapshot = await query.get();
-    return snapshot.docs
+    var results = (await query.get())
+        .docs
         .map((d) => CoffeeListing.fromJson(d.data()))
         .toList();
+
+    // Client-side range and text filtering
+    if (filters.minPrice != null) {
+      results =
+          results.where((l) => l.pricePerKg >= filters.minPrice!).toList();
+    }
+    if (filters.maxPrice != null) {
+      results =
+          results.where((l) => l.pricePerKg <= filters.maxPrice!).toList();
+    }
+    if (filters.minAltitude != null) {
+      results =
+          results.where((l) => l.altitude >= filters.minAltitude!).toList();
+    }
+    if (filters.maxAltitude != null) {
+      results =
+          results.where((l) => l.altitude <= filters.maxAltitude!).toList();
+    }
+    if (filters.country != null) {
+      final c = filters.country!.toLowerCase();
+      results = results
+          .where((l) => l.location.toLowerCase().contains(c))
+          .toList();
+    }
+    if (filters.query != null && filters.query!.isNotEmpty) {
+      final q = filters.query!.toLowerCase();
+      results = results
+          .where((l) =>
+              l.variety.toLowerCase().contains(q) ||
+              l.location.toLowerCase().contains(q) ||
+              (l.farmerName?.toLowerCase().contains(q) ?? false))
+          .toList();
+    }
+
+    return results;
   }
 
   @override
@@ -129,7 +152,6 @@ class FirebaseListingRepository implements ListingRepository {
   }) async {
     Query<Map<String, dynamic>> query = _col
         .where('status', isEqualTo: 'active')
-        .orderBy('createdAt', descending: true)
         .limit(pageSize + 1); // fetch one extra to detect hasMore
 
     if (startAfter is DocumentSnapshot) {
@@ -151,10 +173,16 @@ class FirebaseListingRepository implements ListingRepository {
       List<File> images, String listingId) async {
     final urls = <String>[];
     for (var i = 0; i < images.length; i++) {
-      final ref =
-          _storage.ref().child('listings/$listingId/image_$i.jpg');
-      await ref.putFile(images[i]);
-      urls.add(await ref.getDownloadURL());
+      final uri = Uri.parse(CloudinaryConfig.uploadUrl);
+      final request = http.MultipartRequest('POST', uri)
+        ..fields['upload_preset'] = CloudinaryConfig.uploadPreset
+        ..fields['public_id'] = 'listings/$listingId/image_$i'
+        ..files.add(await http.MultipartFile.fromPath('file', images[i].path));
+      final response = await request.send();
+      final body = await response.stream.bytesToString();
+      if (response.statusCode != 200) throw Exception('Image upload failed');
+      final data = jsonDecode(body) as Map<String, dynamic>;
+      urls.add(data['secure_url'] as String);
     }
     return urls;
   }

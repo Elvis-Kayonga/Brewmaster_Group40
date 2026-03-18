@@ -25,6 +25,7 @@ import 'package:brewmaster/domain/repositories/market_price_repository.dart';
 import 'package:brewmaster/domain/repositories/message_repository.dart';
 import 'package:brewmaster/domain/repositories/notification_repository.dart';
 import 'package:brewmaster/domain/repositories/offline_sync_repository.dart';
+import 'package:brewmaster/domain/models/escrow_transaction.dart' as tx;
 import 'package:brewmaster/domain/repositories/payment_repository.dart';
 import 'package:brewmaster/domain/repositories/verification_repository.dart';
 import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
@@ -88,6 +89,12 @@ class _FakeUserRepository implements UserRepository {
 }
 
 class _FakePaymentRepository implements PaymentRepository {
+  @override
+  Stream<List<tx.Transaction>> getUserTransactions(String userId) =>
+      Stream.value([]);
+  @override
+  Future<Map<String, dynamic>> getUserStatistics(String userId) async =>
+      {'totalEarnings': 0.0, 'completedTransactions': 0, 'pendingTransactions': 0};
   @override dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
 }
 
@@ -118,6 +125,7 @@ class _FakeNotificationRepository implements NotificationRepository {
   @override Stream<Map<String, dynamic>> watchNotifications() => Stream.value({});
   @override Future<Map<String, bool>> getPreferences() async => {};
   @override Future<void> updatePreferences(Map<String, bool> p) async {}
+  @override dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
 }
 
 class _FakeOfflineSyncRepository implements OfflineSyncRepository {
@@ -209,6 +217,10 @@ void main() {
     testWidgets(
         'property: authenticated user with profile always lands on DashboardScreen (5 iterations)',
         (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       for (var i = 0; i < 5; i++) {
         final uid = _faker.guid.guid();
         final email = _faker.internet.email();

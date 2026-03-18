@@ -42,10 +42,14 @@ Future<void> main() async {
   // Build repositories once — shared across all BLoCs
   final authRepository = FirebaseAuthRepository();
   final userRepository = FirebaseUserRepository();
-  final paymentRepository = FirebasePaymentRepository();
-  final listingRepository = FirebaseListingRepository();
-  final messageRepository = FirebaseMessageRepository();
   final notificationRepository = FirebaseNotificationRepository();
+  final paymentRepository = FirebasePaymentRepository(
+    notificationRepository: notificationRepository,
+  );
+  final listingRepository = FirebaseListingRepository();
+  final messageRepository = FirebaseMessageRepository(
+    notificationRepository: notificationRepository,
+  );
   final offlineSyncRepository = FirebaseOfflineSyncRepository();
   final verificationRepository = FirebaseVerificationRepository();
   final dashboardRepository = FirebaseDashboardRepository();

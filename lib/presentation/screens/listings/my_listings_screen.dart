@@ -87,7 +87,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                 MaterialPageRoute(
                   builder: (_) => BlocProvider.value(
                     value: context.read<ListingBloc>(),
-                    child: const ListingFormScreen(),
+                    child: ListingFormScreen(farmerId: widget.farmerId),
                   ),
                 ),
               ),
@@ -153,7 +153,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
           MaterialPageRoute(
             builder: (_) => BlocProvider.value(
               value: context.read<ListingBloc>(),
-              child: const ListingFormScreen(),
+              child: ListingFormScreen(farmerId: widget.farmerId),
             ),
           ),
         ),

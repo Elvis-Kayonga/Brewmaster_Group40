@@ -1,28 +1,29 @@
 // Feature: brewmaster-verification
 // Firebase implementation of VerificationRepository.
-// Uploads documents to Firebase Storage and stores requests in Firestore.
+// Stores one verification record per user (1:1 per ERD) in the
+// 'verifications' collection, keyed by userId.
+// Documents are uploaded to Cloudinary (consistent with the rest of the app).
 //
 // Requirements: 7.1, 7.2, 7.3
 // Developer: Developer 1
 
+import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:http/http.dart' as http;
+import '../../config/cloudinary_config.dart';
 import '../../domain/models/enums.dart';
 import '../../domain/models/verification_request.dart';
 import '../../domain/repositories/verification_repository.dart';
 
 class FirebaseVerificationRepository implements VerificationRepository {
   final FirebaseFirestore _firestore;
-  final FirebaseStorage _storage;
 
-  static const _collection = 'verification_requests';
+  // ERD collection name — one document per user, keyed by userId.
+  static const _collection = 'verifications';
 
-  FirebaseVerificationRepository({
-    FirebaseFirestore? firestore,
-    FirebaseStorage? storage,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _storage = storage ?? FirebaseStorage.instance;
+  FirebaseVerificationRepository({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
   @override
   Future<void> submitVerificationRequest(
@@ -35,19 +36,20 @@ class FirebaseVerificationRepository implements VerificationRepository {
     }
 
     final now = DateTime.now();
-    final ref = _firestore.collection(_collection).doc();
-    final request = VerificationRequest(
-      id: ref.id,
+    final record = VerificationRequest(
       userId: userId,
-      status: VerificationStatus.pending,
+      state: VerificationStatus.pending,
       documentUrls: urls,
-      submittedAt: now,
       updatedAt: now,
     );
 
-    await ref.set(request.toJson());
+    // Upsert: userId is the document ID — maintains 1:1 relationship per ERD.
+    await _firestore
+        .collection(_collection)
+        .doc(userId)
+        .set(record.toJson());
 
-    // Mark the user profile as pending
+    // Mirror status on user profile for quick reads across the app.
     await _firestore.collection('users').doc(userId).update({
       'verificationStatus': VerificationStatus.pending.toJson(),
     });
@@ -55,30 +57,43 @@ class FirebaseVerificationRepository implements VerificationRepository {
 
   @override
   Future<String> uploadDocument(String userId, File document) async {
-    final fileName =
-        '${DateTime.now().millisecondsSinceEpoch}_${document.path.split('/').last}';
-    final ref = _storage.ref('verification/$userId/$fileName');
-    await ref.putFile(document);
-    return ref.getDownloadURL();
+    final uri = Uri.parse(CloudinaryConfig.uploadUrl);
+    final fileName = document.path.split('/').last;
+
+    final request = http.MultipartRequest('POST', uri)
+      ..fields['upload_preset'] = CloudinaryConfig.uploadPreset
+      ..fields['public_id'] = 'verification/$userId/${DateTime.now().millisecondsSinceEpoch}_$fileName'
+      ..files.add(await http.MultipartFile.fromPath('file', document.path));
+
+    final response = await request.send();
+    final body = await response.stream.bytesToString();
+
+    if (response.statusCode != 200) {
+      throw Exception('Document upload failed: ${response.statusCode} $body');
+    }
+
+    final data = jsonDecode(body) as Map<String, dynamic>;
+    return data['secure_url'] as String;
   }
 
   @override
   Future<VerificationRequest?> getVerificationStatus(String userId) async {
-    final snapshot = await _firestore
+    // Direct lookup by userId — no query or index needed.
+    final doc = await _firestore
         .collection(_collection)
-        .where('userId', isEqualTo: userId)
-        .orderBy('submittedAt', descending: true)
-        .limit(1)
+        .doc(userId)
         .get();
 
-    if (snapshot.docs.isEmpty) return null;
-    return VerificationRequest.fromJson(snapshot.docs.first.data());
+    if (!doc.exists || doc.data() == null) return null;
+    return VerificationRequest.fromJson(doc.data()!);
   }
 
   @override
   Stream<VerificationStatus> watchVerificationStatus(String userId) {
+    // Watch the verifications document directly — this is what admin tools
+    // update. Watching users/{userId} would miss changes made here.
     return _firestore
-        .collection('users')
+        .collection(_collection)
         .doc(userId)
         .snapshots()
         .map((doc) {
@@ -86,8 +101,18 @@ class FirebaseVerificationRepository implements VerificationRepository {
         return VerificationStatus.unverified;
       }
       return VerificationStatusExtension.fromJson(
-        doc.data()!['verificationStatus'] as String? ?? 'unverified',
+        doc.data()!['state'] as String? ?? 'unverified',
       );
+    });
+  }
+
+  @override
+  Future<void> syncStatusToUserProfile(
+      String userId, VerificationStatus status) async {
+    // Keep users/{userId}.verificationStatus in sync so AuthBloc reads the
+    // correct value without querying the verifications collection.
+    await _firestore.collection('users').doc(userId).update({
+      'verificationStatus': status.toJson(),
     });
   }
 }

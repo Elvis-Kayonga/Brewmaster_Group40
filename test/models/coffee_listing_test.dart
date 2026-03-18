@@ -9,6 +9,7 @@
 ///
 /// Requirements: 2.1, 2.6, 8.4, 15.1, 16.1
 /// Developer: Developer 2
+library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:brewmaster/domain/models/coffee_listing.dart';
@@ -106,15 +107,15 @@ void main() {
 
         expect(json['listingId'], equals('listing-123'));
         expect(json['farmerId'], equals('farmer-456'));
-        expect(json['variety'], equals('Arabica SL28'));
-        expect(json['quantity'], equals(500.0));
-        expect(json['pricePerKg'], equals(850.0));
+        expect(json['coffeeVariety'], equals('Arabica SL28'));
+        expect(json['quantityKg'], equals(500.0));
+        expect(json['askingPricePerKg'], equals(850.0));
         expect(json['processingMethod'], equals('washed'));
         expect(json['altitude'], equals(1800.0));
         expect(json['harvestDate'], equals(testHarvestDate.toIso8601String()));
-        expect(json['qualityScore'], equals(87.5));
-        expect(json['description'], contains('Premium quality'));
-        expect(json['images'], hasLength(3));
+        expect(json['cuppingScore'], equals(87.5));
+        expect(json['flavorNotes'], contains('Premium quality'));
+        expect(json['imageUrls'], hasLength(3));
         expect(json['location'], equals('Kirinyaga County, Kenya'));
         expect(json['status'], equals('active'));
         expect(json['createdAt'], equals(testCreatedAt.toIso8601String()));
@@ -156,10 +157,10 @@ void main() {
 
       test('Should handle integer quantity as num in JSON', () {
         final json = testListing.toJson();
-        json['quantity'] = 500; // Integer instead of double
-        json['pricePerKg'] = 850;
+        json['quantityKg'] = 500; // Integer instead of double
+        json['askingPricePerKg'] = 850;
         json['altitude'] = 1800;
-        json['qualityScore'] = 87;
+        json['cuppingScore'] = 87;
 
         final recreated = CoffeeListing.fromJson(json);
 

@@ -8,10 +8,13 @@
 // Developer: Developer 6
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../config/theme.dart';
 import '../../../domain/models/enums.dart';
 import '../../../domain/models/user_profile.dart';
+import '../../blocs/messaging/notification_bloc.dart';
+import '../../blocs/profile/profile_bloc.dart';
 import '../../screens/dashboard/farmer_dashboard_screen.dart';
 import '../../screens/dashboard/market_prices_screen.dart';
 import '../../screens/messaging/conversations_screen.dart';
@@ -35,6 +38,19 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Start the real-time profile watch immediately on login so ProfileBloc
+    // always has fresh data (e.g. for ProfileAvatarButton photo updates).
+    context
+        .read<ProfileBloc>()
+        .add(ProfileWatchRequested(widget.profile.id));
+    context
+        .read<NotificationBloc>()
+        .add(NotificationsWatchRequested(widget.profile.id));
+  }
 
   bool get _isFarmer => widget.profile.role == UserRole.farmer;
 

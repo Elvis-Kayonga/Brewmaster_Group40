@@ -1,17 +1,23 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:brewmaster/domain/models/escrow_transaction.dart' as models;
-import 'package:brewmaster/domain/models/enums.dart';
+import 'package:brewmaster/domain/models/enums.dart' hide NotificationType;
+import 'package:brewmaster/domain/models/notification.dart';
 import 'package:brewmaster/domain/models/paginated_result.dart';
+import 'package:brewmaster/domain/repositories/notification_repository.dart';
 import 'package:brewmaster/domain/repositories/payment_repository.dart';
 
 /// Firebase/Firestore implementation of [PaymentRepository].
 class FirebasePaymentRepository implements PaymentRepository {
   final FirebaseFirestore _firestore;
+  final NotificationRepository _notifications;
   final Random _random = Random();
 
-  FirebasePaymentRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirebasePaymentRepository({
+    FirebaseFirestore? firestore,
+    required NotificationRepository notificationRepository,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _notifications = notificationRepository;
 
   CollectionReference<Map<String, dynamic>> get _transactions =>
       _firestore.collection('transactions');
@@ -37,7 +43,15 @@ class FirebasePaymentRepository implements PaymentRepository {
       statusHistory: {'pending': now},
     );
     final docRef = await _transactions.add(transaction.toFirestore());
-    return transaction.copyWith(id: docRef.id);
+    final created = transaction.copyWith(id: docRef.id);
+    _notify(
+      userId: farmerId,
+      title: 'New Purchase Request',
+      body: 'A buyer has initiated a purchase of \$${amount.toStringAsFixed(2)}.',
+      type: NotificationType.purchaseInitiated,
+      data: {'transactionId': docRef.id},
+    );
+    return created;
   }
 
   @override
@@ -49,7 +63,15 @@ class FirebasePaymentRepository implements PaymentRepository {
     final success = _random.nextDouble() > 0.1; // 90% success
 
     if (success) {
-      return _updateStatus(transaction, TransactionStatus.fundsHeld);
+      final updated = await _updateStatus(transaction, TransactionStatus.fundsHeld);
+      _notify(
+        userId: transaction.farmerId,
+        title: 'Payment Received',
+        body: 'Funds of \$${transaction.amount.toStringAsFixed(2)} are now held in escrow.',
+        type: NotificationType.paymentReceived,
+        data: {'transactionId': transactionId},
+      );
+      return updated;
     } else {
       if (transaction.canRetry()) {
         final updated = transaction.copyWith(
@@ -79,7 +101,15 @@ class FirebasePaymentRepository implements PaymentRepository {
     if (transaction.status != TransactionStatus.fundsHeld) {
       throw Exception('Cannot confirm delivery - funds not held');
     }
-    return _updateStatus(transaction, TransactionStatus.delivered);
+    final updated = await _updateStatus(transaction, TransactionStatus.delivered);
+    _notify(
+      userId: transaction.buyerId,
+      title: 'Delivery Confirmed',
+      body: 'The farmer has confirmed your order is on its way.',
+      type: NotificationType.deliveryConfirmed,
+      data: {'transactionId': transactionId},
+    );
+    return updated;
   }
 
   @override
@@ -95,7 +125,15 @@ class FirebasePaymentRepository implements PaymentRepository {
 
     final success = _random.nextDouble() > 0.05; // 95% success
     if (success) {
-      return _updateStatus(transaction, TransactionStatus.completed);
+      final updated = await _updateStatus(transaction, TransactionStatus.completed);
+      _notify(
+        userId: transaction.farmerId,
+        title: 'Funds Released',
+        body: 'The buyer confirmed receipt. \$${transaction.amount.toStringAsFixed(2)} has been released to you.',
+        type: NotificationType.paymentReceived,
+        data: {'transactionId': transactionId},
+      );
+      return updated;
     } else {
       throw Exception('Fund transfer failed - please try again');
     }
@@ -211,6 +249,26 @@ class FirebasePaymentRepository implements PaymentRepository {
   // Private helpers
   // ---------------------------------------------------------------------------
 
+  void _notify({
+    required String userId,
+    required String title,
+    required String body,
+    required NotificationType type,
+    required Map<String, dynamic> data,
+  }) {
+    final id = _firestore.collection('notifications').doc().id;
+    _notifications.saveNotification(AppNotification(
+      id: id,
+      userId: userId,
+      title: title,
+      body: body,
+      type: type,
+      data: data,
+      isRead: false,
+      createdAt: DateTime.now(),
+    ));
+  }
+
   Future<models.Transaction> _updateStatus(
     models.Transaction transaction,
     TransactionStatus newStatus,
@@ -221,6 +279,7 @@ class FirebasePaymentRepository implements PaymentRepository {
 
     final updated = transaction.copyWith(
       status: newStatus,
+      updatedAt: now,
       fundsHeldAt: newStatus == TransactionStatus.fundsHeld
           ? now
           : transaction.fundsHeldAt,

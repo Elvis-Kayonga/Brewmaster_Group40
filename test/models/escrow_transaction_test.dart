@@ -11,6 +11,7 @@
 ///
 /// Requirements: 3.1, 3.2, 3.3, 16.1
 /// Developer: Developer 2
+library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;

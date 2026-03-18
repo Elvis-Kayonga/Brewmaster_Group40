@@ -174,7 +174,7 @@ void main() {
 
           final json = message.toJson();
           expect(
-            json['messageType'],
+            json['type'],
             equals('listingReference'),
             reason: 'messageType should be listingReference',
           );

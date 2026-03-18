@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../domain/models/notification.dart';
 import '../../domain/repositories/notification_repository.dart';
 
 /// Firebase / FCM implementation of [NotificationRepository].
@@ -141,4 +142,60 @@ class FirebaseNotificationRepository implements NotificationRepository {
         'paymentsEnabled': true,
         'promotionsEnabled': true,
       };
+
+  // ---------------------------------------------------------------------------
+  // Firestore notification persistence (ERD: notifications collection)
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<void> saveNotification(AppNotification notification) async {
+    await _firestore
+        .collection('notifications')
+        .doc(notification.id)
+        .set(notification.toJson());
+  }
+
+  @override
+  Stream<List<AppNotification>> watchUserNotifications(String userId) {
+    return _firestore
+        .collection('notifications')
+        .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.map((d) => AppNotification.fromFirestore(d)).toList());
+  }
+
+  @override
+  Future<void> markAsRead(String notificationId, String userId) async {
+    await _firestore
+        .collection('notifications')
+        .doc(notificationId)
+        .update({'isRead': true});
+  }
+
+  @override
+  Future<void> markAllAsRead(String userId) async {
+    final unread = await _firestore
+        .collection('notifications')
+        .where('userId', isEqualTo: userId)
+        .where('isRead', isEqualTo: false)
+        .get();
+
+    final batch = _firestore.batch();
+    for (final doc in unread.docs) {
+      batch.update(doc.reference, {'isRead': true});
+    }
+    await batch.commit();
+  }
+
+  @override
+  Future<int> getUnreadCount(String userId) async {
+    final snap = await _firestore
+        .collection('notifications')
+        .where('userId', isEqualTo: userId)
+        .where('isRead', isEqualTo: false)
+        .get();
+    return snap.size;
+  }
 }

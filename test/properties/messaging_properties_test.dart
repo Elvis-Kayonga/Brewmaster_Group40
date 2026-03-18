@@ -136,6 +136,9 @@ class FakeNotificationRepository implements NotificationRepository {
   @override
   Future<Map<String, bool>> getPreferences() async =>
       Map.unmodifiable(_preferences);
+
+  @override
+  dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
 }
 
 // ---------------------------------------------------------------------------

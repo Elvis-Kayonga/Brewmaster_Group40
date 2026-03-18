@@ -8,6 +8,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../config/theme.dart';
@@ -21,8 +22,10 @@ import '../../widgets/common/date_picker_widget.dart';
 
 class ListingFormScreen extends StatefulWidget {
   final CoffeeListing? listing;
+  /// farmerId of the currently signed-in farmer — required for new listings.
+  final String farmerId;
 
-  const ListingFormScreen({super.key, this.listing});
+  const ListingFormScreen({super.key, this.listing, this.farmerId = ''});
 
   @override
   State<ListingFormScreen> createState() => _ListingFormScreenState();
@@ -41,6 +44,7 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
   DateTime? _harvestDate;
   List<File> _selectedImages = [];
   final ImagePicker _imagePicker = ImagePicker();
+  bool _isGeocoding = false;
 
   @override
   void initState() {
@@ -75,6 +79,31 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
     super.dispose();
   }
 
+  Future<void> _geocodeLocation() async {
+    final address = _locationController.text.trim();
+    if (address.isEmpty) return;
+    setState(() => _isGeocoding = true);
+    try {
+      final results = await locationFromAddress(address);
+      if (results.isNotEmpty && mounted) {
+        final loc = results.first;
+        setState(() {
+          _locationController.text =
+              '${loc.latitude.toStringAsFixed(6)},${loc.longitude.toStringAsFixed(6)}';
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Could not find coordinates for that address.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isGeocoding = false);
+    }
+  }
+
   Future<void> _pickImages() async {
     final images = await _imagePicker.pickMultiImage();
     setState(() {
@@ -99,7 +128,7 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
     final now = DateTime.now();
     final listing = CoffeeListing(
       listingId: widget.listing?.listingId ?? '',
-      farmerId: widget.listing?.farmerId ?? '',
+      farmerId: widget.listing?.farmerId ?? widget.farmerId,
       variety: _varietyController.text,
       quantity: double.parse(_quantityController.text),
       pricePerKg: double.parse(_priceController.text),
@@ -110,7 +139,7 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
       description: _descriptionController.text,
       images: widget.listing?.images ?? [],
       location: _locationController.text,
-      status: widget.listing?.status ?? ListingStatus.draft,
+      status: widget.listing?.status ?? ListingStatus.active,
       createdAt: widget.listing?.createdAt ?? now,
       updatedAt: now,
     );
@@ -202,10 +231,40 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
               maxLines: 3,
             ),
             const SizedBox(height: AppTheme.margin16),
-            CustomTextField(
-              labelText: 'Location (lat,lng)',
-              controller: _locationController,
-              hintText: 'e.g., -1.9441,29.8739',
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: CustomTextField(
+                    labelText: 'Location',
+                    controller: _locationController,
+                    hintText: 'Type address or lat,lng',
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Tooltip(
+                    message: 'Convert address to coordinates',
+                    child: _isGeocoding
+                        ? const SizedBox(
+                            width: 48,
+                            height: 48,
+                            child: Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                          )
+                        : IconButton.filled(
+                            icon: const Icon(Icons.my_location),
+                            onPressed: _geocodeLocation,
+                          ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: AppTheme.margin16),
             CustomButton(

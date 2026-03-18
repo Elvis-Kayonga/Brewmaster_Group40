@@ -29,12 +29,12 @@ void main() {
 
       expect(json['listingId'], 'list1');
       expect(json['farmerId'], 'farm1');
-      expect(json['variety'], 'Bourbon');
-      expect(json['quantity'], 100.0);
-      expect(json['pricePerKg'], 5.5);
+      expect(json['coffeeVariety'], 'Bourbon');
+      expect(json['quantityKg'], 100.0);
+      expect(json['askingPricePerKg'], 5.5);
       expect(json['processingMethod'], 'washed');
       expect(json['altitude'], 1500.0);
-      expect(json['qualityScore'], 85.0);
+      expect(json['cuppingScore'], 85.0);
       expect(json['status'], 'active');
     });
 
