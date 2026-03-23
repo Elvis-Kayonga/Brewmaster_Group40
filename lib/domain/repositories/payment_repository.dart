@@ -10,6 +10,7 @@ abstract class PaymentRepository {
     required String farmerId,
     required String listingId,
     required double amount,
+    String currency = 'USD',
     required PaymentMethod paymentMethod,
   });
 

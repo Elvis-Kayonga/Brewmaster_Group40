@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import '../../../core/utils/currency_utils.dart';
 import '../../../config/theme.dart';
 import '../../../domain/models/escrow_transaction.dart' as models;
 import '../../widgets/common/profile_avatar_button.dart';
@@ -263,7 +264,7 @@ class _HeritageOrderCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Batch · \$${transaction.amount.toStringAsFixed(2)}',
+              'Batch · ${CurrencyUtils.format(transaction.amount, transaction.currency)}',
               style: const TextStyle(fontSize: 13, color: Colors.white60),
             ),
             const SizedBox(height: 20),
