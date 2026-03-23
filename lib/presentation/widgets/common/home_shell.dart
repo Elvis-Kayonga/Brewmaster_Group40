@@ -21,6 +21,7 @@ import '../../screens/messaging/conversations_screen.dart';
 import '../../screens/payments/transaction_history_screen.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../../screens/search/search_screen.dart';
+import '../../screens/voice/voice_assistant_screen.dart';
 
 /// Root scaffold rendered once the user is authenticated.
 ///
@@ -61,6 +62,7 @@ class _HomeShellState extends State<HomeShell> {
           isFarmer: false,
         ),
         const MarketPricesScreen(),
+        const VoiceAssistantScreen(),
         const ConversationsScreen(),
         const ProfileScreen(),
       ];
@@ -72,6 +74,7 @@ class _HomeShellState extends State<HomeShell> {
           isFarmer: true,
         ),
         const MarketPricesScreen(),
+        const VoiceAssistantScreen(),
         const ConversationsScreen(),
         const ProfileScreen(),
       ];
@@ -91,6 +94,11 @@ class _HomeShellState extends State<HomeShell> {
           icon: Icon(Icons.show_chart_outlined),
           activeIcon: Icon(Icons.show_chart),
           label: 'Prices',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.mic_none_rounded),
+          activeIcon: Icon(Icons.mic_rounded),
+          label: 'Voice',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.chat_bubble_outline),
@@ -119,6 +127,11 @@ class _HomeShellState extends State<HomeShell> {
           icon: Icon(Icons.show_chart_outlined),
           activeIcon: Icon(Icons.show_chart),
           label: 'Prices',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.mic_none_rounded),
+          activeIcon: Icon(Icons.mic_rounded),
+          label: 'Voice',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.chat_bubble_outline),

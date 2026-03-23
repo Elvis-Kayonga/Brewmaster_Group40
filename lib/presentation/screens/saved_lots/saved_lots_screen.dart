@@ -260,6 +260,7 @@ class _SavedLotTile extends StatelessWidget {
                                 buyerId: buyerId,
                                 amount:
                                     lot.pricePerKg * lot.availableQuantity,
+                                farmerCountry: lot.location,
                               ),
                             ),
                           );

@@ -41,11 +41,12 @@ class ProfileAvatarButton extends StatelessWidget {
             final photoUrl = profile?.photoUrl;
 
             final isBuyer = profile?.role == UserRole.buyer;
+            final savedLotsBloc = context.read<SavedLotsBloc?>();
 
             return Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (isBuyer)
+                if (isBuyer && savedLotsBloc != null)
                   BlocBuilder<SavedLotsBloc, SavedLotsState>(
                     builder: (context, savedState) {
                       return IconButton(

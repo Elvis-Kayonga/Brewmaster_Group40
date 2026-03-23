@@ -431,10 +431,9 @@ class _SearchScreenState extends State<SearchScreen> {
                   itemCount: listings.length,
                   itemBuilder: (context, index) {
                     final listing = listings[index];
-                    final savedState =
-                        context.watch<SavedLotsBloc>().state;
-                    final isSaved =
-                        savedState.contains(listing.listingId);
+                    final savedLotsBloc = context.read<SavedLotsBloc?>();
+                    final savedState = savedLotsBloc?.state ?? const SavedLotsState();
+                    final isSaved = savedState.contains(listing.listingId);
                     return _ListingCard(
                       listing: listing,
                       inCart: isSaved,
@@ -448,9 +447,11 @@ class _SearchScreenState extends State<SearchScreen> {
                           ),
                         ),
                       ),
-                      onAddToCart: () {
+                      onAddToCart: savedLotsBloc == null
+                          ? null
+                          : () {
                         if (isSaved) {
-                          context.read<SavedLotsBloc>().add(
+                          savedLotsBloc.add(
                                 SavedLotRemoved(listing.listingId),
                               );
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -461,7 +462,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             ),
                           );
                         } else {
-                          context.read<SavedLotsBloc>().add(
+                          savedLotsBloc.add(
                                 SavedLotAdded(SavedLot(
                                   listingId: listing.listingId,
                                   farmerId: listing.farmerId,
@@ -505,6 +506,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               buyerId: buyerId,
                               amount: listing.pricePerKg *
                                   listing.quantity,
+                              farmerCountry: listing.location,
                             ),
                           ),
                         );
@@ -753,7 +755,7 @@ class _ListingCard extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '\$${listing.pricePerKg.toStringAsFixed(2)}',
+                            'USD ${listing.pricePerKg.toStringAsFixed(2)}',
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,

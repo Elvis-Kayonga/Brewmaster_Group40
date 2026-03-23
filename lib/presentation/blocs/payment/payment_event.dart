@@ -12,6 +12,7 @@ class PaymentInitiateRequested extends PaymentEvent {
   final String farmerId;
   final String listingId;
   final double amount;
+  final String currency;
   final PaymentMethod paymentMethod;
 
   const PaymentInitiateRequested({
@@ -19,12 +20,13 @@ class PaymentInitiateRequested extends PaymentEvent {
     required this.farmerId,
     required this.listingId,
     required this.amount,
+    this.currency = 'USD',
     required this.paymentMethod,
   });
 
   @override
   List<Object?> get props =>
-      [buyerId, farmerId, listingId, amount, paymentMethod];
+      [buyerId, farmerId, listingId, amount, currency, paymentMethod];
 }
 
 class PaymentProcessRequested extends PaymentEvent {

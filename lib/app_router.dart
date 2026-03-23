@@ -26,6 +26,7 @@ import 'presentation/screens/profile/profile_screen.dart';
 import 'presentation/screens/notifications/notifications_screen.dart';
 import 'presentation/screens/profile/verification_request_screen.dart';
 import 'presentation/screens/search/search_screen.dart';
+import 'presentation/screens/voice/voice_assistant_screen.dart';
 
 /// Canonical route names used throughout the app.
 abstract class AppRoutes {
@@ -54,6 +55,9 @@ abstract class AppRoutes {
 
   // Notifications
   static const notifications = '/notifications';
+
+  // Voice assistant
+  static const voice = '/voice';
 }
 
 /// Pass to [MaterialApp.onGenerateRoute].
@@ -124,6 +128,9 @@ Route<dynamic>? generateRoute(RouteSettings settings) {
 
     case AppRoutes.notifications:
       return _page(const NotificationsScreen());
+
+    case AppRoutes.voice:
+      return _page(const VoiceAssistantScreen());
 
     default:
       return null;
