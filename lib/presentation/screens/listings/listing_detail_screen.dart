@@ -34,17 +34,23 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
     context.read<ListingBloc>().add(ListingLoadRequested(widget.listingId));
   }
 
-  /// Parse location stored as JSON {"latitude": x, "longitude": y}.
-  /// Falls back gracefully if the string is not valid JSON.
+  /// Parse location — handles both JSON {"latitude": x, "longitude": y}
+  /// and legacy comma-separated "lat,lng" formats.
   LatLng? _parseLocation(String locationString) {
     if (locationString.isEmpty) return null;
+    // Format 1: JSON
     try {
       final map = jsonDecode(locationString) as Map<String, dynamic>;
       final lat = (map['latitude'] as num?)?.toDouble();
       final lng = (map['longitude'] as num?)?.toDouble();
       if (lat != null && lng != null) return LatLng(lat, lng);
-    } catch (_) {
-      // Not JSON — map won't be shown
+    } catch (_) {}
+    // Format 2: legacy comma-separated "lat,lng"
+    final parts = locationString.split(',');
+    if (parts.length == 2) {
+      final lat = double.tryParse(parts[0].trim());
+      final lng = double.tryParse(parts[1].trim());
+      if (lat != null && lng != null) return LatLng(lat, lng);
     }
     return null;
   }

@@ -47,12 +47,21 @@ class _SearchScreenState extends State<SearchScreen> {
   CoffeeListing? _selectedMapListing;
 
   LatLng? _parseLatLng(String location) {
+    if (location.isEmpty) return null;
+    // Format 1: JSON {"latitude": x, "longitude": y}
     try {
       final map = jsonDecode(location) as Map<String, dynamic>;
       final lat = (map['latitude'] as num?)?.toDouble();
       final lng = (map['longitude'] as num?)?.toDouble();
       if (lat != null && lng != null) return LatLng(lat, lng);
     } catch (_) {}
+    // Format 2: legacy comma-separated "lat,lng"
+    final parts = location.split(',');
+    if (parts.length == 2) {
+      final lat = double.tryParse(parts[0].trim());
+      final lng = double.tryParse(parts[1].trim());
+      if (lat != null && lng != null) return LatLng(lat, lng);
+    }
     return null;
   }
 
