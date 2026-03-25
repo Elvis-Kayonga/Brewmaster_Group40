@@ -74,7 +74,7 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
               message: state.message,
               onRetry: () => context
                   .read<MarketPriceBloc>()
-                  .add(const MarketPricesLoadRequested()),
+                  .add(const MarketPricesSyncRequested()),
             );
           }
 

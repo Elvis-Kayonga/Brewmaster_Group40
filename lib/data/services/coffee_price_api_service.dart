@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:http/http.dart' as http;
 
 import '../../domain/models/enums.dart';
@@ -19,48 +17,43 @@ class CoffeePriceApiService {
     final response = await _client.get(_coffeeQuoteUri).timeout(
       const Duration(seconds: 12),
     );
-
     if (response.statusCode != 200) {
       throw Exception('Coffee price API failed with status ${response.statusCode}.');
     }
+    return _buildFromResponse(response.body);
+  }
 
-    final baseUsdPerKg = _parseUsdPerKg(response.body);
+  List<MarketPrice> _buildFromResponse(String body) {
+    final baseUsdPerKg = _parseUsdPerKg(body);
     final now = DateTime.now();
-
-    final templates = _buildTemplates(baseUsdPerKg);
-    return templates
-        .map(
-          (template) => MarketPrice(
-            id: _docIdFor(template.variety, template.grade),
-            variety: template.variety,
-            grade: template.grade,
-            lowPrice: template.avgPrice * 0.9,
-            avgPrice: template.avgPrice,
-            highPrice: template.avgPrice * 1.1,
-            currency: 'USD',
-            updatedAt: now,
-          ),
-        )
+    return _buildTemplates(baseUsdPerKg)
+        .map((t) => MarketPrice(
+              id: _docIdFor(t.variety, t.grade),
+              variety: t.variety,
+              grade: t.grade,
+              lowPrice: t.avgPrice * 0.9,
+              avgPrice: t.avgPrice,
+              highPrice: t.avgPrice * 1.1,
+              currency: 'USD',
+              updatedAt: now,
+            ))
         .toList();
   }
 
   double _parseUsdPerKg(String csvBody) {
-    final lines = LineSplitter.split(csvBody).toList();
-    if (lines.length < 2) {
-      throw Exception('Coffee price API returned an unexpected payload.');
-    }
-
-    final row = lines[1].split(',');
+    // Stooq returns a single CSV line: SYMBOL,date,time,open,high,low,close,,
+    // e.g. KC.F,20260325,171648,317.4,318.68,311.5,317.17,,
+    final row = csvBody.trim().split(',');
     if (row.length < 7) {
-      throw Exception('Coffee quote row is incomplete.');
+      throw Exception('Coffee price API returned an unexpected format: $csvBody');
     }
 
     final closeCentsPerLb = double.tryParse(row[6]);
     if (closeCentsPerLb == null || closeCentsPerLb <= 0) {
-      throw Exception('Coffee quote close value is invalid.');
+      throw Exception('Coffee quote close value is invalid: ${row[6]}');
     }
 
-    // Stooq KC quote is cents/lb. Convert to USD/kg.
+    // KC futures are quoted in US cents/lb — convert to USD/kg.
     return (closeCentsPerLb / 100.0) * 2.20462262;
   }
 

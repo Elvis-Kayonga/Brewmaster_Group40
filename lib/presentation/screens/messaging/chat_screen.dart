@@ -299,6 +299,12 @@ class _EliasInputFieldState extends State<_EliasInputField> {
   }
 
   Future<void> _toggleListening() async {
+    if (!_speechAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Speech recognition not available on this device.')),
+      );
+      return;
+    }
     if (_isListening) {
       await _speech.stop();
       setState(() => _isListening = false);
@@ -315,7 +321,6 @@ class _EliasInputFieldState extends State<_EliasInputField> {
         pauseFor: const Duration(seconds: 3),
         localeId: 'en_US',
       );
-      // listen() completes when speech ends naturally
       if (mounted) setState(() => _isListening = false);
     }
   }
@@ -333,23 +338,20 @@ class _EliasInputFieldState extends State<_EliasInputField> {
         ),
         child: Row(
           children: [
-            // Mic button — shown when speech is available
-            if (_speechAvailable)
-              Padding(
-                padding: const EdgeInsets.only(left: 6),
-                child: IconButton(
-                  icon: Icon(
-                    _isListening ? Icons.mic : Icons.mic_none,
-                    color: _isListening
-                        ? AppTheme.primaryColor
-                        : AppTheme.textSecondary,
-                  ),
-                  onPressed: _toggleListening,
-                  tooltip: _isListening ? 'Stop listening' : 'Speak',
+            // Mic button — always visible; shows snackbar if speech unavailable
+            Padding(
+              padding: const EdgeInsets.only(left: 6),
+              child: IconButton(
+                icon: Icon(
+                  _isListening ? Icons.mic : Icons.mic_none,
+                  color: _isListening
+                      ? AppTheme.primaryColor
+                      : AppTheme.textSecondary,
                 ),
-              )
-            else
-              const SizedBox(width: 16),
+                onPressed: _toggleListening,
+                tooltip: _isListening ? 'Stop listening' : 'Speak',
+              ),
+            ),
             Expanded(
               child: TextField(
                 controller: widget.controller,
