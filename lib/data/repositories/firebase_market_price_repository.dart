@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/models/enums.dart';
 import '../../domain/models/market_price.dart';
 import '../../domain/repositories/market_price_repository.dart';
+import '../services/coffee_price_api_service.dart';
 
 /// Firebase implementation of [MarketPriceRepository].
 ///
@@ -13,10 +14,14 @@ import '../../domain/repositories/market_price_repository.dart';
 /// Requirements: 3.1, 3.2, 3.4, 3.5
 /// Developer: Developer 5
 class FirebaseMarketPriceRepository implements MarketPriceRepository {
-  FirebaseMarketPriceRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirebaseMarketPriceRepository({
+    FirebaseFirestore? firestore,
+    CoffeePriceApiService? coffeePriceApi,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _coffeePriceApi = coffeePriceApi ?? CoffeePriceApiService();
 
   final FirebaseFirestore _firestore;
+  final CoffeePriceApiService _coffeePriceApi;
 
   DateTime? _lastSyncTime;
 
@@ -50,12 +55,19 @@ class FirebaseMarketPriceRepository implements MarketPriceRepository {
 
   @override
   Future<List<MarketPrice>> syncDailyPrices() async {
-    // Force a fresh server-side fetch by disabling the local cache for this call
-    final snapshot = await _collection
-        .orderBy('variety')
-        .get(const GetOptions(source: Source.server));
+    // Fetch live KC futures prices from Stooq and upsert into Firestore
+    final livePrices = await _coffeePriceApi.fetchDailyPrices();
+    final batch = _firestore.batch();
+    for (final price in livePrices) {
+      batch.set(
+        _collection.doc(price.id),
+        price.toJson(),
+        SetOptions(merge: true),
+      );
+    }
+    await batch.commit();
     _lastSyncTime = DateTime.now();
-    return snapshot.docs.map(MarketPrice.fromFirestore).toList();
+    return getMarketPrices();
   }
 
   @override
