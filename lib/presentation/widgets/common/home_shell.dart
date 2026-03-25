@@ -21,7 +21,6 @@ import '../../screens/messaging/conversations_screen.dart';
 import '../../screens/payments/transaction_history_screen.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../../screens/search/search_screen.dart';
-import '../../screens/voice/voice_assistant_screen.dart';
 
 /// Root scaffold rendered once the user is authenticated.
 ///
@@ -40,44 +39,40 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 0;
 
+  /// Tracks which tab indices have been visited so screens are only built
+  /// on first visit rather than all at once at startup.
+  late final Set<int> _visitedIndices;
+
+  /// Screen lists are cached so widget instances are not recreated on rebuild.
+  late final List<Widget> _screens;
+
   @override
   void initState() {
     super.initState();
+    _visitedIndices = {0};
+    _screens = widget.profile.role == UserRole.farmer
+        ? [
+            FarmerDashboardScreen(userId: widget.profile.id),
+            TransactionHistoryScreen(userId: widget.profile.id, isFarmer: true),
+            const MarketPricesScreen(),
+            const ConversationsScreen(),
+            const ProfileScreen(),
+          ]
+        : [
+            const SearchScreen(),
+            TransactionHistoryScreen(userId: widget.profile.id, isFarmer: false),
+            const MarketPricesScreen(),
+            const ConversationsScreen(),
+            const ProfileScreen(),
+          ];
+
     // Start the real-time profile watch immediately on login so ProfileBloc
     // always has fresh data (e.g. for ProfileAvatarButton photo updates).
-    context
-        .read<ProfileBloc>()
-        .add(ProfileWatchRequested(widget.profile.id));
-    context
-        .read<NotificationBloc>()
-        .add(NotificationsWatchRequested(widget.profile.id));
+    context.read<ProfileBloc>().add(ProfileWatchRequested(widget.profile.id));
+    context.read<NotificationBloc>().add(NotificationsWatchRequested(widget.profile.id));
   }
 
   bool get _isFarmer => widget.profile.role == UserRole.farmer;
-
-  List<Widget> get _buyerScreens => [
-        const SearchScreen(),
-        TransactionHistoryScreen(
-          userId: widget.profile.id,
-          isFarmer: false,
-        ),
-        const MarketPricesScreen(),
-        const VoiceAssistantScreen(),
-        const ConversationsScreen(),
-        const ProfileScreen(),
-      ];
-
-  List<Widget> get _farmerScreens => [
-        FarmerDashboardScreen(userId: widget.profile.id),
-        TransactionHistoryScreen(
-          userId: widget.profile.id,
-          isFarmer: true,
-        ),
-        const MarketPricesScreen(),
-        const VoiceAssistantScreen(),
-        const ConversationsScreen(),
-        const ProfileScreen(),
-      ];
 
   List<BottomNavigationBarItem> get _buyerNavItems => const [
         BottomNavigationBarItem(
@@ -94,11 +89,6 @@ class _HomeShellState extends State<HomeShell> {
           icon: Icon(Icons.show_chart_outlined),
           activeIcon: Icon(Icons.show_chart),
           label: 'Prices',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.mic_none_rounded),
-          activeIcon: Icon(Icons.mic_rounded),
-          label: 'Voice',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.chat_bubble_outline),
@@ -129,11 +119,6 @@ class _HomeShellState extends State<HomeShell> {
           label: 'Prices',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.mic_none_rounded),
-          activeIcon: Icon(Icons.mic_rounded),
-          label: 'Voice',
-        ),
-        BottomNavigationBarItem(
           icon: Icon(Icons.chat_bubble_outline),
           activeIcon: Icon(Icons.chat_bubble),
           label: 'Messages',
@@ -146,21 +131,31 @@ class _HomeShellState extends State<HomeShell> {
       ];
 
   void _onTabTapped(int index) {
-    setState(() => _currentIndex = index);
+    setState(() {
+      _visitedIndices.add(index);
+      _currentIndex = index;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final screens = _isFarmer ? _farmerScreens : _buyerScreens;
     final navItems = _isFarmer ? _farmerNavItems : _buyerNavItems;
 
     // Clamp index to valid range if role changed
-    final safeIndex = _currentIndex.clamp(0, screens.length - 1);
+    final safeIndex = _currentIndex.clamp(0, _screens.length - 1);
 
     return Scaffold(
-      body: IndexedStack(
-        index: safeIndex,
-        children: screens,
+      body: Stack(
+        fit: StackFit.expand,
+        children: List.generate(_screens.length, (i) {
+          // Only build a screen once it has been visited — avoids firing all
+          // Firestore queries/streams simultaneously at startup.
+          if (!_visitedIndices.contains(i)) return const SizedBox.shrink();
+          return Offstage(
+            offstage: i != safeIndex,
+            child: _screens[i],
+          );
+        }),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: safeIndex,

@@ -35,10 +35,11 @@ Future<void> main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Enable Firestore offline persistence
+  // Enable Firestore offline persistence with a 40 MB cap.
+  // CACHE_SIZE_UNLIMITED grows forever and slows startup as the cache expands.
   FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: true,
-    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    cacheSizeBytes: 40 * 1024 * 1024, // 40 MB
   );
 
   // Build repositories once — shared across all BLoCs

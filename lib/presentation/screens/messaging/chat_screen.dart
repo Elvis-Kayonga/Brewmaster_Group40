@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../../config/theme.dart';
 import '../../../domain/models/conversation.dart';
@@ -263,7 +264,7 @@ class _MessageBubble extends StatelessWidget {
   }
 }
 
-class _EliasInputField extends StatelessWidget {
+class _EliasInputField extends StatefulWidget {
   const _EliasInputField({
     required this.controller,
     required this.isComposing,
@@ -273,6 +274,51 @@ class _EliasInputField extends StatelessWidget {
   final TextEditingController controller;
   final bool isComposing;
   final VoidCallback onSend;
+
+  @override
+  State<_EliasInputField> createState() => _EliasInputFieldState();
+}
+
+class _EliasInputFieldState extends State<_EliasInputField> {
+  final SpeechToText _speech = SpeechToText();
+  bool _isListening = false;
+  bool _speechAvailable = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _speech.initialize().then((available) {
+      if (mounted) setState(() => _speechAvailable = available);
+    });
+  }
+
+  @override
+  void dispose() {
+    _speech.stop();
+    super.dispose();
+  }
+
+  Future<void> _toggleListening() async {
+    if (_isListening) {
+      await _speech.stop();
+      setState(() => _isListening = false);
+    } else {
+      setState(() => _isListening = true);
+      await _speech.listen(
+        onResult: (result) {
+          widget.controller.text = result.recognizedWords;
+          widget.controller.selection = TextSelection.fromPosition(
+            TextPosition(offset: widget.controller.text.length),
+          );
+        },
+        listenFor: const Duration(seconds: 30),
+        pauseFor: const Duration(seconds: 3),
+        localeId: 'en_US',
+      );
+      // listen() completes when speech ends naturally
+      if (mounted) setState(() => _isListening = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -287,21 +333,39 @@ class _EliasInputField extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const SizedBox(width: 16),
+            // Mic button — shown when speech is available
+            if (_speechAvailable)
+              Padding(
+                padding: const EdgeInsets.only(left: 6),
+                child: IconButton(
+                  icon: Icon(
+                    _isListening ? Icons.mic : Icons.mic_none,
+                    color: _isListening
+                        ? AppTheme.primaryColor
+                        : AppTheme.textSecondary,
+                  ),
+                  onPressed: _toggleListening,
+                  tooltip: _isListening ? 'Stop listening' : 'Speak',
+                ),
+              )
+            else
+              const SizedBox(width: 16),
             Expanded(
               child: TextField(
-                controller: controller,
+                controller: widget.controller,
                 maxLines: null,
                 minLines: 1,
-                decoration: const InputDecoration(
-                  hintText: 'Type a message...',
+                decoration: InputDecoration(
+                  hintText: _isListening ? 'Listening...' : 'Type a message...',
                   hintStyle: TextStyle(
                     fontSize: 14,
-                    color: AppTheme.textHint,
+                    color: _isListening
+                        ? AppTheme.primaryColor
+                        : AppTheme.textHint,
                   ),
                   border: InputBorder.none,
                   isDense: true,
-                  contentPadding: EdgeInsets.symmetric(vertical: 14),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 textInputAction: TextInputAction.newline,
               ),
@@ -309,12 +373,12 @@ class _EliasInputField extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(6),
               child: GestureDetector(
-                onTap: isComposing ? onSend : null,
+                onTap: widget.isComposing ? widget.onSend : null,
                 child: Container(
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: isComposing
+                    color: widget.isComposing
                         ? AppTheme.primaryDark
                         : AppTheme.textHint,
                     borderRadius: BorderRadius.circular(10),

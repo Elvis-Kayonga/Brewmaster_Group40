@@ -32,7 +32,8 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<MarketPriceBloc>().add(const MarketPricesLoadRequested());
+    // Sync on load so Firestore is always populated from the Stooq API.
+    context.read<MarketPriceBloc>().add(const MarketPricesSyncRequested());
   }
 
   @override
