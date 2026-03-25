@@ -5,6 +5,7 @@
 // Requirements: 2.1, 2.2, 2.7, 16.1 (Clean Architecture)
 // Developer: Developer 2
 
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -87,9 +88,12 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
       final results = await locationFromAddress(address);
       if (results.isNotEmpty && mounted) {
         final loc = results.first;
+        final locationJson = jsonEncode({
+          'latitude': loc.latitude,
+          'longitude': loc.longitude,
+        });
         setState(() {
-          _locationController.text =
-              '${loc.latitude.toStringAsFixed(6)},${loc.longitude.toStringAsFixed(6)}';
+          _locationController.text = locationJson;
         });
       }
     } catch (_) {

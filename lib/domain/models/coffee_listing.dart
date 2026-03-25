@@ -77,7 +77,7 @@ class CoffeeListing {
     };
   }
 
-  /// Create object from JSON — reads ERD field names with fallback to legacy keys.
+  /// create object from JSON
   factory CoffeeListing.fromJson(Map<String, dynamic> json) {
     return CoffeeListing(
       listingId: json['listingId'] as String,
@@ -169,6 +169,7 @@ class CoffeeListing {
         other.status == status;
   }
 
+// display listing on the page
   @override
   int get hashCode {
     return listingId.hashCode ^
