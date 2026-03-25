@@ -287,9 +287,21 @@ class _EliasInputFieldState extends State<_EliasInputField> {
   @override
   void initState() {
     super.initState();
-    _speech.initialize().then((available) {
-      if (mounted) setState(() => _speechAvailable = available);
-    });
+    _speech
+        .initialize(
+          onStatus: (status) {
+            // 'done' or 'notListening' fires when the recogniser stops
+            if (status == 'done' || status == 'notListening') {
+              if (mounted) setState(() => _isListening = false);
+            }
+          },
+          onError: (error) {
+            if (mounted) setState(() => _isListening = false);
+          },
+        )
+        .then((available) {
+          if (mounted) setState(() => _speechAvailable = available);
+        });
   }
 
   @override
@@ -310,18 +322,21 @@ class _EliasInputFieldState extends State<_EliasInputField> {
       setState(() => _isListening = false);
     } else {
       setState(() => _isListening = true);
-      await _speech.listen(
+      // Do NOT await — listen() returns immediately after starting.
+      // Results arrive via onResult; status changes via onStatus.
+      _speech.listen(
         onResult: (result) {
-          widget.controller.text = result.recognizedWords;
-          widget.controller.selection = TextSelection.fromPosition(
-            TextPosition(offset: widget.controller.text.length),
-          );
+          if (!mounted) return;
+          setState(() {
+            widget.controller.text = result.recognizedWords;
+            widget.controller.selection = TextSelection.fromPosition(
+              TextPosition(offset: widget.controller.text.length),
+            );
+          });
         },
         listenFor: const Duration(seconds: 30),
         pauseFor: const Duration(seconds: 3),
-        localeId: 'en_US',
       );
-      if (mounted) setState(() => _isListening = false);
     }
   }
 
