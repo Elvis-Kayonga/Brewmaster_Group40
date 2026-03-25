@@ -4,8 +4,12 @@
 // Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.7, 4.8, 16.1 (Clean Architecture)
 // Developer: Developer 2
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../config/theme.dart';
 import '../../../domain/models/coffee_listing.dart';
@@ -39,6 +43,18 @@ class _SearchScreenState extends State<SearchScreen> {
   String? _selectedMethod;
   String? _selectedCountry;
   bool _showFilters = false;
+  bool _showMapView = false;
+  CoffeeListing? _selectedMapListing;
+
+  LatLng? _parseLatLng(String location) {
+    try {
+      final map = jsonDecode(location) as Map<String, dynamic>;
+      final lat = (map['latitude'] as num?)?.toDouble();
+      final lng = (map['longitude'] as num?)?.toDouble();
+      if (lat != null && lng != null) return LatLng(lat, lng);
+    } catch (_) {}
+    return null;
+  }
 
   @override
   void initState() {
@@ -188,33 +204,56 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                // ── Advanced Filters button ─────────────────────────────
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () =>
-                        setState(() => _showFilters = !_showFilters),
-                    icon: const Icon(Icons.tune, size: 18, color: Colors.white),
-                    label: Text(
-                      _showFilters
-                          ? 'HIDE FILTERS'
-                          : 'ADVANCED FILTERS',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.8,
-                        color: Colors.white,
+                // ── Filters + Map toggle row ────────────────────────────
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () =>
+                            setState(() => _showFilters = !_showFilters),
+                        icon: const Icon(Icons.tune, size: 18, color: Colors.white),
+                        label: Text(
+                          _showFilters ? 'HIDE FILTERS' : 'ADVANCED FILTERS',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                            color: Colors.white,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryDark,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(28),
+                          ),
+                          elevation: 0,
+                        ),
                       ),
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryDark,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
+                    const SizedBox(width: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: _showMapView
+                            ? AppTheme.primaryColor
+                            : AppTheme.surfaceColor,
                         borderRadius: BorderRadius.circular(28),
                       ),
-                      elevation: 0,
+                      child: IconButton(
+                        icon: Icon(
+                          _showMapView ? Icons.list : Icons.map_outlined,
+                          color: _showMapView
+                              ? Colors.white
+                              : AppTheme.primaryDark,
+                        ),
+                        tooltip: _showMapView ? 'List view' : 'Map view',
+                        onPressed: () => setState(() {
+                          _showMapView = !_showMapView;
+                          _selectedMapListing = null;
+                        }),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
                 // ── Filter Panel ────────────────────────────────────────
                 if (_showFilters) ...[
@@ -425,6 +464,145 @@ class _SearchScreenState extends State<SearchScreen> {
                   );
                 }
 
+                // ── Map view ─────────────────────────────────────────
+                if (_showMapView) {
+                  final mappable = listings
+                      .where((l) => _parseLatLng(l.location) != null)
+                      .toList();
+
+                  if (mappable.isEmpty) {
+                    return const EmptyStateWidget(
+                      title: 'No map data',
+                      description: 'Listings do not have coordinates yet',
+                      icon: Icons.map_outlined,
+                    );
+                  }
+
+                  // Compute centre from all coordinates
+                  final lats = mappable.map((l) => _parseLatLng(l.location)!.latitude);
+                  final lngs = mappable.map((l) => _parseLatLng(l.location)!.longitude);
+                  final centre = LatLng(
+                    (lats.reduce((a, b) => a + b)) / lats.length,
+                    (lngs.reduce((a, b) => a + b)) / lngs.length,
+                  );
+
+                  return Stack(
+                    children: [
+                      FlutterMap(
+                        options: MapOptions(
+                          initialCenter: centre,
+                          initialZoom: 6.0,
+                          onTap: (_, pos) =>
+                              setState(() => _selectedMapListing = null),
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate:
+                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.brewmaster.app',
+                          ),
+                          MarkerLayer(
+                            markers: mappable.map((listing) {
+                              final pos = _parseLatLng(listing.location)!;
+                              final isSelected =
+                                  _selectedMapListing?.listingId ==
+                                      listing.listingId;
+                              return Marker(
+                                point: pos,
+                                width: 44,
+                                height: 44,
+                                child: GestureDetector(
+                                  onTap: () => setState(
+                                      () => _selectedMapListing = listing),
+                                  child: Icon(
+                                    Icons.location_on,
+                                    color: isSelected
+                                        ? AppTheme.primaryColor
+                                        : AppTheme.primaryDark,
+                                    size: isSelected ? 44 : 36,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+                      // ── Tapped listing card ───────────────────────
+                      if (_selectedMapListing != null)
+                        Positioned(
+                          left: 12,
+                          right: 12,
+                          bottom: 16,
+                          child: Card(
+                            elevation: 6,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16)),
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          _selectedMapListing!.variety,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                            color: AppTheme.primaryDark,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '\$${_selectedMapListing!.pricePerKg.toStringAsFixed(2)}/kg · '
+                                          '${_selectedMapListing!.quantity} kg available',
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: AppTheme.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  ElevatedButton(
+                                    onPressed: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => BlocProvider.value(
+                                          value: context.read<ListingBloc>(),
+                                          child: ListingDetailScreen(
+                                            listingId: _selectedMapListing!
+                                                .listingId,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppTheme.primaryDark,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(20),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 10),
+                                    ),
+                                    child: const Text('View',
+                                        style: TextStyle(color: Colors.white)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                }
+
+                // ── List view ─────────────────────────────────────────
                 return ListView.builder(
                   padding:
                       const EdgeInsets.fromLTRB(16, 0, 16, 24),
