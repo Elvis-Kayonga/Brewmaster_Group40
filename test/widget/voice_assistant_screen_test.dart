@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brewmaster/presentation/blocs/voice/voice_bloc.dart';
-import 'package:brewmaster/presentation/screens/voice/voice_assistant_screen.dart';
 
 // Helper: wraps the screen with a fresh BLoC
 Widget _buildScreen({VoiceAssistantBloc? bloc}) {
