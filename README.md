@@ -1,79 +1,72 @@
-# BrewMaster Coffee Marketplace
+# BrewMaster — Coffee Marketplace
 
-A Flutter mobile application that connects smallholder coffee farmers directly with specialty buyers, eliminating intermediaries and providing price transparency, secure payments, and quality verification.
+A Flutter mobile application connecting smallholder coffee farmers directly with specialty buyers. Built for the ALU Mobile Application Development course, Group 40.
 
 ## Features
 
-- **Direct Marketplace**: Connect farmers and buyers without middlemen
-- **Offline-First**: Works without internet, syncs when online
-- **Secure Payments**: Escrow system with M-Pesa and MTN Mobile Money
-- **Price Transparency**: Real-time market prices for fair trading
-- **Quality Verification**: Verified farmer badges and quality profiles
-- **Low-Literacy Support**: Icon-driven navigation and voice input
-- **Messaging**: Direct communication between farmers and buyers
+- **Direct Marketplace** — Farmers list coffee lots; buyers browse, filter, and purchase
+- **Map View** — Interactive map showing listing locations with tap-to-preview
+- **Secure Payments** — Flutterwave escrow (card, mobile money, USSD) with full transaction history
+- **Real-Time Messaging** — Direct farmer-buyer chat with push notifications
+- **Market Prices** — Live commodity price feed (Stooq) with chart visualization
+- **Voice Assistant** — Speech-to-text input for low-literacy users
+- **Multilingual** — English, Kinyarwanda, and Kiswahili (persisted via SharedPreferences)
+- **Dark / Light Theme** — Toggleable, persisted across sessions
+- **Offline-First** — Firestore local persistence (40 MB cache); syncs on reconnect
+- **Farmer Verification** — Badge system with admin-approved verification workflow
+- **Saved Lots** — Buyers can save listings for later
+
+## Tech Stack
+
+- **Framework**: Flutter 3.x (Dart 3.10.4)
+- **Architecture**: Clean Architecture with BLoC pattern
+- **Backend**: Firebase (Auth, Firestore, Storage, Messaging)
+- **Payments**: Flutterwave Standard Checkout
+- **Maps**: flutter_map (OpenStreetMap tiles)
+- **State**: flutter_bloc + provider (ThemeNotifier, LocaleNotifier)
 
 ## Prerequisites
 
-- Flutter SDK (3.10.4 or higher)
-- Dart SDK (3.10.4 or higher)
-- Android Studio / VS Code with Flutter extensions
-- Firebase account
-- FlutterFire CLI
+- Flutter SDK 3.x / Dart 3.10.4+
+- Android Studio or VS Code with Flutter extension
+- Firebase project (see setup below)
+- A `.env` file with your API keys (see `.env.example`)
 
-## Setup Instructions
+## Setup
 
-### 1. Clone the Repository
-
-```bash
-git clone <repository-url>
-cd brewmaster
-```
-
-### 2. Install Dependencies
+### 1. Clone and install dependencies
 
 ```bash
+git clone https://github.com/Elvis-Kayonga/Brewmaster_Group40.git
+cd Brewmaster_Group40
 flutter pub get
 ```
 
-### 3. Firebase Configuration
+### 2. Firebase configuration
 
-#### Option A: Using FlutterFire CLI (Recommended)
+1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
+2. Enable: **Authentication** (Email/Password), **Cloud Firestore**, **Firebase Storage**, **Cloud Messaging**
+3. Download `google-services.json` → place in `android/app/`
+4. The `lib/firebase_options.dart` file is already configured for the project Firebase instance
 
-1. Install FlutterFire CLI:
-```bash
-dart pub global activate flutterfire_cli
+### 3. Environment variables
+
+Create `.env` in the project root (this file is gitignored):
+
+```
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_UPLOAD_PRESET=your_preset
+FLUTTERWAVE_PUBLIC_KEY=your_flutterwave_key
 ```
 
-2. Configure Firebase:
-```bash
-flutterfire configure --project=brewmaster-coffee
-```
-
-This will:
-- Create a Firebase project (or select existing)
-- Register your app with Firebase
-- Generate `lib/firebase_options.dart` with your configuration
-- Download `google-services.json` for Android
-
-#### Option B: Manual Configuration
-
-1. Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
-2. Enable the following services:
-   - Authentication (Email/Password and Phone)
-   - Cloud Firestore
-   - Firebase Storage
-   - Cloud Messaging
-3. Download `google-services.json` and place it in `android/app/`
-4. Update `lib/firebase_options.dart` with your Firebase configuration
-
-### 4. Deploy Firestore Security Rules
+### 4. Deploy Firestore rules and indexes
 
 ```bash
 firebase deploy --only firestore:rules
 firebase deploy --only firestore:indexes
 ```
 
-### 5. Run the App
+### 5. Run the app
 
 ```bash
 flutter run
@@ -83,101 +76,67 @@ flutter run
 
 ```
 lib/
-├── presentation/          # UI Layer
-│   ├── screens/          # Full-screen pages
-│   └── widgets/          # Reusable UI components
-├── domain/               # Business Logic Layer
-│   ├── models/          # Data models
-│   └── validators/      # Input validation
-├── data/                # Data Layer
-│   ├── services/        # Firebase interactions
-│   ├── providers/       # State management
-│   └── repositories/    # Data access
-├── config/              # App configuration
-│   ├── theme.dart       # App theme
-│   ├── constants.dart   # Constants
-│   └── routes.dart      # Navigation routes
-├── utils/               # Helper utilities
-└── main.dart            # App entry point
+├── config/                  # Theme, locale, routing, localization
+│   └── localization/        # AppLocalizations (en / rw / sw)
+├── data/
+│   ├── repositories/        # Firebase implementations
+│   └── services/            # Exchange rate, Cloudinary
+├── domain/
+│   ├── models/              # CoffeeListing, UserProfile, EscrowTransaction ...
+│   └── repositories/        # Abstract repository interfaces
+└── presentation/
+    ├── blocs/               # BLoC classes (auth, listing, payment, messaging ...)
+    ├── screens/             # Full-screen pages
+    └── widgets/             # Reusable UI components
 ```
 
 ## Testing
 
-### Run All Tests
-
 ```bash
+# Run all tests
 flutter test
-```
 
-### Run Tests with Coverage
-
-```bash
+# Run with coverage
 flutter test --coverage
-```
 
-### Generate Coverage Report
-
-```bash
+# Generate HTML coverage report
 genhtml coverage/lcov.info -o coverage/html
 open coverage/html/index.html
 ```
 
-## Building for Production
+## Building a Signed Release APK
 
-### Android
+The project is configured for release signing via `android/key.properties` (gitignored).
 
 ```bash
 flutter build apk --release
+# Output: build/app/outputs/flutter-apk/app-release.apk
 ```
 
-### iOS
+For Play Store:
 
 ```bash
-flutter build ios --release
+flutter build appbundle --release
+# Output: build/app/outputs/bundle/release/app-release.aab
 ```
-
-## Firebase Services Used
-
-- **Authentication**: User registration and login
-- **Cloud Firestore**: Database for users, listings, messages, transactions
-- **Firebase Storage**: Image storage for listings and profiles
-- **Cloud Messaging**: Push notifications
-- **Cloud Functions**: (Future) Payment processing and admin tasks
-
-## Dependencies
-
-### Core
-- `flutter`: Cross-platform mobile framework
-- `provider`: State management
-- `firebase_core`: Firebase initialization
-- `firebase_auth`: Authentication
-- `cloud_firestore`: Database
-- `firebase_storage`: File storage
-- `firebase_messaging`: Push notifications
-
-### Utilities
-- `image_picker`: Image selection
-- `intl`: Internationalization
-- `connectivity_plus`: Network connectivity
-
-### Testing
-- `faker`: Test data generation
-- `mockito`: Mocking for tests
-- `build_runner`: Code generation
 
 ## Team
 
-- **Developer 1**: Firebase + Authentication + Profiles + Verification + Security
-- **Developer 2**: Listings + Search + Discovery
-- **Developer 3**: Messaging + Notifications
-- **Developer 4**: Payments + Escrow + Compliance
-- **Developer 5**: Dashboard + Market Prices + Analytics
-- **Developer 6**: UI/UX + Offline Sync + Integration + Testing
+| Name | Role | GitHub | Commits |
+| --- | --- | --- | --- |
+| Ryan Apreala | UI/UX · Offline Sync · Integration · Testing | rapreala | 70 |
+| Elvis Kayonga | Firebase · Auth · Profiles · Verification | Elvis-Kayonga | 10 |
+| Dan Paul Dushime | Payments · Escrow | DUSHIME Dan Paul | 10 |
+| Justine Neema | Messaging · Notifications | justine-neema | 6 |
+| Clarisse | Listings · Search | Clarisse-12 | 6 |
+| Claudia Adeline | Dashboard · Market Prices | iclaudiaadeline | 2 |
+
+## AI Tool Disclosure
+
+This project used Claude (Anthropic) for code generation assistance, debugging, localization drafting, and documentation. All AI-generated output was reviewed and approved by the relevant team member before being committed.
+
+**Reference:** Anthropic. (2025). *Claude* (claude-sonnet-4-6) [Large language model]. [https://claude.ai](https://claude.ai)
 
 ## License
 
-This project is developed for academic purposes as part of the Mobile Application Development course.
-
-## Support
-
-For issues and questions, please contact the development team or create an issue in the repository.
+Developed for academic purposes — ALU Mobile Application Development, 2026.
