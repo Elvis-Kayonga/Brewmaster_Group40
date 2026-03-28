@@ -122,14 +122,14 @@ flutter build appbundle --release
 
 ## Team
 
-| Name | Role | GitHub | Commits |
-| --- | --- | --- | --- |
-| Ryan Apreala | UI/UX · Offline Sync · Integration · Testing | rapreala | 70 |
-| Elvis Kayonga | Firebase · Auth · Profiles · Verification | Elvis-Kayonga | 10 |
-| Dan Paul Dushime | Payments · Escrow | DUSHIME Dan Paul | 10 |
-| Justine Neema | Messaging · Notifications | justine-neema | 6 |
-| Clarisse | Listings · Search | Clarisse-12 | 6 |
-| Claudia Adeline | Dashboard · Market Prices | iclaudiaadeline | 2 |
+| Name | Role | GitHub |
+| --- | --- | --- |
+| Ryan Apreala | UI/UX · Offline Sync · Integration · Testing | rapreala |
+| Elvis Kayonga | Firebase · Auth · Profiles · Verification | Elvis-Kayonga |
+| Dan Paul Dushime | Payments · Escrow | DUSHIME Dan Paul |
+| Justine Neema | Messaging · Notifications | justine-neema |
+| Clarisse | Listings · Search | Clarisse-12 |
+| Claudia Adeline | Dashboard · Market Prices | iclaudiaadeline |
 
 ## AI Tool Disclosure
 
