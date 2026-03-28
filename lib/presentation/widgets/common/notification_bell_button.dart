@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../config/theme.dart';
 import '../../blocs/messaging/notification_bloc.dart';
 import '../../screens/notifications/notifications_screen.dart';
 
@@ -14,8 +13,7 @@ class NotificationBellButton extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        const Icon(Icons.notifications_outlined,
-            color: AppTheme.primaryDark, size: 24),
+        const Icon(Icons.notifications_outlined, size: 24),
         if (unread > 0)
           Positioned(
             top: -4,

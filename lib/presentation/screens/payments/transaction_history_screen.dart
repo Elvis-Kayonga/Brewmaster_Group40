@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import '../../../config/localization/app_localizations.dart';
 import '../../../core/utils/currency_utils.dart';
 import '../../../config/theme.dart';
 import '../../../domain/models/escrow_transaction.dart' as models;
@@ -37,15 +38,12 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.backgroundColor,
-        elevation: 0,
+                elevation: 0,
         automaticallyImplyLeading: false,
-        title: const Text(
-          'Brew Master',
-          style: TextStyle(
-            color: AppTheme.primaryDark,
+        title: Text(
+          AppLocalizations.of(context).appName,
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -55,6 +53,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         ],
       ),
       body: BlocBuilder<PaymentBloc, PaymentState>(
+        buildWhen: (_, curr) =>
+            curr is PaymentHistoryLoaded ||
+            curr is PaymentFailure,
         builder: (context, state) {
           if (state is! PaymentHistoryLoaded) {
             return const Center(child: CircularProgressIndicator());
@@ -68,19 +69,18 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'My Orders',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context).myOrders,
+                        style: const TextStyle(
                           fontSize: 36,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryDark,
                           height: 1.1,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
-                        'Track your coffee purchases and supply chain status.',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context).ordersSubtitle,
+                        style: const TextStyle(
                           fontSize: 13,
                           color: AppTheme.textSecondary,
                           height: 1.4,
@@ -95,11 +95,10 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const EmptyStateWidget(
+                      EmptyStateWidget(
                         icon: Icons.receipt_long,
-                        title: 'No Transactions Yet',
-                        description:
-                            'Your coffee orders and payments will appear here.',
+                        title: AppLocalizations.of(context).noTransactionsTitle,
+                        description: AppLocalizations.of(context).noTransactionsDescription,
                       ),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
@@ -114,11 +113,10 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                             side: const BorderSide(
                                 color: AppTheme.primaryColor, width: 1.5),
                           ),
-                          child: const Text(
-                            'View all',
-                            style: TextStyle(
+                          child: Text(
+                            AppLocalizations.of(context).viewAll,
+                            style: const TextStyle(
                               fontSize: 15,
-                              color: AppTheme.primaryDark,
                             ),
                           ),
                         ),
@@ -211,9 +209,9 @@ class _HeritageOrderCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 5),
-                        const Text(
-                          'LIVE TRACE: ACTIVE',
-                          style: TextStyle(
+                        Text(
+                          AppLocalizations.of(context).liveTraceActive,
+                          style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.8,
@@ -232,7 +230,7 @@ class _HeritageOrderCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      _statusLabel(transaction.status),
+                      _statusLabel(transaction.status, context),
                       style: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
@@ -255,7 +253,7 @@ class _HeritageOrderCard extends StatelessWidget {
 
             // ── Title ────────────────────────────────────────────
             Text(
-              _cardTitle(transaction.status),
+              _cardTitle(transaction.status, context),
               style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -279,7 +277,7 @@ class _HeritageOrderCard extends StatelessWidget {
                 const Icon(Icons.schedule, size: 14, color: Colors.white38),
                 const SizedBox(width: 6),
                 Text(
-                  DateFormat('hh:mm a').format(transaction.createdAt),
+                  DateFormat('MMM d, yyyy · hh:mm a').format(transaction.createdAt),
                   style: const TextStyle(
                     fontSize: 12,
                     color: Colors.white38,
@@ -293,33 +291,35 @@ class _HeritageOrderCard extends StatelessWidget {
     );
   }
 
-  String _cardTitle(TransactionStatus status) {
+  String _cardTitle(TransactionStatus status, BuildContext context) {
+    final loc = AppLocalizations.of(context);
     switch (status) {
       case TransactionStatus.pending:
-        return 'Awaiting Payment';
+        return loc.awaitingPaymentTitle;
       case TransactionStatus.fundsHeld:
-        return 'In Escrow';
+        return loc.inEscrow;
       case TransactionStatus.delivered:
-        return 'In Transit';
+        return loc.inTransit;
       case TransactionStatus.completed:
-        return 'Delivered';
+        return loc.delivered;
       case TransactionStatus.disputed:
-        return 'Under Dispute';
+        return loc.underDispute;
       case TransactionStatus.cancelled:
-        return 'Cancelled';
+        return loc.cancelled;
     }
   }
 
-  String _statusLabel(TransactionStatus status) {
+  String _statusLabel(TransactionStatus status, BuildContext context) {
+    final loc = AppLocalizations.of(context);
     switch (status) {
       case TransactionStatus.completed:
-        return 'DELIVERED';
+        return loc.delivered.toUpperCase();
       case TransactionStatus.cancelled:
-        return 'CANCELLED';
+        return loc.cancelled.toUpperCase();
       case TransactionStatus.disputed:
-        return 'DISPUTED';
+        return loc.disputed.toUpperCase();
       default:
-        return 'PENDING';
+        return loc.pending.toUpperCase();
     }
   }
 }
@@ -346,7 +346,8 @@ class _TransitProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const steps = ['Origin', 'Processing', 'Export', 'Freight', 'Delivery'];
+    final loc = AppLocalizations.of(context);
+    final steps = [loc.origin, loc.processingStep, loc.export, loc.freight, loc.delivery];
     final active = _activeStep;
 
     return Column(

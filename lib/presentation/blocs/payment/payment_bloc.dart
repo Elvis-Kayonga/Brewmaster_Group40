@@ -43,6 +43,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         amount: event.amount,
         currency: event.currency,
         paymentMethod: event.paymentMethod,
+        paymentReference: event.flutterwaveTxId,
       );
       final processed = await _paymentRepository.processPayment(tx.id);
       emit(PaymentProcessed(processed));

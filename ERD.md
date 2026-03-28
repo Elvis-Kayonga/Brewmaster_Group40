@@ -38,6 +38,7 @@ erDiagram
         number monthlyVolume "buyers only"
         string fcmToken
         string verificationStatus "unverified|pending|verified|rejected"
+        array savedListings "listingIds saved by this user (buyer)"
     }
     
     listings {
@@ -54,10 +55,11 @@ erDiagram
         number cuppingScore "0-100"
         string flavorNotes
         string location "farm/region location"
+        string locationAddress "human-readable address shown on cards"
         string status "draft|active|sold|expired"
-        number viewCount
         string batchNumber "traceability"
         array certifications "e.g. Organic FairTrade"
+        number viewCount "written by app; reserved for future analytics"
         timestamp createdAt
         timestamp updatedAt
     }
@@ -66,6 +68,7 @@ erDiagram
         string id PK
         array participantIds "2 users"
         map participantNames "userId to displayName"
+        map participantPhotoUrls "userId to photoUrl - denormalized for avatars"
         string listingId FK
         map lastMessage "embedded Message object"
         string lastMessageContent "denormalized for quick reads"
@@ -94,10 +97,10 @@ erDiagram
         string farmerId FK
         string listingId FK
         number amount
-        string currency "USD|KES"
+        string currency "USD canonical - Flutterwave charges buyer in local currency"
         string status "pending|fundsHeld|delivered|completed|disputed|cancelled"
-        string paymentMethod "mpesa|mtnMobileMoney"
-        string paymentReference
+        string paymentMethod "flutterwave"
+        string paymentReference "Flutterwave txId e.g. FLW-XXXXXXXX"
         timestamp fundsHeldAt
         timestamp deliveredAt
         timestamp completedAt
@@ -205,9 +208,9 @@ This document describes the Firestore database structure for the BrewMaster Coff
 | imageUrls | Array<String> | Yes | Array of image URLs (max 5) |
 | cuppingScore | Number | No | Cupping score (0-100) |
 | flavorNotes | String | No | Flavor notes / tasting description |
-| location | String | No | Farm or region location |
+| location | String | No | Coordinate string for map pins ("lat,lng") |
+| locationAddress | String | No | Human-readable address shown on listing cards (e.g. "Kigali, Rwanda") |
 | status | String | Yes | Listing status: "draft", "active", "sold", "expired" |
-| viewCount | Number | Yes | Number of times viewed (default 0) |
 | batchNumber | String | No | Traceability batch identifier |
 | certifications | Array(String) | No | e.g. "Organic", "Fair Trade" |
 | createdAt | Timestamp | Yes | Creation timestamp |
@@ -236,6 +239,7 @@ This document describes the Firestore database structure for the BrewMaster Coff
 | conversationId | String | Yes | Conversation ID (auto-generated) |
 | participantIds | Array(String) | Yes | Array of user IDs (2 participants) |
 | participantNames | Map(String,String) | Yes | Map of userId → displayName (denormalized) |
+| participantPhotoUrls | Map(String,String) | No | Map of userId → photoUrl (denormalized for avatars) |
 | listingId | String | No | Related listing ID (if conversation started from a listing) |
 | lastMessage | Map | No | Embedded last Message object for quick display |
 | lastMessageContent | String | No | Denormalized content of last message |
@@ -292,11 +296,11 @@ This document describes the Firestore database structure for the BrewMaster Coff
 | buyerId | String | Yes | Foreign key to users.id |
 | farmerId | String | Yes | Foreign key to users.id |
 | listingId | String | Yes | Foreign key to listings.id |
-| amount | Number | Yes | Transaction amount |
-| currency | String | Yes | Currency code (e.g., "USD", "KES") |
+| amount | Number | Yes | Transaction amount in USD (canonical storage currency) |
+| currency | String | Yes | Always `"USD"` — Flutterwave converts to buyer's local currency (KES/RWF/UGX/TZS/ETB/BIF) at checkout using live rates |
 | status | String | Yes | Status: "pending", "fundsHeld", "delivered", "completed", "disputed", "cancelled" |
-| paymentMethod | String | Yes | Payment method: "mpesa", "mtnMobileMoney" |
-| paymentReference | String | No | Payment reference from provider |
+| paymentMethod | String | Yes | Always `"flutterwave"` — Flutterwave handles card, MPesa (KE), mobile money (RW/UG/TZ), and USSD per buyer country |
+| paymentReference | String | No | Flutterwave transaction ID returned by the checkout SDK (e.g. `FLW-XXXXXXXX`) |
 | fundsHeldAt | Timestamp | No | Timestamp when funds were held in escrow |
 | deliveredAt | Timestamp | No | Timestamp when delivery was confirmed |
 | completedAt | Timestamp | No | Timestamp when transaction was completed |
@@ -467,7 +471,7 @@ This document describes the Firestore database structure for the BrewMaster Coff
 - **users**: Users can read all profiles, but only create/update/delete their own
 - **listings**: All authenticated users can read, only listing owner can create/update/delete
 - **conversations**: Only participants can read/write
-- **messages**: Only conversation participants can read/write
+- **messages**: Participants can read and create; participants can update only the `isRead` field
 - **transactions**: Only buyer and farmer involved can read/write
 - **marketPrices**: Read-only for all authenticated users
 - **verifications**: Only the user can read/write their own verification
@@ -498,6 +502,13 @@ This document describes the Firestore database structure for the BrewMaster Coff
 
 ---
 
-**Last Updated**: 2026-03-18
+**Last Updated**: 2026-03-28
 **Status**: In Sync with Implementation
-**Changes in this update**: Added `users/{userId}/savedLots` subcollection — buyer wishlist feature. Each document is a denormalised listing snapshot keyed by listingId, with savedAt timestamp. Currently session-only (in-memory via SavedLotsBloc); schema documents intended Firestore structure. Updated Mermaid diagram and relationship summary to reflect new 1:N and N:M relationships between users and listings via savedLots.
+**Changes in this update**:
+
+- `listings`: removed `viewCount` (dead field — never read by UI); added `locationAddress` (human-readable address for cards, separate from `location` which stores "lat,lng" for map pins)
+- `conversations`: added `participantPhotoUrls` map (userId → photoUrl, denormalized for avatar display); backfilled on existing docs via `migrateParticipantPhotoUrls()` at first authenticated load
+- `messages`: security rule updated — participants can now `update` the `isRead` field; composite index added on (receiverId ASC, isRead ASC) for mark-read queries
+- Farmer dashboard metric `views` (always 0, sourced from unwritten `viewCount`) replaced with `savedCount` — counts how many buyers have saved any of the farmer's listings (cross-user query on `savedListings` arrays)
+- `users`: added `savedListings` array — buyer's saved listing IDs written via `FieldValue.arrayUnion`/`arrayRemove` on every save/unsave action; was previously in-memory only
+- `transactions`: corrected `paymentMethod` — always `"flutterwave"` (not `"mpesa"` or `"mtnMobileMoney"`); Flutterwave is the single payment gateway and handles regional sub-methods (card, MPesa, mobile money, USSD) internally based on buyer country; corrected `currency` — always `"USD"` canonical; Flutterwave converts to local currency at checkout

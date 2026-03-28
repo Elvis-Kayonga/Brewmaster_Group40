@@ -48,7 +48,6 @@ class AppTheme {
   static const TextStyle heading1 = TextStyle(
     fontSize: 24,
     fontWeight: FontWeight.bold,
-    color: textPrimary,
     height: 1.3,
   );
 
@@ -56,7 +55,6 @@ class AppTheme {
   static const TextStyle heading2 = TextStyle(
     fontSize: 20,
     fontWeight: FontWeight.bold,
-    color: textPrimary,
     height: 1.3,
   );
 
@@ -64,7 +62,6 @@ class AppTheme {
   static const TextStyle body = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.normal,
-    color: textPrimary,
     height: 1.5,
   );
 
@@ -72,7 +69,6 @@ class AppTheme {
   static const TextStyle caption = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w300,
-    color: textSecondary,
     height: 1.4,
   );
 
@@ -339,19 +335,29 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: borderRadiusMediumAll),
         behavior: SnackBarBehavior.floating,
       ),
-      textTheme: const TextTheme(
-        displayLarge: heading1,
-        displayMedium: heading2,
-        bodyLarge: body,
-        bodyMedium: body,
-        bodySmall: caption,
+      textTheme: TextTheme(
+        displayLarge: heading1.copyWith(color: textPrimary),
+        displayMedium: heading2.copyWith(color: textPrimary),
+        bodyLarge: body.copyWith(color: textPrimary),
+        bodyMedium: body.copyWith(color: textPrimary),
+        bodySmall: caption.copyWith(color: textSecondary),
         labelLarge: button,
       ),
     );
   }
 
+  // Dark-mode adaptive colors (use via Theme.of(context) where possible)
+  static const Color darkBackgroundColor = Color(0xFF121212);
+  static const Color darkSurfaceColor = Color(0xFF1E1E1E);
+  static const Color darkInputFillColor = Color(0xFF2C2C2C);
+  static const Color darkTextPrimary = Color(0xFFE0E0E0);
+  static const Color darkTextSecondary = Color(0xFF9E9E9E);
+
   /// Dark theme configuration
   static ThemeData get darkTheme {
+    const darkOnSurface = darkTextPrimary;
+    const darkOnSurfaceVariant = darkTextSecondary;
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
@@ -362,79 +368,147 @@ class AppTheme {
         secondary: secondaryLight,
         secondaryContainer: secondaryColor,
         error: errorColor,
-        surface: Color(0xFF1E1E1E),
-        onPrimary: Color(0xFF000000),
-        onSecondary: Color(0xFF000000),
+        surface: darkSurfaceColor,
+        onPrimary: Color(0xFFFFFFFF),
+        onSecondary: Color(0xFFFFFFFF),
         onError: onErrorColor,
-        onSurface: Color(0xFFE0E0E0),
+        onSurface: darkOnSurface,
       ),
-      scaffoldBackgroundColor: const Color(0xFF121212),
+      scaffoldBackgroundColor: darkBackgroundColor,
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF1E1E1E),
-        foregroundColor: Color(0xFFE0E0E0),
+        backgroundColor: darkSurfaceColor,
+        foregroundColor: darkOnSurface,
         elevation: 0,
-        centerTitle: true,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
         titleTextStyle: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFFE0E0E0),
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: darkOnSurface,
         ),
-        iconTheme: IconThemeData(
-          color: Color(0xFFE0E0E0),
-          size: iconSizeMedium,
-        ),
+        iconTheme: IconThemeData(color: darkOnSurface, size: iconSizeMedium),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Color(0xFF1E1E1E),
+        backgroundColor: darkSurfaceColor,
         selectedItemColor: primaryLight,
-        unselectedItemColor: Color(0xFF9E9E9E),
-        selectedIconTheme: IconThemeData(
-          size: iconSizeMedium,
-          color: primaryLight,
-        ),
-        unselectedIconTheme: IconThemeData(
-          size: iconSizeMedium,
-          color: Color(0xFF9E9E9E),
-        ),
+        unselectedItemColor: darkOnSurfaceVariant,
+        selectedIconTheme: IconThemeData(size: iconSizeMedium, color: primaryLight),
+        unselectedIconTheme: IconThemeData(size: iconSizeMedium, color: darkOnSurfaceVariant),
         showSelectedLabels: true,
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: const Color(0xFF1E1E1E),
+        backgroundColor: darkSurfaceColor,
         indicatorColor: primaryColor.withValues(alpha: 0.3),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(
-              color: primaryLight,
-              size: iconSizeMedium,
-            );
+            return const IconThemeData(color: primaryLight, size: iconSizeMedium);
           }
-          return const IconThemeData(
-            color: Color(0xFF9E9E9E),
-            size: iconSizeMedium,
-          );
+          return const IconThemeData(color: darkOnSurfaceVariant, size: iconSizeMedium);
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return caption.copyWith(
-              color: primaryLight,
-              fontWeight: FontWeight.w500,
-            );
+            return caption.copyWith(color: primaryLight, fontWeight: FontWeight.w500);
           }
-          return caption.copyWith(color: const Color(0xFF9E9E9E));
+          return caption.copyWith(color: darkOnSurfaceVariant);
         }),
         elevation: 4,
         height: 64,
       ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryLight,
+          foregroundColor: Colors.white,
+          textStyle: button,
+          padding: const EdgeInsets.symmetric(horizontal: padding24, vertical: padding12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(borderRadiusPill)),
+          ),
+          elevation: 0,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: primaryLight,
+          textStyle: button.copyWith(color: primaryLight),
+          padding: const EdgeInsets.symmetric(horizontal: padding24, vertical: padding12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(borderRadiusPill)),
+          ),
+          side: const BorderSide(color: primaryLight, width: 1.5),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: primaryLight,
+          textStyle: button.copyWith(color: primaryLight),
+          padding: const EdgeInsets.symmetric(horizontal: padding16, vertical: padding8),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: darkInputFillColor,
+        contentPadding: const EdgeInsets.symmetric(horizontal: padding16, vertical: padding12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(borderRadiusLarge)),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(borderRadiusLarge)),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(borderRadiusLarge)),
+          borderSide: const BorderSide(color: primaryLight, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(borderRadiusLarge)),
+          borderSide: const BorderSide(color: errorColor),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(borderRadiusLarge)),
+          borderSide: const BorderSide(color: errorColor, width: 1.5),
+        ),
+        labelStyle: body.copyWith(color: darkOnSurfaceVariant),
+        hintStyle: body.copyWith(color: darkOnSurfaceVariant),
+        errorStyle: caption.copyWith(color: errorColor),
+        prefixIconColor: darkOnSurfaceVariant,
+        suffixIconColor: darkOnSurfaceVariant,
+      ),
+      cardTheme: CardThemeData(
+        color: darkSurfaceColor,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(borderRadiusLarge)),
+        ),
+        margin: const EdgeInsets.all(margin8),
+      ),
+      iconTheme: const IconThemeData(color: darkOnSurface, size: iconSizeMedium),
+      dividerTheme: DividerThemeData(
+        color: Colors.white.withValues(alpha: 0.12),
+        thickness: 1,
+        space: margin16,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: darkSurfaceColor,
+        contentTextStyle: body.copyWith(color: darkOnSurface),
+        shape: RoundedRectangleBorder(borderRadius: borderRadiusMediumAll),
+        behavior: SnackBarBehavior.floating,
+      ),
+      listTileTheme: const ListTileThemeData(
+        textColor: darkOnSurface,
+        iconColor: darkOnSurface,
+      ),
       textTheme: TextTheme(
-        displayLarge: heading1.copyWith(color: const Color(0xFFE0E0E0)),
-        displayMedium: heading2.copyWith(color: const Color(0xFFE0E0E0)),
-        bodyLarge: body.copyWith(color: const Color(0xFFE0E0E0)),
-        bodyMedium: body.copyWith(color: const Color(0xFFE0E0E0)),
-        bodySmall: caption.copyWith(color: const Color(0xFF9E9E9E)),
-        labelLarge: button,
+        displayLarge: heading1.copyWith(color: darkOnSurface),
+        displayMedium: heading2.copyWith(color: darkOnSurface),
+        bodyLarge: body.copyWith(color: darkOnSurface),
+        bodyMedium: body.copyWith(color: darkOnSurface),
+        bodySmall: caption.copyWith(color: darkOnSurfaceVariant),
+        labelLarge: button.copyWith(color: Colors.white),
       ),
     );
   }

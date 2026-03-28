@@ -23,3 +23,10 @@ class SavedLotRemoved extends SavedLotsEvent {
 class SavedLotsCleared extends SavedLotsEvent {
   const SavedLotsCleared();
 }
+
+class SavedLotsLoaded extends SavedLotsEvent {
+  final List<SavedLot> lots;
+  const SavedLotsLoaded(this.lots);
+  @override
+  List<Object?> get props => [lots];
+}

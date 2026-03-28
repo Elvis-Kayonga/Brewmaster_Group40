@@ -48,17 +48,30 @@ class FirebasePaymentRepository implements PaymentRepository {
     required double amount,
     String currency = 'USD',
     required PaymentMethod paymentMethod,
+    String? paymentReference,
   }) async {
+    // Denormalize buyer display name so the farmer can see who placed the order.
+    String? buyerName;
+    try {
+      final userDoc =
+          await _firestore.collection('users').doc(buyerId).get();
+      buyerName = userDoc.data()?['displayName'] as String?;
+    } catch (_) {
+      // Non-fatal: buyer name is optional display info.
+    }
+
     final now = DateTime.now();
     final transaction = models.Transaction(
       id: '',
       buyerId: buyerId,
+      buyerName: buyerName,
       farmerId: farmerId,
       listingId: listingId,
       amount: amount,
       currency: currency,
       status: TransactionStatus.pending,
       paymentMethod: paymentMethod,
+      paymentReference: paymentReference,
       createdAt: now,
       statusHistory: {'pending': now},
     );

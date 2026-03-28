@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brewmaster/config/theme.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:brewmaster/domain/models/enums.dart';
 import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
 import 'package:brewmaster/presentation/widgets/common/custom_text_field.dart';
@@ -60,6 +61,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -110,18 +112,17 @@ class _SignupScreenState extends State<SignupScreen> {
                     const SizedBox(height: AppTheme.padding24),
 
                     // Heading
-                    const Text(
-                      'Join BrewMaster',
-                      style: TextStyle(
+                    Text(
+                      loc.joinBrewmaster,
+                      style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
                       ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppTheme.padding8),
-                    const Text(
-                      'Choose your role and start your journey.',
+                    Text(
+                      loc.signupSubtitle,
                       style: AppTheme.caption,
                       textAlign: TextAlign.center,
                     ),
@@ -139,7 +140,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     Container(
                       padding: const EdgeInsets.all(AppTheme.padding24),
                       decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(
                             AppTheme.borderRadiusXLarge),
                       ),
@@ -147,11 +148,10 @@ class _SignupScreenState extends State<SignupScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           // Full Name
-                          const Text('Full Name',
-                              style: TextStyle(
+                          Text(loc.fullName,
+                              style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                color: AppTheme.textPrimary,
                               )),
                           const SizedBox(height: AppTheme.padding8),
                           CustomTextField(
@@ -160,17 +160,16 @@ class _SignupScreenState extends State<SignupScreen> {
                             prefixIcon: Icons.person_outline,
                             validator: (v) =>
                                 v == null || v.trim().isEmpty
-                                    ? 'Name is required'
+                                    ? loc.nameRequired
                                     : null,
                           ),
                           const SizedBox(height: AppTheme.padding16),
 
                           // Email
-                          const Text('Email Address',
-                              style: TextStyle(
+                          Text(loc.emailAddress,
+                              style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                color: AppTheme.textPrimary,
                               )),
                           const SizedBox(height: AppTheme.padding8),
                           EmailTextField(
@@ -179,11 +178,11 @@ class _SignupScreenState extends State<SignupScreen> {
                             textInputAction: TextInputAction.next,
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
-                                return 'Email is required';
+                                return loc.emailRequired;
                               }
                               if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
                                   .hasMatch(value.trim())) {
-                                return 'Enter a valid email';
+                                return loc.emailInvalid;
                               }
                               return null;
                             },
@@ -191,11 +190,10 @@ class _SignupScreenState extends State<SignupScreen> {
                           const SizedBox(height: AppTheme.padding16),
 
                           // Password
-                          const Text('Password',
-                              style: TextStyle(
+                          Text(loc.password,
+                              style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                color: AppTheme.textPrimary,
                               )),
                           const SizedBox(height: AppTheme.padding8),
                           PasswordTextField(
@@ -209,11 +207,10 @@ class _SignupScreenState extends State<SignupScreen> {
                           const SizedBox(height: AppTheme.padding16),
 
                           // Confirm password
-                          const Text('Confirm Password',
-                              style: TextStyle(
+                          Text(loc.confirmPassword,
+                              style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                color: AppTheme.textPrimary,
                               )),
                           const SizedBox(height: AppTheme.padding8),
                           PasswordTextField(
@@ -221,10 +218,10 @@ class _SignupScreenState extends State<SignupScreen> {
                             textInputAction: TextInputAction.done,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Please confirm your password';
+                                return loc.pleaseConfirmPassword;
                               }
                               if (value != _passwordController.text) {
-                                return 'Passwords do not match';
+                                return loc.passwordsDoNotMatch;
                               }
                               return null;
                             },
@@ -234,8 +231,8 @@ class _SignupScreenState extends State<SignupScreen> {
                           // Sign up button
                           CustomButton(
                             text: _isBuyer
-                                ? 'Sign up as Buyer'
-                                : 'Sign up as Seller',
+                                ? loc.signUpAsBuyer
+                                : loc.signUpAsSeller,
                             isFullWidth: true,
                             isLoading: isLoading,
                             onPressed: _handleSignUp,
@@ -252,14 +249,14 @@ class _SignupScreenState extends State<SignupScreen> {
                         Padding(
                           padding: const EdgeInsets.symmetric(
                               horizontal: AppTheme.padding16),
-                          child: Text('OR', style: AppTheme.caption),
+                          child: Text(loc.or, style: AppTheme.caption),
                         ),
                         const Expanded(child: Divider()),
                       ],
                     ),
                     const SizedBox(height: AppTheme.padding16),
                     CustomButton(
-                      text: 'Sign up with Google',
+                      text: loc.signUpWithGoogle,
                       type: ButtonType.outlined,
                       isFullWidth: true,
                       leadingIcon: Icons.g_mobiledata,
@@ -269,15 +266,15 @@ class _SignupScreenState extends State<SignupScreen> {
                     const SizedBox(height: AppTheme.padding24),
 
                     // Sign in link
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Wrap(
+                      alignment: WrapAlignment.center,
                       children: [
-                        Text('Already have an account? ',
+                        Text(loc.alreadyHaveAccount,
                             style: AppTheme.caption),
                         GestureDetector(
                           onTap: () => Navigator.pop(context),
                           child: Text(
-                            'Sign In',
+                            loc.signIn,
                             style: AppTheme.caption.copyWith(
                               color: AppTheme.primaryColor,
                               fontWeight: FontWeight.w600,
@@ -309,7 +306,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   value: _passwordStrength.index /
                       PasswordStrength.values.length,
                   minHeight: 6,
-                  backgroundColor: AppTheme.inputFillColor,
+                  backgroundColor: Theme.of(context).inputDecorationTheme.fillColor ?? AppTheme.inputFillColor,
                   valueColor: AlwaysStoppedAnimation<Color>(
                     _passwordStrength.color,
                   ),
@@ -339,21 +336,22 @@ class _RoleToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Container(
       height: 52,
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppTheme.borderRadiusXLarge),
       ),
       child: Row(
         children: [
           _Tab(
-            label: 'I want to buy',
+            label: loc.iWantToBuy,
             selected: isBuyer,
             onTap: () => onChanged(true),
           ),
           _Tab(
-            label: 'I want to sell',
+            label: loc.iWantToSell,
             selected: !isBuyer,
             onTap: () => onChanged(false),
           ),

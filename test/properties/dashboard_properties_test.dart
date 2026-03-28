@@ -55,14 +55,14 @@ FarmerDashboard _makeFarmer({
   int activeListings = 3,
   double totalEarnings = 1500.0,
   int conversations = 5,
-  int views = 120,
+  int savedCount = 120,
   double responseRate = 80.0,
 }) =>
     FarmerDashboard(
       activeListings: activeListings,
       totalEarnings: totalEarnings,
       conversations: conversations,
-      views: views,
+      savedCount: savedCount,
       responseRate: responseRate,
     );
 
@@ -88,7 +88,7 @@ void main() {
       expect(d.activeListings, equals(0));
       expect(d.totalEarnings, equals(0.0));
       expect(d.conversations, equals(0));
-      expect(d.views, equals(0));
+      expect(d.savedCount, equals(0));
       expect(d.responseRate, equals(0.0));
     });
 
@@ -97,7 +97,7 @@ void main() {
       expect(d.activeListings, greaterThanOrEqualTo(0));
       expect(d.totalEarnings, greaterThanOrEqualTo(0.0));
       expect(d.conversations, greaterThanOrEqualTo(0));
-      expect(d.views, greaterThanOrEqualTo(0));
+      expect(d.savedCount, greaterThanOrEqualTo(0));
       expect(d.responseRate, greaterThanOrEqualTo(0.0));
     });
 
@@ -114,7 +114,7 @@ void main() {
         activeListings: 7,
         totalEarnings: 2500.75,
         conversations: 12,
-        views: 340,
+        savedCount: 340,
         responseRate: 92.5,
       );
       final restored = FarmerDashboard.fromJson(original.toJson());
@@ -129,8 +129,8 @@ void main() {
     });
 
     test('equality holds for identical field values', () {
-      final a = _makeFarmer(views: 50);
-      final b = _makeFarmer(views: 50);
+      final a = _makeFarmer(savedCount: 50);
+      final b = _makeFarmer(savedCount: 50);
       expect(a, equals(b));
     });
   });
@@ -207,7 +207,7 @@ void main() {
     // available. This property verifies that the repository layer returns
     // previously loaded data without re-fetching.
     test('watchFarmerDashboard emits current data immediately', () async {
-      final data = _makeFarmer(views: 200);
+      final data = _makeFarmer(savedCount: 200);
       final repo = FakeDashboardRepository(farmer: data);
       final emitted = await repo.watchFarmerDashboard('f1').first;
       expect(emitted, equals(data));

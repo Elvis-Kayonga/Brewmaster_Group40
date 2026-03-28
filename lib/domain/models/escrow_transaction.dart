@@ -5,6 +5,8 @@ import 'enums.dart';
 class Transaction {
   final String id;
   final String buyerId;
+  /// Denormalized buyer display name for showing on the farmer's order view.
+  final String? buyerName;
   final String farmerId;
   final String listingId;
   final double amount;
@@ -31,6 +33,7 @@ class Transaction {
   Transaction({
     required this.id,
     required this.buyerId,
+    this.buyerName,
     required this.farmerId,
     required this.listingId,
     required this.amount,
@@ -57,6 +60,7 @@ class Transaction {
     return Transaction(
       id: doc.id,
       buyerId: data['buyerId'] as String,
+      buyerName: data['buyerName'] as String?,
       farmerId: data['farmerId'] as String,
       listingId: data['listingId'] as String,
       amount: (data['amount'] as num).toDouble(),
@@ -92,6 +96,7 @@ class Transaction {
   Map<String, dynamic> toFirestore() {
     return {
       'buyerId': buyerId,
+      'buyerName': buyerName,
       'farmerId': farmerId,
       'listingId': listingId,
       'amount': amount,
@@ -134,6 +139,7 @@ class Transaction {
   Transaction copyWith({
     String? id,
     String? buyerId,
+    String? buyerName,
     String? farmerId,
     String? listingId,
     double? amount,
@@ -156,6 +162,7 @@ class Transaction {
     return Transaction(
       id: id ?? this.id,
       buyerId: buyerId ?? this.buyerId,
+      buyerName: buyerName ?? this.buyerName,
       farmerId: farmerId ?? this.farmerId,
       listingId: listingId ?? this.listingId,
       amount: amount ?? this.amount,

@@ -4,11 +4,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/utils/currency_utils.dart';
 import '../../../config/theme.dart';
+import '../../../config/localization/app_localizations.dart';
 import '../../../domain/models/coffee_listing.dart';
 import '../../../domain/models/enums.dart';
 import '../../../domain/models/escrow_transaction.dart';
 import '../../../domain/models/farmer_dashboard.dart';
-import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/dashboard/dashboard_bloc.dart';
 import '../../blocs/listing/listing_bloc.dart';
 import '../../blocs/payment/payment_bloc.dart';
@@ -45,23 +45,20 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.backgroundColor,
-        elevation: 0,
+                elevation: 0,
         automaticallyImplyLeading: false,
-        title: const Text(
-          'Brew Master',
-          style: TextStyle(
-            color: AppTheme.primaryDark,
+        title: Text(
+          AppLocalizations.of(context).appName,
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: AppTheme.primaryDark),
-            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh),
+            tooltip: AppLocalizations.of(context).refresh,
             onPressed: () => context
                 .read<DashboardBloc>()
                 .add(FarmerDashboardLoadRequested(widget.userId)),
@@ -72,7 +69,7 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
       body: BlocBuilder<DashboardBloc, DashboardState>(
         builder: (context, state) {
           if (state is DashboardLoading || state is DashboardInitial) {
-            return const LoadingIndicator(message: 'Loading your dashboard…');
+            return LoadingIndicator(message: AppLocalizations.of(context).loadingDashboard);
           }
           if (state is DashboardFailure) {
             return ErrorStateWidget(
@@ -109,32 +106,31 @@ class _FarmerDashboardBody extends StatefulWidget {
 class _FarmerDashboardBodyState extends State<_FarmerDashboardBody> {
   int _selectedTab = 0; // 0 = ANALYTICS, 1 = ORDERS, 2 = LISTINGS
 
-  static const _tabs = ['ANALYTICS', 'ORDERS', 'LISTINGS'];
-
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final tabs = [loc.analytics, loc.orders.toUpperCase(), loc.listings.toUpperCase()];
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
       children: [
         // ── Page title ────────────────────────────────────────────────
-        const Text(
-          'Farmer\nCommand',
-          style: TextStyle(
+        Text(
+          loc.farmerCommand,
+          style: const TextStyle(
             fontSize: 36,
             fontWeight: FontWeight.bold,
-            color: AppTheme.primaryDark,
             height: 1.1,
           ),
         ),
         const SizedBox(height: 8),
         // Seller status row
         Row(
-          children: const [
-            Icon(Icons.circle, size: 10, color: Color(0xFF4CAF50)),
-            SizedBox(width: 6),
+          children: [
+            const Icon(Icons.circle, size: 10, color: Color(0xFF4CAF50)),
+            const SizedBox(width: 6),
             Text(
-              'Active Seller | Link: Secured',
-              style: TextStyle(
+              loc.activeSeller,
+              style: const TextStyle(
                 fontSize: 13,
                 color: AppTheme.textSecondary,
                 fontWeight: FontWeight.w500,
@@ -146,12 +142,12 @@ class _FarmerDashboardBodyState extends State<_FarmerDashboardBody> {
         // ── Tab row ───────────────────────────────────────────────────
         Container(
           decoration: BoxDecoration(
-            color: AppTheme.inputFillColor,
+            color: Theme.of(context).inputDecorationTheme.fillColor ?? AppTheme.inputFillColor,
             borderRadius: BorderRadius.circular(28),
           ),
           padding: const EdgeInsets.all(4),
           child: Row(
-            children: List.generate(_tabs.length, (i) {
+            children: List.generate(tabs.length, (i) {
               final selected = _selectedTab == i;
               return Expanded(
                 child: GestureDetector(
@@ -167,7 +163,7 @@ class _FarmerDashboardBodyState extends State<_FarmerDashboardBody> {
                     ),
                     child: Center(
                       child: Text(
-                        _tabs[i],
+                        tabs[i],
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -207,6 +203,7 @@ class _AnalyticsTab extends StatelessWidget {
     return '$sign${pct.toStringAsFixed(1)}%';
   }
 
+
   String _marketInsight(FarmerDashboard d) {
     final insights = <String>[];
 
@@ -242,10 +239,13 @@ class _AnalyticsTab extends StatelessWidget {
           'Adding more variety lots increases your visibility to buyers sourcing different origins and processing methods.');
     }
 
-    // Views
-    if (d.views == 0 && d.activeListings > 0) {
+    // Saved lots
+    if (d.savedCount > 0) {
       insights.add(
-          'Your listings haven\'t received views yet. Make sure your descriptions, altitude, and quality score are filled in — buyers filter by these.');
+          '${d.savedCount} buyer${d.savedCount == 1 ? '' : 's'} have saved your lots — follow up with active conversations to convert interest into orders.');
+    } else if (d.activeListings > 0) {
+      insights.add(
+          'No buyers have saved your lots yet. Make sure your descriptions, altitude, and quality score are filled in — buyers filter by these.');
     }
 
     if (insights.isEmpty) {
@@ -256,11 +256,8 @@ class _AnalyticsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authState = context.read<AuthBloc>().state;
-    final profile = authState is AuthAuthenticated ? authState.profile : null;
-    final symbol = CurrencyUtils.symbolFromCode(
-      CurrencyUtils.codeFromCountry(profile?.country),
-    );
+    final loc = AppLocalizations.of(context);
+    const symbol = r'$';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,16 +267,14 @@ class _AnalyticsTab extends StatelessWidget {
           children: [
             Expanded(
               child: _MetricCard(
-                label: 'TOTAL REVENUE',
-                value: '$symbol ${dashboard.totalEarnings.toStringAsFixed(0)}',
-                change: _formatChangePct(dashboard.revenueChangePct),
-                changePositive: (dashboard.revenueChangePct ?? 0) >= 0,
+                label: loc.activeLots,
+                value: dashboard.activeListings.toString(),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: _MetricCard(
-                label: 'ORDERS LOGGED',
+                label: loc.ordersLogged,
                 value: dashboard.conversations.toString(),
                 change: _formatChangePct(dashboard.ordersChangePct),
                 changePositive: (dashboard.ordersChangePct ?? 0) >= 0,
@@ -289,8 +284,10 @@ class _AnalyticsTab extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         _MetricCard(
-          label: 'ACTIVE HUBS',
-          value: dashboard.activeListings.toString(),
+          label: loc.totalRevenue,
+          value: '$symbol ${dashboard.totalEarnings.toStringAsFixed(0)}',
+          change: _formatChangePct(dashboard.revenueChangePct),
+          changePositive: (dashboard.revenueChangePct ?? 0) >= 0,
           wide: true,
         ),
         const SizedBox(height: 20),
@@ -298,16 +295,16 @@ class _AnalyticsTab extends StatelessWidget {
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'VELOCITY COMMAND',
-                style: TextStyle(
+              Text(
+                loc.velocityCommand,
+                style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.1,
@@ -315,9 +312,9 @@ class _AnalyticsTab extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                '7-day revenue',
-                style: TextStyle(fontSize: 11, color: AppTheme.textHint),
+              Text(
+                loc.sevenDayRevenue,
+                style: const TextStyle(fontSize: 11, color: AppTheme.textHint),
               ),
               const SizedBox(height: 16),
               SizedBox(
@@ -331,15 +328,23 @@ class _AnalyticsTab extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Views: ${dashboard.views}',
-                    style: const TextStyle(
-                        fontSize: 12, color: AppTheme.textSecondary),
+                  Flexible(
+                    child: Text(
+                      '${loc.savedLabel}: ${dashboard.savedCount}',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppTheme.textSecondary),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  Text(
-                    'Response rate: ${dashboard.responseRate.toStringAsFixed(0)}%',
-                    style: const TextStyle(
-                        fontSize: 12, color: AppTheme.textSecondary),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      '${loc.responseRate}: ${dashboard.responseRate.toStringAsFixed(0)}%',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppTheme.textSecondary),
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                    ),
                   ),
                 ],
               ),
@@ -358,9 +363,9 @@ class _AnalyticsTab extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'MARKET INTELLIGENCE',
-                style: TextStyle(
+              Text(
+                loc.marketIntelligence,
+                style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.1,
@@ -408,8 +413,8 @@ class _OrdersTabState extends State<_OrdersTab> {
       listener: (context, state) {
         if (state is PaymentActionSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Delivery confirmed successfully.'),
+            SnackBar(
+              content: Text(AppLocalizations.of(context).deliveryConfirmed),
               backgroundColor: AppTheme.successColor,
             ),
           );
@@ -422,10 +427,9 @@ class _OrdersTabState extends State<_OrdersTab> {
       child: BlocBuilder<PaymentBloc, PaymentState>(
         buildWhen: (_, curr) =>
             curr is PaymentInitial ||
-            curr is PaymentLoading ||
             curr is PaymentHistoryLoaded,
         builder: (context, state) {
-          if (state is PaymentInitial || state is PaymentLoading) {
+          if (state is PaymentInitial) {
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 32),
               child: Center(child: CircularProgressIndicator()),
@@ -442,13 +446,13 @@ class _OrdersTabState extends State<_OrdersTab> {
             return Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: AppTheme.surfaceColor,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  'No orders yet.',
-                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+                  AppLocalizations.of(context).noOrdersYet,
+                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
                 ),
               ),
             );
@@ -471,7 +475,7 @@ class _OrdersTabState extends State<_OrdersTab> {
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceColor,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(
@@ -496,7 +500,6 @@ class _OrdersTabState extends State<_OrdersTab> {
                               style: const TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
-                                color: AppTheme.primaryDark,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -515,7 +518,6 @@ class _OrdersTabState extends State<_OrdersTab> {
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: AppTheme.primaryDark,
                         ),
                       ),
                       if (t.status == TransactionStatus.fundsHeld) ...[
@@ -533,9 +535,9 @@ class _OrdersTabState extends State<_OrdersTab> {
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
-                          child: const Text(
-                            'Confirm Delivery',
-                            style: TextStyle(fontSize: 11, color: Colors.white),
+                          child: Text(
+                            AppLocalizations.of(context).confirmDelivery,
+                            style: const TextStyle(fontSize: 11, color: Colors.white),
                           ),
                         ),
                       ] else ...[
@@ -555,19 +557,20 @@ class _OrdersTabState extends State<_OrdersTab> {
   }
 
   String _statusLabel(TransactionStatus status) {
+    final loc = AppLocalizations.of(context);
     switch (status) {
       case TransactionStatus.pending:
-        return 'Awaiting payment';
+        return loc.awaitingPayment;
       case TransactionStatus.fundsHeld:
-        return 'In escrow';
+        return loc.inEscrow;
       case TransactionStatus.delivered:
-        return 'Delivered — awaiting confirmation';
+        return loc.deliveredAwaitingConfirmation;
       case TransactionStatus.completed:
-        return 'Completed';
+        return loc.completed;
       case TransactionStatus.disputed:
-        return 'Under dispute';
+        return loc.underDispute;
       case TransactionStatus.cancelled:
-        return 'Cancelled';
+        return loc.cancelled;
     }
   }
 
@@ -636,29 +639,31 @@ class _ListingsTabState extends State<_ListingsTab> {
         ),
       );
 
-  void _confirmDelete(CoffeeListing listing) => showDialog<void>(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Delete Listing'),
-          content:
-              const Text('Are you sure you want to delete this listing?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                context
-                    .read<ListingBloc>()
-                    .add(ListingDeleteRequested(listing.listingId));
-                Navigator.pop(context);
-              },
-              child: const Text('Delete'),
-            ),
-          ],
-        ),
-      );
+  void _confirmDelete(CoffeeListing listing) {
+    final loc = AppLocalizations.of(context);
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(loc.delete),
+        content: Text('Are you sure you want to delete this listing?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(loc.cancel),
+          ),
+          TextButton(
+            onPressed: () {
+              context
+                  .read<ListingBloc>()
+                  .add(ListingDeleteRequested(listing.listingId));
+              Navigator.pop(context);
+            },
+            child: Text(loc.delete),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -671,9 +676,9 @@ class _ListingsTabState extends State<_ListingsTab> {
           child: ElevatedButton.icon(
             onPressed: _openCreate,
             icon: const Icon(Icons.add, size: 18, color: Colors.white),
-            label: const Text(
-              '+ INITIALIZE LOT',
-              style: TextStyle(
+            label: Text(
+              AppLocalizations.of(context).initializeLot,
+              style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.8,
@@ -715,12 +720,12 @@ class _ListingsTabState extends State<_ListingsTab> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceColor,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Text(
-                  'No listings yet. Tap the button above to create your first lot.',
-                  style: TextStyle(
+                child: Text(
+                  AppLocalizations.of(context).noListingsYet,
+                  style: const TextStyle(
                     fontSize: 13,
                     color: AppTheme.textSecondary,
                     height: 1.5,
@@ -771,7 +776,7 @@ class _MetricCard extends StatelessWidget {
       width: wide ? double.infinity : null,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -788,17 +793,19 @@ class _MetricCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryDark,
+              Expanded(
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (change != null)
+              if (change != null) ...[
+                const SizedBox(width: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 3),
@@ -819,6 +826,7 @@ class _MetricCard extends StatelessWidget {
                     ),
                   ),
                 ),
+              ],
             ],
           ),
         ],

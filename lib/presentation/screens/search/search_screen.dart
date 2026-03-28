@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../config/localization/app_localizations.dart';
 import '../../../config/theme.dart';
 import '../../../domain/models/coffee_listing.dart';
 import '../../../domain/models/saved_lot.dart';
@@ -124,16 +125,14 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.backgroundColor,
-        elevation: 0,
+                elevation: 0,
         automaticallyImplyLeading: false,
-        title: const Text(
-          'Brew Master',
-          style: TextStyle(
-            color: AppTheme.primaryDark,
+        title: Text(
+          loc.appName,
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -142,7 +141,8 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
       body: BlocListener<MessagingBloc, MessagingState>(
         listener: (context, state) {
-          if (state is ConversationReady) {
+          if (state is ConversationReady &&
+              ModalRoute.of(context)?.isCurrent == true) {
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) =>
@@ -160,19 +160,18 @@ class _SearchScreenState extends State<SearchScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Direct Trade\nShop',
-                  style: TextStyle(
+                Text(
+                  loc.directTradeShop,
+                  style: const TextStyle(
                     fontSize: 34,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryDark,
                     height: 1.15,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Explore specialty lots directly from their producers.',
-                  style: TextStyle(
+                Text(
+                  loc.shopSubtitle,
+                  style: const TextStyle(
                     fontSize: 13,
                     color: AppTheme.textSecondary,
                     height: 1.4,
@@ -183,7 +182,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Search varieties, origins, or producers',
+                    hintText: loc.searchHint,
                     hintStyle: const TextStyle(
                       fontSize: 13,
                       color: AppTheme.textHint,
@@ -194,7 +193,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       size: 20,
                     ),
                     filled: true,
-                    fillColor: AppTheme.surfaceColor,
+                    fillColor: Theme.of(context).colorScheme.surface,
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                     border: OutlineInputBorder(
@@ -222,7 +221,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             setState(() => _showFilters = !_showFilters),
                         icon: const Icon(Icons.tune, size: 18, color: Colors.white),
                         label: Text(
-                          _showFilters ? 'HIDE FILTERS' : 'ADVANCED FILTERS',
+                          _showFilters ? loc.hideFilters : loc.advancedFilters,
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -245,7 +244,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       decoration: BoxDecoration(
                         color: _showMapView
                             ? AppTheme.primaryColor
-                            : AppTheme.surfaceColor,
+                            : Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(28),
                       ),
                       child: IconButton(
@@ -255,7 +254,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               ? Colors.white
                               : AppTheme.primaryDark,
                         ),
-                        tooltip: _showMapView ? 'List view' : 'Map view',
+                        tooltip: _showMapView ? loc.listView : loc.mapView,
                         onPressed: () => setState(() {
                           _showMapView = !_showMapView;
                           _selectedMapListing = null;
@@ -269,20 +268,20 @@ class _SearchScreenState extends State<SearchScreen> {
                   const SizedBox(height: 12),
                   Container(
                     decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'ORIGIN COUNTRY',
+                        Text(
+                          loc.originCountry,
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.1,
-                            color: AppTheme.primaryColor,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -311,13 +310,13 @@ class _SearchScreenState extends State<SearchScreen> {
                               .toList(),
                         ),
                         const SizedBox(height: 12),
-                        const Text(
-                          'PROCESSING METHOD',
+                        Text(
+                          loc.processingMethod,
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.1,
-                            color: AppTheme.primaryColor,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -336,13 +335,13 @@ class _SearchScreenState extends State<SearchScreen> {
                               .toList(),
                         ),
                         const SizedBox(height: 12),
-                        const Text(
-                          'PRICE RANGE (USD/KG)',
+                        Text(
+                          loc.priceRangeUsd,
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.1,
-                            color: AppTheme.primaryColor,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -351,26 +350,26 @@ class _SearchScreenState extends State<SearchScreen> {
                             Expanded(
                               child: _CompactTextField(
                                 controller: _minPriceController,
-                                hint: 'Min',
+                                hint: loc.min,
                               ),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: _CompactTextField(
                                 controller: _maxPriceController,
-                                hint: 'Max',
+                                hint: loc.max,
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 12),
-                        const Text(
-                          'ALTITUDE RANGE (m)',
+                        Text(
+                          loc.altitudeRange,
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.1,
-                            color: AppTheme.primaryColor,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -379,14 +378,14 @@ class _SearchScreenState extends State<SearchScreen> {
                             Expanded(
                               child: _CompactTextField(
                                 controller: _minAltitudeController,
-                                hint: 'Min',
+                                hint: loc.min,
                               ),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: _CompactTextField(
                                 controller: _maxAltitudeController,
-                                hint: 'Max',
+                                hint: loc.max,
                               ),
                             ),
                           ],
@@ -397,9 +396,9 @@ class _SearchScreenState extends State<SearchScreen> {
                           children: [
                             TextButton(
                               onPressed: _clearFilters,
-                              child: const Text(
-                                'CLEAR',
-                                style: TextStyle(
+                              child: Text(
+                                loc.clear,
+                                style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 0.8,
@@ -418,9 +417,9 @@ class _SearchScreenState extends State<SearchScreen> {
                                 ),
                                 elevation: 0,
                               ),
-                              child: const Text(
-                                'APPLY FILTERS',
-                                style: TextStyle(
+                              child: Text(
+                                loc.applyFilters,
+                                style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 0.8,
@@ -443,8 +442,8 @@ class _SearchScreenState extends State<SearchScreen> {
             child: BlocBuilder<ListingBloc, ListingState>(
               buildWhen: (_, curr) =>
                   curr is ListingInitial ||
-                  curr is ListingLoading ||
-                  curr is ActiveListingsLoaded,
+                  curr is ActiveListingsLoaded ||
+                  curr is ListingFailure,
               builder: (context, state) {
                 if (state is ListingLoading || state is ListingInitial) {
                   return const LoadingIndicator();
@@ -466,9 +465,9 @@ class _SearchScreenState extends State<SearchScreen> {
                 }
 
                 if (listings.isEmpty) {
-                  return const EmptyStateWidget(
-                    title: 'No listings found',
-                    description: 'Try adjusting your filters',
+                  return EmptyStateWidget(
+                    title: loc.noListingsFound,
+                    description: loc.tryAdjustingFilters,
                     icon: Icons.search_off,
                   );
                 }
@@ -480,9 +479,9 @@ class _SearchScreenState extends State<SearchScreen> {
                       .toList();
 
                   if (mappable.isEmpty) {
-                    return const EmptyStateWidget(
-                      title: 'No map data',
-                      description: 'Listings do not have coordinates yet',
+                    return EmptyStateWidget(
+                      title: loc.noMapData,
+                      description: loc.noMapCoordinates,
                       icon: Icons.map_outlined,
                     );
                   }
@@ -561,13 +560,12 @@ class _SearchScreenState extends State<SearchScreen> {
                                           style: const TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 15,
-                                            color: AppTheme.primaryDark,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           '\$${_selectedMapListing!.pricePerKg.toStringAsFixed(2)}/kg · '
-                                          '${_selectedMapListing!.quantity} kg available',
+                                          '${_selectedMapListing!.quantity} kg ${loc.kgAvailable}',
                                           style: const TextStyle(
                                             fontSize: 13,
                                             color: AppTheme.textSecondary,
@@ -599,8 +597,8 @@ class _SearchScreenState extends State<SearchScreen> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 16, vertical: 10),
                                     ),
-                                    child: const Text('View',
-                                        style: TextStyle(color: Colors.white)),
+                                    child: Text(loc.view,
+                                        style: const TextStyle(color: Colors.white)),
                                   ),
                                 ],
                               ),
@@ -624,6 +622,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     return _ListingCard(
                       listing: listing,
                       inCart: isSaved,
+                      loc: loc,
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -644,7 +643,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                  '${listing.variety} removed from saved lots'),
+                                  '${listing.variety} ${loc.removedFromSaved}'),
                               duration: const Duration(seconds: 2),
                             ),
                           );
@@ -667,7 +666,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                  '${listing.variety} saved to your wishlist'),
+                                  '${listing.variety} ${loc.savedToWishlist}'),
                               duration: const Duration(seconds: 2),
                               backgroundColor: AppTheme.secondaryColor,
                             ),
@@ -681,19 +680,19 @@ class _SearchScreenState extends State<SearchScreen> {
                       onPay: () {
                         final authState =
                             context.read<AuthBloc>().state;
-                        final buyerId = authState is AuthAuthenticated
-                            ? authState.profile.id
-                            : '';
+                        final buyer = authState is AuthAuthenticated
+                            ? authState.profile
+                            : null;
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => PaymentScreen(
                               listingId: listing.listingId,
                               farmerId: listing.farmerId,
-                              buyerId: buyerId,
+                              buyerId: buyer?.id ?? '',
                               amount: listing.pricePerKg *
                                   listing.quantity,
-                              farmerCountry: listing.location,
+                              buyerCountry: buyer?.country,
                             ),
                           ),
                         );
@@ -720,10 +719,12 @@ class _ListingCard extends StatelessWidget {
   final VoidCallback? onPay;
   final VoidCallback? onAddToCart;
   final bool inCart;
+  final AppLocalizations loc;
 
   const _ListingCard({
     required this.listing,
     required this.onTap,
+    required this.loc,
     this.onMessage,
     this.onPay,
     this.onAddToCart,
@@ -733,16 +734,15 @@ class _ListingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lotRating = (listing.qualityScore / 20).clamp(0.0, 5.0);
-    final producerInitial = listing.farmerId.isNotEmpty
-        ? listing.farmerId[0].toUpperCase()
-        : 'F';
+    final producerName = listing.farmerName ?? loc.producer;
+    final producerInitial = producerName[0].toUpperCase();
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -764,9 +764,9 @@ class _ListingCard extends StatelessWidget {
                           width: double.infinity,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stack) =>
-                              _imagePlaceholder(),
+                              _imagePlaceholder(context),
                         )
-                      : _imagePlaceholder(),
+                      : _imagePlaceholder(context),
                   // Dark gradient at bottom
                   Positioned(
                     left: 0,
@@ -819,7 +819,7 @@ class _ListingCard extends StatelessWidget {
                             color: Colors.amber, size: 14),
                         const SizedBox(width: 3),
                         Text(
-                          'Lot rating ${lotRating.toStringAsFixed(1)}',
+                          '${loc.lotRating} ${lotRating.toStringAsFixed(1)}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -843,7 +843,8 @@ class _ListingCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        listing.location.toUpperCase(),
+                        (listing.locationAddress ?? listing.location)
+                            .toUpperCase(),
                         style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -877,7 +878,6 @@ class _ListingCard extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryDark,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -903,9 +903,9 @@ class _ListingCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
-                        'Producer',
-                        style: TextStyle(
+                      Text(
+                        producerName,
+                        style: const TextStyle(
                           fontSize: 11,
                           color: AppTheme.textSecondary,
                         ),
@@ -933,9 +933,9 @@ class _ListingCard extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Price / KG',
-                            style: TextStyle(
+                          Text(
+                            loc.pricePerKgLabel,
+                            style: const TextStyle(
                               fontSize: 10,
                               color: AppTheme.textSecondary,
                               letterSpacing: 0.5,
@@ -946,14 +946,13 @@ class _ListingCard extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: AppTheme.primaryDark,
                             ),
                           ),
                         ],
                       ),
                       const Spacer(),
                       Text(
-                        '${listing.quantity.toStringAsFixed(0)} kg available',
+                        '${listing.quantity.toStringAsFixed(0)} ${loc.kgAvailable}',
                         style: const TextStyle(
                           fontSize: 11,
                           color: AppTheme.textSecondary,
@@ -972,17 +971,14 @@ class _ListingCard extends StatelessWidget {
                             Icons.chat_bubble_outline,
                             size: 14,
                           ),
-                          label: const Text(
-                            'Message',
-                            style: TextStyle(
+                          label: Text(
+                            loc.messageButton,
+                            style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppTheme.primaryDark,
-                            side: const BorderSide(
-                                color: AppTheme.primaryDark),
                             padding: const EdgeInsets.symmetric(
                                 vertical: 10),
                             shape: RoundedRectangleBorder(
@@ -1000,9 +996,9 @@ class _ListingCard extends StatelessWidget {
                             size: 14,
                             color: Colors.white,
                           ),
-                          label: const Text(
-                            'Direct Pay',
-                            style: TextStyle(
+                          label: Text(
+                            loc.directPay,
+                            style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
@@ -1030,11 +1026,11 @@ class _ListingCard extends StatelessWidget {
     );
   }
 
-  Widget _imagePlaceholder() {
+  Widget _imagePlaceholder(BuildContext context) {
     return Container(
       height: 200,
       width: double.infinity,
-      color: AppTheme.inputFillColor,
+      color: Theme.of(context).inputDecorationTheme.fillColor ?? AppTheme.inputFillColor,
       child: const Center(
         child: Icon(Icons.coffee, size: 48, color: AppTheme.textHint),
       ),
@@ -1065,7 +1061,7 @@ class _FilterChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected
               ? AppTheme.primaryDark
-              : AppTheme.inputFillColor,
+              : Theme.of(context).inputDecorationTheme.fillColor ?? AppTheme.inputFillColor,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
@@ -1098,7 +1094,6 @@ class _CompactTextField extends StatelessWidget {
         hintText: hint,
         hintStyle: const TextStyle(color: AppTheme.textHint, fontSize: 13),
         filled: true,
-        fillColor: AppTheme.inputFillColor,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         border: OutlineInputBorder(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brewmaster/config/theme.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
 import 'package:brewmaster/presentation/widgets/common/custom_text_field.dart';
 import 'package:brewmaster/presentation/widgets/common/custom_button.dart';
@@ -43,8 +44,9 @@ class _LoginScreenState extends State<LoginScreen> {
   void _handleForgotPassword() {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
+      final loc = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your email first.')),
+        SnackBar(content: Text(loc.pleaseEnterEmailFirst)),
       );
       return;
     }
@@ -53,6 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -73,8 +76,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 }
                 if (state is AuthPasswordResetSent) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Password reset email sent.'),
+                    SnackBar(
+                      content: Text(loc.passwordResetSent),
                       backgroundColor: AppTheme.successColor,
                     ),
                   );
@@ -107,18 +110,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: AppTheme.padding24),
 
                       // Heading
-                      const Text(
-                        'Welcome Back',
-                        style: TextStyle(
+                      Text(
+                        loc.welcomeBack,
+                        style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimary,
                         ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: AppTheme.padding8),
-                      const Text(
-                        'Log in to your BrewMaster account.',
+                      Text(
+                        loc.loginSubtitle,
                         style: AppTheme.caption,
                         textAlign: TextAlign.center,
                       ),
@@ -136,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Container(
                         padding: const EdgeInsets.all(AppTheme.padding24),
                         decoration: BoxDecoration(
-                          color: AppTheme.surfaceColor,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(
                               AppTheme.borderRadiusXLarge),
                         ),
@@ -144,11 +146,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             // Email field
-                            const Text('Email Address',
-                                style: TextStyle(
+                            Text(loc.emailAddress,
+                                style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
-                                  color: AppTheme.textPrimary,
                                 )),
                             const SizedBox(height: AppTheme.padding8),
                             EmailTextField(
@@ -157,7 +158,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               textInputAction: TextInputAction.next,
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
-                                  return 'Email is required';
+                                  return loc.emailRequired;
                                 }
                                 return null;
                               },
@@ -165,11 +166,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             const SizedBox(height: AppTheme.padding16),
 
                             // Password field
-                            const Text('Password',
-                                style: TextStyle(
+                            Text(loc.password,
+                                style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
-                                  color: AppTheme.textPrimary,
                                 )),
                             const SizedBox(height: AppTheme.padding8),
                             PasswordTextField(
@@ -177,7 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               textInputAction: TextInputAction.done,
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Password is required';
+                                  return loc.passwordRequired;
                                 }
                                 return null;
                               },
@@ -187,8 +187,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             // Sign in button
                             CustomButton(
                               text: _isBuyer
-                                  ? 'Sign In as Buyer'
-                                  : 'Sign In as Seller',
+                                  ? loc.signInAsBuyer
+                                  : loc.signInAsSeller,
                               isFullWidth: true,
                               isLoading: isLoading,
                               onPressed: _handleSignIn,
@@ -201,7 +201,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Forgot password
                       Center(
                         child: CustomButton(
-                          text: 'Forgot password?',
+                          text: loc.forgotPassword,
                           type: ButtonType.text,
                           size: ButtonSize.small,
                           onPressed: _handleForgotPassword,
@@ -216,14 +216,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           Padding(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: AppTheme.padding16),
-                            child: Text('OR', style: AppTheme.caption),
+                            child: Text(loc.or, style: AppTheme.caption),
                           ),
                           const Expanded(child: Divider()),
                         ],
                       ),
                       const SizedBox(height: AppTheme.padding16),
                       CustomButton(
-                        text: 'Sign in with Google',
+                        text: loc.signInWithGoogle,
                         type: ButtonType.outlined,
                         isFullWidth: true,
                         leadingIcon: Icons.g_mobiledata,
@@ -233,11 +233,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: AppTheme.padding24),
 
                       // Sign up link
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      Wrap(
+                        alignment: WrapAlignment.center,
                         children: [
                           Text(
-                            "Don't have an account? ",
+                            loc.noAccount,
                             style: AppTheme.caption,
                           ),
                           GestureDetector(
@@ -248,7 +248,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             child: Text(
-                              'Create one',
+                              loc.createOne,
                               style: AppTheme.caption.copyWith(
                                 color: AppTheme.primaryColor,
                                 fontWeight: FontWeight.w600,
@@ -279,21 +279,22 @@ class _RoleToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Container(
       height: 52,
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppTheme.borderRadiusXLarge),
       ),
       child: Row(
         children: [
           _Tab(
-            label: 'Buyer',
+            label: loc.buyer,
             selected: isBuyer,
             onTap: () => onChanged(true),
           ),
           _Tab(
-            label: 'Seller',
+            label: loc.seller,
             selected: !isBuyer,
             onTap: () => onChanged(false),
           ),

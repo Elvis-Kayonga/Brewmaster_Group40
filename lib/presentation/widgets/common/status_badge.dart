@@ -70,7 +70,7 @@ class StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _getColors();
+    final colors = _getColors(Theme.of(context).brightness);
     final bgColor = backgroundColor ?? colors.$1;
     final fgColor = textColor ?? colors.$2;
 
@@ -108,40 +108,48 @@ class StatusBadge extends StatelessWidget {
     );
   }
 
-  (Color, Color) _getColors() {
+  (Color, Color) _getColors(Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
     switch (type) {
       case StatusBadgeType.pending:
         return (
-          const Color(0xFFFFF3E0), // Light orange
-          const Color(0xFFE65100), // Orange
+          isDark
+              ? const Color(0xFFE65100).withValues(alpha: 0.2)
+              : const Color(0xFFFFF3E0),
+          isDark ? const Color(0xFFFF8A65) : const Color(0xFFE65100),
         );
       case StatusBadgeType.active:
         return (
-          const Color(0xFFE3F2FD), // Light blue
-          const Color(0xFF1565C0), // Blue
+          isDark
+              ? const Color(0xFF1565C0).withValues(alpha: 0.2)
+              : const Color(0xFFE3F2FD),
+          isDark ? const Color(0xFF64B5F6) : const Color(0xFF1565C0),
         );
       case StatusBadgeType.success:
         return (
-          AppTheme.successColor.withValues(alpha: 0.15),
-          AppTheme.successColor,
+          AppTheme.successColor.withValues(alpha: isDark ? 0.2 : 0.15),
+          isDark ? const Color(0xFF81C784) : AppTheme.successColor,
         );
       case StatusBadgeType.warning:
         return (
-          AppTheme.warningColor.withValues(alpha: 0.15),
-          const Color(0xFFF57F17), // Darker yellow for text
+          AppTheme.warningColor.withValues(alpha: isDark ? 0.2 : 0.15),
+          isDark ? const Color(0xFFFFD54F) : const Color(0xFFF57F17),
         );
       case StatusBadgeType.error:
         return (
-          AppTheme.errorColor.withValues(alpha: 0.15),
-          AppTheme.errorColor,
+          AppTheme.errorColor.withValues(alpha: isDark ? 0.2 : 0.15),
+          isDark ? const Color(0xFFEF9A9A) : AppTheme.errorColor,
         );
       case StatusBadgeType.info:
         return (
-          AppTheme.secondaryColor.withValues(alpha: 0.15),
-          AppTheme.secondaryColor,
+          AppTheme.secondaryColor.withValues(alpha: isDark ? 0.2 : 0.15),
+          isDark ? const Color(0xFFA5D6A7) : AppTheme.secondaryColor,
         );
       case StatusBadgeType.neutral:
-        return (const Color(0xFFEEEEEE), AppTheme.textSecondary);
+        return (
+          isDark ? const Color(0xFF424242) : const Color(0xFFEEEEEE),
+          isDark ? const Color(0xFF9E9E9E) : AppTheme.textSecondary,
+        );
     }
   }
 
@@ -386,7 +394,7 @@ class OnlineStatusIndicator extends StatelessWidget {
       decoration: BoxDecoration(
         color: isOnline ? AppTheme.successColor : AppTheme.textHint,
         shape: BoxShape.circle,
-        border: showBorder ? Border.all(color: Colors.white, width: 2) : null,
+        border: showBorder ? Border.all(color: Theme.of(context).colorScheme.surface, width: 2) : null,
       ),
     );
   }

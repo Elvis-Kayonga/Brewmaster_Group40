@@ -88,4 +88,37 @@ class FirebaseUserRepository implements UserRepository {
     });
   }
 
+  @override
+  Future<void> saveListing(String userId, String listingId) async {
+    try {
+      await _users.doc(userId).update({
+        'savedListings': FieldValue.arrayUnion([listingId]),
+      });
+    } catch (e) {
+      throw Exception('Failed to save listing: $e');
+    }
+  }
+
+  @override
+  Future<void> unsaveListing(String userId, String listingId) async {
+    try {
+      await _users.doc(userId).update({
+        'savedListings': FieldValue.arrayRemove([listingId]),
+      });
+    } catch (e) {
+      throw Exception('Failed to unsave listing: $e');
+    }
+  }
+
+  @override
+  Future<List<String>> getSavedListings(String userId) async {
+    try {
+      final doc = await _users.doc(userId).get();
+      if (!doc.exists || doc.data() == null) return [];
+      return List<String>.from(doc.data()!['savedListings'] as List? ?? []);
+    } catch (e) {
+      return [];
+    }
+  }
+
 }

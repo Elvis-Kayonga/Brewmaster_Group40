@@ -84,11 +84,11 @@ class FirebaseListingRepository implements ListingRepository {
     return _col
         .where('status', isEqualTo: 'active')
         .snapshots()
-        .map((s) {
+        .asyncMap((s) async {
           final list =
               s.docs.map((d) => CoffeeListing.fromJson(d.data())).toList();
           list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          return list;
+          return _enrichWithFarmerNames(list);
         });
   }
 
@@ -142,7 +142,7 @@ class FirebaseListingRepository implements ListingRepository {
           .toList();
     }
 
-    return results;
+    return _enrichWithFarmerNames(results);
   }
 
   @override
@@ -167,6 +167,29 @@ class FirebaseListingRepository implements ListingRepository {
       hasMore: hasMore,
       cursor: docs.isNotEmpty ? docs.last : null,
     );
+  }
+
+  /// For listings that have no [farmerName] stored, batch-fetch the farmer's
+  /// displayName from the `users` collection and back-fill it in memory.
+  Future<List<CoffeeListing>> _enrichWithFarmerNames(
+      List<CoffeeListing> listings) async {
+    final missing = listings.where((l) => l.farmerName == null).toList();
+    if (missing.isEmpty) return listings;
+
+    final uniqueIds = missing.map((l) => l.farmerId).toSet();
+    final nameMap = <String, String>{};
+    for (final id in uniqueIds) {
+      final doc = await _firestore.collection('users').doc(id).get();
+      if (doc.exists) {
+        nameMap[id] = doc.data()?['displayName'] as String? ?? '';
+      }
+    }
+
+    return listings.map((l) {
+      if (l.farmerName != null) return l;
+      final name = nameMap[l.farmerId];
+      return name != null && name.isNotEmpty ? l.copyWith(farmerName: name) : l;
+    }).toList();
   }
 
   Future<List<String>> _uploadImages(

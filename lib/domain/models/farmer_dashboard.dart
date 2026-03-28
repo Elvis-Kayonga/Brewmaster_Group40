@@ -2,7 +2,8 @@ class FarmerDashboard {
   final int activeListings;
   final double totalEarnings;
   final int conversations;
-  final int views;
+  /// Total number of times buyers have saved any of this farmer's listings.
+  final int savedCount;
   final double responseRate;
   /// Percentage change in revenue vs the previous 30-day window, e.g. 12.5
   final double? revenueChangePct;
@@ -15,7 +16,7 @@ class FarmerDashboard {
     required this.activeListings,
     required this.totalEarnings,
     required this.conversations,
-    required this.views,
+    required this.savedCount,
     required this.responseRate,
     this.revenueChangePct,
     this.ordersChangePct,
@@ -27,7 +28,7 @@ class FarmerDashboard {
       'activeListings': activeListings,
       'totalEarnings': totalEarnings,
       'conversations': conversations,
-      'views': views,
+      'savedCount': savedCount,
       'responseRate': responseRate,
     };
   }
@@ -37,7 +38,7 @@ class FarmerDashboard {
       activeListings: json['activeListings'] as int,
       totalEarnings: (json['totalEarnings'] as num).toDouble(),
       conversations: json['conversations'] as int,
-      views: json['views'] as int,
+      savedCount: json['savedCount'] as int,
       responseRate: (json['responseRate'] as num).toDouble(),
     );
   }
@@ -47,7 +48,7 @@ class FarmerDashboard {
       activeListings: 0,
       totalEarnings: 0.0,
       conversations: 0,
-      views: 0,
+      savedCount: 0,
       responseRate: 0.0,
     );
   }
@@ -56,7 +57,7 @@ class FarmerDashboard {
     int? activeListings,
     double? totalEarnings,
     int? conversations,
-    int? views,
+    int? savedCount,
     double? responseRate,
     double? revenueChangePct,
     double? ordersChangePct,
@@ -66,7 +67,7 @@ class FarmerDashboard {
       activeListings: activeListings ?? this.activeListings,
       totalEarnings: totalEarnings ?? this.totalEarnings,
       conversations: conversations ?? this.conversations,
-      views: views ?? this.views,
+      savedCount: savedCount ?? this.savedCount,
       responseRate: responseRate ?? this.responseRate,
       revenueChangePct: revenueChangePct ?? this.revenueChangePct,
       ordersChangePct: ordersChangePct ?? this.ordersChangePct,
@@ -82,7 +83,7 @@ class FarmerDashboard {
         other.activeListings == activeListings &&
         other.totalEarnings == totalEarnings &&
         other.conversations == conversations &&
-        other.views == views &&
+        other.savedCount == savedCount &&
         other.responseRate == responseRate &&
         other.revenueChangePct == revenueChangePct &&
         other.ordersChangePct == ordersChangePct;
@@ -93,7 +94,7 @@ class FarmerDashboard {
     return activeListings.hashCode ^
         totalEarnings.hashCode ^
         conversations.hashCode ^
-        views.hashCode ^
+        savedCount.hashCode ^
         responseRate.hashCode ^
         revenueChangePct.hashCode ^
         ordersChangePct.hashCode;
@@ -101,6 +102,6 @@ class FarmerDashboard {
 
   @override
   String toString() {
-    return 'FarmerDashboard(activeListings: $activeListings, totalEarnings: $totalEarnings, conversations: $conversations, views: $views, responseRate: $responseRate, revenueChangePct: $revenueChangePct, ordersChangePct: $ordersChangePct, dailyRevenue: $dailyRevenue)';
+    return 'FarmerDashboard(activeListings: $activeListings, totalEarnings: $totalEarnings, conversations: $conversations, savedCount: $savedCount, responseRate: $responseRate, revenueChangePct: $revenueChangePct, ordersChangePct: $ordersChangePct, dailyRevenue: $dailyRevenue)';
   }
 }

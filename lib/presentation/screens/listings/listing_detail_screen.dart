@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../config/localization/app_localizations.dart';
 import '../../../config/theme.dart';
 import '../../blocs/listing/listing_bloc.dart';
 import '../../blocs/messaging/messaging_bloc.dart';
@@ -58,7 +59,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F1EA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -73,10 +74,10 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.9),
+                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.close, size: 18, color: AppTheme.primaryDark),
+                child: const Icon(Icons.close, size: 18),
               ),
             ),
           ),
@@ -156,9 +157,9 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'COFFEE PROFILE',
-                              style: TextStyle(
+                            Text(
+                              AppLocalizations.of(context).coffeeProfile,
+                              style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
@@ -195,9 +196,9 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // ── Processing station ──────────────────────
-                        const Text(
-                          'PROCESSING STATION',
-                          style: TextStyle(
+                        Text(
+                          AppLocalizations.of(context).processingStation,
+                          style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 2.0,
@@ -210,7 +211,6 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                           style: const TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryDark,
                             height: 1.2,
                           ),
                         ),
@@ -226,33 +226,41 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                         const SizedBox(height: 32),
 
                         // ── Specifications ──────────────────────────
-                        const Text(
-                          'SPECIFICATIONS',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 2.0,
-                            color: AppTheme.primaryColor,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _DetailCard(
-                          items: [
-                            _DetailItem('Altitude', '${listing.altitude} m'),
-                            _DetailItem('Processing', listing.processingMethod.name),
-                            _DetailItem('Harvest Year', '$year'),
-                            _DetailItem('Quality Score', '${listing.qualityScore}/100'),
-                            _DetailItem('Available', '${listing.quantity} kg'),
-                            _DetailItem('Price / kg', '\$${listing.pricePerKg.toStringAsFixed(2)}'),
-                          ],
-                        ),
+                        Builder(builder: (context) {
+                          final loc = AppLocalizations.of(context);
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                loc.specifications,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 2.0,
+                                  color: AppTheme.primaryColor,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              _DetailCard(
+                                items: [
+                                  _DetailItem(loc.altitude, '${listing.altitude} m'),
+                                  _DetailItem(loc.processing, listing.processingMethod.name),
+                                  _DetailItem(loc.harvestYear, '$year'),
+                                  _DetailItem(loc.qualityScore, '${listing.qualityScore}/100'),
+                                  _DetailItem(loc.available, '${listing.quantity} kg'),
+                                  _DetailItem(loc.pricePerKg, '\$${listing.pricePerKg.toStringAsFixed(2)}'),
+                                ],
+                              ),
+                            ],
+                          );
+                        }),
                         const SizedBox(height: 28),
 
                         // ── Farm location map ───────────────────────
                         if (mapLocation != null) ...[
-                          const Text(
-                            'FARM LOCATION',
-                            style: TextStyle(
+                          Text(
+                            AppLocalizations.of(context).farmLocationLabel,
+                            style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 2.0,
@@ -307,9 +315,9 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                         FirebaseAuth.instance.currentUser?.uid;
                                     if (listing.farmerId == currentUid) {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
+                                        SnackBar(
                                             content: Text(
-                                                'This is your own listing.')),
+                                                AppLocalizations.of(context).thisIsYourListing)),
                                       );
                                       return;
                                     }
@@ -334,9 +342,9 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                       color: Colors.white,
                                     ),
                                   )
-                                : const Text(
-                                    'CONTACT FARMER',
-                                    style: TextStyle(
+                                : Text(
+                                    AppLocalizations.of(context).contactFarmer,
+                                    style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: 1.5,
@@ -384,7 +392,7 @@ class _DetailCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -409,7 +417,6 @@ class _DetailCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.primaryDark,
                       ),
                     ),
                   ],

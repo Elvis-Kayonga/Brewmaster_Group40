@@ -126,7 +126,13 @@ class CustomButton extends StatelessWidget {
       children.add(SizedBox(width: _getIconSpacing()));
     }
 
-    children.add(Text(text, style: _getTextStyle()));
+    children.add(Flexible(
+      child: Text(
+        text,
+        style: _getTextStyle(),
+        overflow: TextOverflow.ellipsis,
+      ),
+    ));
 
     if (trailingIcon != null) {
       children.add(SizedBox(width: _getIconSpacing()));

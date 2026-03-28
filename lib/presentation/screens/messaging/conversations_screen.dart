@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../config/localization/app_localizations.dart';
 import '../../../config/theme.dart';
 import '../../../domain/models/conversation.dart';
 import '../../widgets/common/profile_avatar_button.dart';
@@ -41,15 +42,12 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.backgroundColor,
-        elevation: 0,
+                elevation: 0,
         automaticallyImplyLeading: false,
-        title: const Text(
-          'Brew Master',
-          style: TextStyle(
-            color: AppTheme.primaryDark,
+        title: Text(
+          AppLocalizations.of(context).appName,
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -59,8 +57,12 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
         ],
       ),
       body: BlocBuilder<MessagingBloc, MessagingState>(
+        buildWhen: (_, curr) =>
+            curr is MessagingInitial ||
+            curr is ConversationsLoaded ||
+            curr is MessagingFailure,
         builder: (context, state) {
-          if (state is MessagingLoading || state is MessagingInitial) {
+          if (state is MessagingInitial) {
             return const LoadingIndicator();
           }
 
@@ -82,19 +84,18 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Messages',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context).messages,
+                      style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryDark,
                         height: 1.15,
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
-                      'DIRECT MESSAGING',
-                      style: TextStyle(
+                    Text(
+                      AppLocalizations.of(context).directMessaging,
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.8,
@@ -106,7 +107,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                       controller: _searchController,
                       onChanged: (v) => setState(() => _searchQuery = v),
                       decoration: InputDecoration(
-                        hintText: 'Search conversations...',
+                        hintText: AppLocalizations.of(context).searchConversations,
                         hintStyle: const TextStyle(
                           fontSize: 13,
                           color: AppTheme.textHint,
@@ -124,7 +125,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                               )
                             : null,
                         filled: true,
-                        fillColor: AppTheme.surfaceColor,
+                        fillColor: Theme.of(context).colorScheme.surface,
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 12),
                         border: OutlineInputBorder(
@@ -149,11 +150,10 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
               // ── Conversation list ───────────────────────────────────
               if (state is ConversationsLoaded)
                 state.conversations.isEmpty
-                    ? const Expanded(
+                    ? Expanded(
                         child: EmptyStateWidget(
-                          title: 'No Messages',
-                          description:
-                              'Start a conversation to connect with farmers or buyers',
+                          title: AppLocalizations.of(context).noMessagesTitle,
+                          description: AppLocalizations.of(context).noMessagesDescription,
                           icon: Icons.chat_bubble_outline,
                         ),
                       )
@@ -235,6 +235,7 @@ class _ConversationTile extends StatelessWidget {
         otherName.isNotEmpty ? otherName : 'Chat #${conversation.conversationId.substring(0, 8)}';
     final avatarLetter =
         otherName.isNotEmpty ? otherName[0].toUpperCase() : '?';
+    final otherPhotoUrl = conversation.participantPhotoUrls[otherId];
 
     return GestureDetector(
       onTap: onTap,
@@ -242,28 +243,28 @@ class _ConversationTile extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: isUnread ? AppTheme.primaryDark : AppTheme.primaryColor,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  avatarLetter,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
+            CircleAvatar(
+              radius: 22,
+              backgroundColor:
+                  isUnread ? AppTheme.primaryDark : AppTheme.primaryColor,
+              backgroundImage: otherPhotoUrl != null
+                  ? NetworkImage(otherPhotoUrl)
+                  : null,
+              child: otherPhotoUrl == null
+                  ? Text(
+                      avatarLetter,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    )
+                  : null,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -276,12 +277,11 @@ class _ConversationTile extends StatelessWidget {
                       fontSize: 14,
                       fontWeight:
                           isUnread ? FontWeight.bold : FontWeight.w600,
-                      color: AppTheme.primaryDark,
                     ),
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    lastMessage?.content ?? 'No messages yet',
+                    lastMessage?.content ?? AppLocalizations.of(context).noMessagesYet,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(

@@ -21,7 +21,7 @@ enum TransactionStatus {
 }
 
 /// Payment methods
-enum PaymentMethod { mpesa, mtnMobileMoney }
+enum PaymentMethod { mpesa, mtnMobileMoney, flutterwave }
 
 /// Message types
 enum MessageType { text, listingReference, system }
@@ -111,7 +111,7 @@ extension PaymentMethodExtension on PaymentMethod {
   static PaymentMethod fromJson(String value) {
     return PaymentMethod.values.firstWhere(
       (e) => e.name == value,
-      orElse: () => PaymentMethod.mpesa,
+      orElse: () => PaymentMethod.flutterwave,
     );
   }
 }

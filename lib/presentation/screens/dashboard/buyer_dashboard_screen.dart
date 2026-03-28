@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../config/theme.dart';
+import '../../../config/localization/app_localizations.dart';
 import '../../../domain/models/buyer_dashboard.dart';
 import '../../widgets/common/profile_avatar_button.dart';
 import '../../blocs/dashboard/dashboard_bloc.dart';
@@ -33,23 +34,20 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.backgroundColor,
-        elevation: 0,
+                elevation: 0,
         automaticallyImplyLeading: false,
-        title: const Text(
-          'Brew Master',
-          style: TextStyle(
-            color: AppTheme.primaryDark,
+        title: Text(
+          AppLocalizations.of(context).appName,
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: AppTheme.primaryDark, size: 20),
-            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh, size: 20),
+            tooltip: AppLocalizations.of(context).refresh,
             onPressed: () => context
                 .read<DashboardBloc>()
                 .add(BuyerDashboardLoadRequested(widget.userId)),
@@ -60,7 +58,7 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
       body: BlocBuilder<DashboardBloc, DashboardState>(
         builder: (context, state) {
           if (state is DashboardLoading || state is DashboardInitial) {
-            return const LoadingIndicator(message: 'Loading your dashboard…');
+            return LoadingIndicator(message: AppLocalizations.of(context).loadingDashboard);
           }
           if (state is DashboardFailure) {
             return ErrorStateWidget(
@@ -87,23 +85,23 @@ class _BuyerDashboardBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
       children: [
         // ── Page header ─────────────────────────────────────────────
-        const Text(
-          'My\nDashboard',
-          style: TextStyle(
+        Text(
+          loc.myDashboard,
+          style: const TextStyle(
             fontSize: 36,
             fontWeight: FontWeight.bold,
-            color: AppTheme.primaryDark,
             height: 1.15,
           ),
         ),
         const SizedBox(height: 6),
-        const Text(
-          'Your coffee purchasing activity at a glance.',
-          style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+        Text(
+          loc.buyerDashboardSubtitle,
+          style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
         ),
         const SizedBox(height: 28),
 
@@ -112,7 +110,7 @@ class _BuyerDashboardBody extends StatelessWidget {
           children: [
             Expanded(
               child: _MetricCard(
-                label: 'TOTAL PURCHASES',
+                label: loc.totalPurchases,
                 value: dashboard.totalPurchases.toString(),
                 onTap: () => Navigator.of(context).pushNamed('/transactions'),
               ),
@@ -120,7 +118,7 @@ class _BuyerDashboardBody extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: _MetricCard(
-                label: 'CONVERSATIONS',
+                label: loc.conversationsLabel,
                 value: dashboard.conversations.toString(),
                 onTap: () => Navigator.of(context).pushNamed('/messages'),
               ),
@@ -129,7 +127,7 @@ class _BuyerDashboardBody extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         _MetricCard(
-          label: 'SAVED LOTS',
+          label: loc.savedLotsLabel,
           value: dashboard.savedListings.toString(),
           onTap: () => Navigator.of(context).pushNamed('/search'),
           fullWidth: true,
@@ -137,9 +135,9 @@ class _BuyerDashboardBody extends StatelessWidget {
         const SizedBox(height: 28),
 
         // ── Quick actions ─────────────────────────────────────────────
-        const Text(
-          'QUICK ACCESS',
-          style: TextStyle(
+        Text(
+          loc.quickAccess,
+          style: const TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
             letterSpacing: 2.0,
@@ -152,7 +150,7 @@ class _BuyerDashboardBody extends StatelessWidget {
             Expanded(
               child: _ActionTile(
                 icon: Icons.shopping_bag_outlined,
-                label: 'Browse\nShop',
+                label: loc.browseShop,
                 onTap: () => Navigator.of(context).pushNamed('/search'),
               ),
             ),
@@ -160,7 +158,7 @@ class _BuyerDashboardBody extends StatelessWidget {
             Expanded(
               child: _ActionTile(
                 icon: Icons.show_chart,
-                label: 'Market\nPrices',
+                label: loc.marketPricesLabel,
                 onTap: () =>
                     Navigator.of(context).pushNamed('/market-prices'),
               ),
@@ -169,7 +167,7 @@ class _BuyerDashboardBody extends StatelessWidget {
             Expanded(
               child: _ActionTile(
                 icon: Icons.chat_bubble_outline,
-                label: 'Messages',
+                label: loc.messages,
                 onTap: () => Navigator.of(context).pushNamed('/messages'),
               ),
             ),
@@ -201,7 +199,7 @@ class _MetricCard extends StatelessWidget {
         width: fullWidth ? double.infinity : null,
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -222,7 +220,6 @@ class _MetricCard extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.primaryDark,
               ),
             ),
           ],
@@ -250,7 +247,7 @@ class _ActionTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Column(
@@ -264,7 +261,6 @@ class _ActionTile extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.primaryDark,
                 height: 1.3,
               ),
             ),

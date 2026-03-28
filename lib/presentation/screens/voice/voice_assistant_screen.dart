@@ -31,23 +31,19 @@ class _VoiceAssistantView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.backgroundColor,
-        elevation: 0,
+                elevation: 0,
         automaticallyImplyLeading: false,
         title: const Text(
           'Brew Master',
           style: TextStyle(
-            color: AppTheme.primaryDark,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.chevron_left,
-                color: AppTheme.primaryDark, size: 28),
+            icon: const Icon(Icons.chevron_left, size: 28),
             onPressed: () => Navigator.of(context).maybePop(),
             tooltip: 'Back',
           ),
@@ -109,7 +105,7 @@ class _IdleBody extends StatelessWidget {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: AppTheme.inputFillColor,
+              color: Theme.of(context).inputDecorationTheme.fillColor ?? AppTheme.inputFillColor,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
@@ -132,7 +128,6 @@ class _IdleBody extends StatelessWidget {
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: AppTheme.primaryDark,
             ),
           ),
           const SizedBox(height: 12),
@@ -212,12 +207,14 @@ class _ActiveBody extends StatelessWidget {
           
           if (state.transcript.isNotEmpty)
             _ChatBubble(
+              key: const Key('transcript_bubble'),
               text: state.transcript,
               isUser: true,
             ),
-          
+
           if (state.response.isNotEmpty)
             _ChatBubble(
+              key: const Key('response_bubble'),
               text: state.response,
               isUser: false,
             ),
@@ -231,8 +228,6 @@ class _ActiveBody extends StatelessWidget {
                   .read<VoiceAssistantBloc>()
                   .add(const VoiceSessionEnded()),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.primaryDark,
-                side: const BorderSide(color: AppTheme.primaryDark, width: 1.5),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius:
@@ -302,7 +297,7 @@ class _ChatBubble extends StatelessWidget {
   final String text;
   final bool isUser;
 
-  const _ChatBubble({required this.text, required this.isUser});
+  const _ChatBubble({super.key, required this.text, required this.isUser});
 
   @override
   Widget build(BuildContext context) {
@@ -317,7 +312,7 @@ class _ChatBubble extends StatelessWidget {
         decoration: BoxDecoration(
           color: isUser
               ? AppTheme.primaryDark
-              : AppTheme.inputFillColor,
+              : Theme.of(context).inputDecorationTheme.fillColor ?? AppTheme.inputFillColor,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),

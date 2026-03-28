@@ -133,26 +133,33 @@ class FirebaseMessageRepository implements MessageRepository {
   @override
   Future<void> markConversationAsRead(String conversationId) async {
     final userId = _currentUserId;
-    final batch = _firestore.batch();
 
-    final unread = await _firestore
+    // Always reset the counter first — single-field update, no index needed.
+    await _firestore
         .collection('conversations')
         .doc(conversationId)
-        .collection('messages')
-        .where('receiverId', isEqualTo: userId)
-        .where('isRead', isEqualTo: false)
-        .get();
+        .update({'unreadCount': 0});
 
-    for (final doc in unread.docs) {
-      batch.update(doc.reference, {'isRead': true});
+    // Mark individual messages as read (best-effort — requires composite index).
+    try {
+      final unread = await _firestore
+          .collection('conversations')
+          .doc(conversationId)
+          .collection('messages')
+          .where('receiverId', isEqualTo: userId)
+          .where('isRead', isEqualTo: false)
+          .get();
+
+      if (unread.docs.isNotEmpty) {
+        final batch = _firestore.batch();
+        for (final doc in unread.docs) {
+          batch.update(doc.reference, {'isRead': true});
+        }
+        await batch.commit();
+      }
+    } catch (_) {
+      // Composite index may be missing — unreadCount already reset above.
     }
-
-    batch.update(
-      _firestore.collection('conversations').doc(conversationId),
-      {'unreadCount': 0},
-    );
-
-    await batch.commit();
   }
 
   @override
@@ -169,13 +176,17 @@ class FirebaseMessageRepository implements MessageRepository {
       if (convo.participantIds.contains(otherUserId)) return convo;
     }
 
-    // Fetch both display names so the conversation tile can show real names.
+    // Fetch both display names and photo URLs for the conversation tile.
     final currentUserName = _auth.currentUser?.displayName ?? '';
+    final currentUserPhoto = _auth.currentUser?.photoURL ?? '';
     String otherUserName = '';
+    String otherUserPhoto = '';
     try {
       final otherDoc =
           await _firestore.collection('users').doc(otherUserId).get();
-      otherUserName = otherDoc.data()?['displayName'] as String? ?? '';
+      final data = otherDoc.data();
+      otherUserName = data?['displayName'] as String? ?? '';
+      otherUserPhoto = data?['photoUrl'] as String? ?? '';
     } catch (_) {}
 
     final conversationId = _firestore.collection('conversations').doc().id;
@@ -186,6 +197,10 @@ class FirebaseMessageRepository implements MessageRepository {
       participantNames: {
         userId: currentUserName,
         otherUserId: otherUserName,
+      },
+      participantPhotoUrls: {
+        if (currentUserPhoto.isNotEmpty) userId: currentUserPhoto,
+        if (otherUserPhoto.isNotEmpty) otherUserId: otherUserPhoto,
       },
       lastMessage: null,
       unreadCount: 0,
@@ -227,6 +242,47 @@ class FirebaseMessageRepository implements MessageRepository {
       hasMore: hasMore,
       cursor: docs.isNotEmpty ? docs.last : null,
     );
+  }
+
+  /// One-time migration: backfill `participantPhotoUrls` on every conversation
+  /// document that doesn't already have it.
+  @override
+  Future<void> migrateParticipantPhotoUrls() async {
+    final snap = await _firestore.collection('conversations').get();
+
+    // Fetch all unique participant UIDs in one pass to minimise Firestore reads.
+    final allUids = <String>{};
+    for (final doc in snap.docs) {
+      final ids = List<String>.from(doc.data()['participantIds'] as List? ?? []);
+      allUids.addAll(ids);
+    }
+
+    // Look up photoUrl for every unique user.
+    final photoMap = <String, String>{};
+    await Future.wait(allUids.map((uid) async {
+      try {
+        final userDoc = await _firestore.collection('users').doc(uid).get();
+        final url = userDoc.data()?['photoUrl'] as String?;
+        if (url != null && url.isNotEmpty) photoMap[uid] = url;
+      } catch (_) {}
+    }));
+
+    // Update only docs that are missing the field or have an empty map.
+    final batch = _firestore.batch();
+    var updates = 0;
+    for (final doc in snap.docs) {
+      final existing = doc.data()['participantPhotoUrls'];
+      if (existing is Map && existing.isNotEmpty) continue;
+
+      final ids = List<String>.from(doc.data()['participantIds'] as List? ?? []);
+      final urls = {for (final uid in ids) if (photoMap.containsKey(uid)) uid: photoMap[uid]!};
+      if (urls.isEmpty) continue;
+
+      batch.update(doc.reference, {'participantPhotoUrls': urls});
+      updates++;
+    }
+
+    if (updates > 0) await batch.commit();
   }
 
   @override

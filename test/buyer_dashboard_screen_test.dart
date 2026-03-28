@@ -54,6 +54,15 @@ class _FakeUserRepository implements UserRepository {
       String userId, Map<String, dynamic> updates) async {}
   @override
   Stream<UserProfile?> watchUserProfile(String userId) => Stream.value(null);
+
+  @override
+  Future<void> saveListing(String userId, String listingId) async {}
+
+  @override
+  Future<void> unsaveListing(String userId, String listingId) async {}
+
+  @override
+  Future<List<String>> getSavedListings(String userId) async => [];
 }
 
 AuthBloc _makeAuthBloc() => AuthBloc(

@@ -5,11 +5,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brewmaster/presentation/blocs/voice/voice_bloc.dart';
 
-// Helper: wraps the screen with a fresh BLoC
+// Helper: wraps the screen with a BLoC.
+// Uses BlocProvider.value for pre-created blocs so the BlocBuilder
+// subscribes immediately and state updates flush in a single pump().
 Widget _buildScreen({VoiceAssistantBloc? bloc}) {
+  final b = bloc ?? VoiceAssistantBloc();
   return MaterialApp(
-    home: BlocProvider<VoiceAssistantBloc>(
-      create: (_) => bloc ?? VoiceAssistantBloc(),
+    home: BlocProvider<VoiceAssistantBloc>.value(
+      value: b,
       child: const _VoiceAssistantViewExposed(),
     ),
   );
@@ -173,6 +176,7 @@ void main() {
 
       bloc.add(const VoiceListenToggled());
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('Listening...'), findsOneWidget);
       bloc.close();
@@ -187,6 +191,7 @@ void main() {
 
       bloc.add(const VoiceTranscriptReceived('What is the best altitude?'));
       await tester.pump();
+      await tester.pump(); // second pump flushes BLoC stream → setState → rebuild
 
       expect(find.byKey(const Key('transcript_bubble')), findsOneWidget);
       expect(find.text('What is the best altitude?'), findsOneWidget);
@@ -202,6 +207,7 @@ void main() {
 
       bloc.add(const VoiceResponseReceived('1800m is ideal for specialty.'));
       await tester.pump();
+      await tester.pump(); // second pump flushes BLoC stream → setState → rebuild
 
       expect(find.byKey(const Key('response_bubble')), findsOneWidget);
       expect(find.text('1800m is ideal for specialty.'), findsOneWidget);

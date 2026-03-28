@@ -16,6 +16,9 @@ import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
 import 'package:brewmaster/presentation/blocs/profile/profile_bloc.dart';
 import 'package:brewmaster/presentation/blocs/payment/payment_bloc.dart';
 import 'package:brewmaster/main.dart';
+import 'package:brewmaster/config/theme_notifier.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // ---------------------------------------------------------------------------
 // Fake repositories
@@ -43,6 +46,15 @@ class _FakeUserRepository implements UserRepository {
   @override Future<void> createUserProfile(UserProfile p) async {}
   @override Future<void> updateUserProfile(String id, Map<String, dynamic> u) async {}
   @override Stream<UserProfile?> watchUserProfile(String id) => const Stream.empty();
+
+  @override
+  Future<void> saveListing(String userId, String listingId) async {}
+
+  @override
+  Future<void> unsaveListing(String userId, String listingId) async {}
+
+  @override
+  Future<List<String>> getSavedListings(String userId) async => [];
 }
 
 class _FakePaymentRepository implements PaymentRepository {
@@ -53,22 +65,27 @@ class _FakePaymentRepository implements PaymentRepository {
 // Helpers
 // ---------------------------------------------------------------------------
 
+ThemeNotifier? _themeNotifier;
+
 Widget _buildApp({fb.User? user, UserProfile? profile}) {
   final authRepo = _FakeAuthRepository(user);
   final userRepo = _FakeUserRepository(profile);
   final paymentRepo = _FakePaymentRepository();
-  return MultiBlocProvider(
-    providers: [
-      BlocProvider(
-          create: (_) => AuthBloc(
-                authRepository: authRepo,
-                userRepository: userRepo,
-              )),
-      BlocProvider(create: (_) => ProfileBloc(userRepository: userRepo)),
-      BlocProvider(
-          create: (_) => PaymentBloc(paymentRepository: paymentRepo)),
-    ],
-    child: const BrewMasterApp(),
+  return ChangeNotifierProvider<ThemeNotifier>.value(
+    value: _themeNotifier!,
+    child: MultiBlocProvider(
+      providers: [
+        BlocProvider(
+            create: (_) => AuthBloc(
+                  authRepository: authRepo,
+                  userRepository: userRepo,
+                )),
+        BlocProvider(create: (_) => ProfileBloc(userRepository: userRepo)),
+        BlocProvider(
+            create: (_) => PaymentBloc(paymentRepository: paymentRepo)),
+      ],
+      child: const BrewMasterApp(),
+    ),
   );
 }
 
@@ -77,6 +94,11 @@ Widget _buildApp({fb.User? user, UserProfile? profile}) {
 // ---------------------------------------------------------------------------
 
 void main() {
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
+    _themeNotifier = await ThemeNotifier.load();
+  });
+
   group('Task 6.1 – MaterialApp uses Material 3 (useMaterial3: true)', () {
     testWidgets('BrewMasterApp theme has useMaterial3 set to true',
         (tester) async {

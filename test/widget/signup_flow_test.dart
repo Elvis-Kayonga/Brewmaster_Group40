@@ -97,6 +97,15 @@ class _FakeUserRepository implements UserRepository {
   @override
   Stream<UserProfile?> watchUserProfile(String userId) =>
       const Stream.empty();
+
+  @override
+  Future<void> saveListing(String userId, String listingId) async {}
+
+  @override
+  Future<void> unsaveListing(String userId, String listingId) async {}
+
+  @override
+  Future<List<String>> getSavedListings(String userId) async => [];
 }
 
 // ---------------------------------------------------------------------------

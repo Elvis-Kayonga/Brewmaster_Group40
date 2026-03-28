@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
 import 'package:brewmaster/firebase_options.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brewmaster/app_router.dart';
 import 'package:brewmaster/config/localization/app_localizations.dart';
+import 'package:brewmaster/config/locale_notifier.dart';
+import 'package:brewmaster/config/theme.dart';
+import 'package:brewmaster/config/theme_notifier.dart';
 import 'package:brewmaster/data/repositories/firebase_auth_repository.dart';
 import 'package:brewmaster/data/repositories/firebase_user_repository.dart';
 import 'package:brewmaster/data/repositories/firebase_payment_repository.dart';
@@ -33,6 +39,7 @@ import 'package:brewmaster/presentation/screens/auth/auth_gate.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await dotenv.load(fileName: '.env');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Enable Firestore offline persistence with a 40 MB cap.
@@ -41,6 +48,9 @@ Future<void> main() async {
     persistenceEnabled: true,
     cacheSizeBytes: 40 * 1024 * 1024, // 40 MB
   );
+
+  final themeNotifier = await ThemeNotifier.load();
+  final localeNotifier = await LocaleNotifier.load();
 
   // Build repositories once — shared across all BLoCs
   final authRepository = FirebaseAuthRepository();
@@ -53,61 +63,91 @@ Future<void> main() async {
   final messageRepository = FirebaseMessageRepository(
     notificationRepository: notificationRepository,
   );
+
   final offlineSyncRepository = FirebaseOfflineSyncRepository();
   final verificationRepository = FirebaseVerificationRepository();
   final dashboardRepository = FirebaseDashboardRepository();
   final marketPriceRepository = FirebaseMarketPriceRepository();
 
   runApp(
-    MultiBlocProvider(
+    MultiProvider(
       providers: [
-        BlocProvider<AuthBloc>(
-          create: (_) => AuthBloc(
-            authRepository: authRepository,
-            userRepository: userRepository,
-          ),
-        ),
-        BlocProvider<ProfileBloc>(
-          create: (_) => ProfileBloc(userRepository: userRepository),
-        ),
-        BlocProvider<PaymentBloc>(
-          create: (_) => PaymentBloc(paymentRepository: paymentRepository),
-        ),
-        BlocProvider<ListingBloc>(
-          create: (_) => ListingBloc(repository: listingRepository),
-        ),
-        BlocProvider<MessagingBloc>(
-          create: (_) => MessagingBloc(repository: messageRepository),
-        ),
-        BlocProvider<NotificationBloc>(
-          create: (_) =>
-              NotificationBloc(repository: notificationRepository),
-        ),
-        BlocProvider<ConnectivityBloc>(
-          create: (_) =>
-              ConnectivityBloc(repository: offlineSyncRepository),
-        ),
-        BlocProvider<VerificationBloc>(
-          create: (_) =>
-              VerificationBloc(repository: verificationRepository),
-        ),
-        BlocProvider<DashboardBloc>(
-          create: (_) => DashboardBloc(repository: dashboardRepository),
-        ),
-        BlocProvider<MarketPriceBloc>(
-          create: (_) =>
-              MarketPriceBloc(repository: marketPriceRepository),
-        ),
-        BlocProvider<SavedLotsBloc>(
-          create: (_) => SavedLotsBloc(),
-        ),
-        BlocProvider<VoiceAssistantBloc>(
-          create: (_) => VoiceAssistantBloc(),
-        ),
+        ChangeNotifierProvider<ThemeNotifier>.value(value: themeNotifier),
+        ChangeNotifierProvider<LocaleNotifier>.value(value: localeNotifier),
       ],
-      child: const BrewMasterApp(),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>(
+            create: (_) => AuthBloc(
+              authRepository: authRepository,
+              userRepository: userRepository,
+            ),
+          ),
+          BlocProvider<ProfileBloc>(
+            create: (_) => ProfileBloc(userRepository: userRepository),
+          ),
+          BlocProvider<PaymentBloc>(
+            create: (_) => PaymentBloc(paymentRepository: paymentRepository),
+          ),
+          BlocProvider<ListingBloc>(
+            create: (_) => ListingBloc(repository: listingRepository),
+          ),
+          BlocProvider<MessagingBloc>(
+            create: (_) => MessagingBloc(repository: messageRepository),
+          ),
+          BlocProvider<NotificationBloc>(
+            create: (_) =>
+                NotificationBloc(repository: notificationRepository),
+          ),
+          BlocProvider<ConnectivityBloc>(
+            create: (_) =>
+                ConnectivityBloc(repository: offlineSyncRepository),
+          ),
+          BlocProvider<VerificationBloc>(
+            create: (_) =>
+                VerificationBloc(repository: verificationRepository),
+          ),
+          BlocProvider<DashboardBloc>(
+            create: (_) => DashboardBloc(repository: dashboardRepository),
+          ),
+          BlocProvider<MarketPriceBloc>(
+            create: (_) =>
+                MarketPriceBloc(repository: marketPriceRepository),
+          ),
+          BlocProvider<SavedLotsBloc>(
+            create: (ctx) => SavedLotsBloc(
+              userRepository: userRepository,
+              userId: FirebaseAuth.instance.currentUser?.uid,
+            ),
+          ),
+          BlocProvider<VoiceAssistantBloc>(
+            create: (_) => VoiceAssistantBloc(),
+          ),
+        ],
+        child: const BrewMasterApp(),
+      ),
     ),
   );
+}
+
+/// Fallback delegate that supplies English [MaterialLocalizations] for any
+/// locale not covered by [GlobalMaterialLocalizations] (e.g. Kinyarwanda 'rw').
+/// It must be placed *after* GlobalMaterialLocalizations in the delegate list so
+/// that supported locales (en, sw, …) are handled by the real implementation
+/// first, and only truly unsupported ones fall through here.
+class _FallbackMaterialLocalizationsDelegate
+    extends LocalizationsDelegate<MaterialLocalizations> {
+  const _FallbackMaterialLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) => true;
+
+  @override
+  Future<MaterialLocalizations> load(Locale locale) =>
+      GlobalMaterialLocalizations.delegate.load(const Locale('en'));
+
+  @override
+  bool shouldReload(_FallbackMaterialLocalizationsDelegate old) => false;
 }
 
 class BrewMasterApp extends StatelessWidget {
@@ -115,18 +155,22 @@ class BrewMasterApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeNotifier = context.watch<ThemeNotifier>();
+    final localeNotifier = context.watch<LocaleNotifier>();
     return MaterialApp(
       title: 'BrewMaster',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeNotifier.mode,
+      locale: localeNotifier.locale,
       // Localization
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
+        // Must be last — catches locales unsupported by Global* delegates (e.g. 'rw')
+        _FallbackMaterialLocalizationsDelegate(),
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       // Named routes

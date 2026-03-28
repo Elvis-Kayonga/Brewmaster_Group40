@@ -40,7 +40,7 @@ class MessageBubble extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isOutgoing
                       ? AppTheme.primaryColor
-                      : Colors.grey.withValues(alpha: 0.2),
+                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(16),
                     topRight: const Radius.circular(16),
@@ -48,7 +48,7 @@ class MessageBubble extends StatelessWidget {
                     bottomRight: Radius.circular(isOutgoing ? 4 : 16),
                   ),
                 ),
-                child: _buildMessageContent(),
+                child: _buildMessageContent(context),
               ),
               Padding(
                 padding: const EdgeInsets.only(top: 4, left: 8, right: 8),
@@ -57,14 +57,17 @@ class MessageBubble extends StatelessWidget {
                   children: [
                     Text(
                       _formatTime(message.createdAt),
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                      ),
                     ),
                     if (isOutgoing) ...[
                       const SizedBox(width: 4),
                       Icon(
                         message.isRead ? Icons.done_all : Icons.done,
                         size: 12,
-                        color: Colors.grey,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ],
                   ],
@@ -77,7 +80,7 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildMessageContent() {
+  Widget _buildMessageContent(BuildContext context) {
     if (message.messageType == MessageType.listingReference &&
         message.listingId != null) {
       return _ListingReferenceContent(
@@ -90,7 +93,9 @@ class MessageBubble extends StatelessWidget {
     return Text(
       message.content,
       style: TextStyle(
-        color: isOutgoing ? Colors.white : Colors.black,
+        color: isOutgoing
+            ? Colors.white
+            : Theme.of(context).colorScheme.onSurface,
         fontSize: 16,
       ),
     );
@@ -121,7 +126,9 @@ class _ListingReferenceContent extends StatelessWidget {
         Text(
           content,
           style: TextStyle(
-            color: isOutgoing ? Colors.white : Colors.black,
+            color: isOutgoing
+                ? Colors.white
+                : Theme.of(context).colorScheme.onSurface,
             fontSize: 16,
           ),
         ),
@@ -129,7 +136,9 @@ class _ListingReferenceContent extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: isOutgoing ? Colors.white.withValues(alpha: 0.2) : Colors.grey,
+            color: isOutgoing
+                ? Colors.white.withValues(alpha: 0.2)
+                : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -140,7 +149,9 @@ class _ListingReferenceContent extends StatelessWidget {
               Text(
                 'Listing #${listingId.substring(0, 8)}',
                 style: TextStyle(
-                  color: isOutgoing ? Colors.white : Colors.black,
+                  color: isOutgoing
+                      ? Colors.white
+                      : Theme.of(context).colorScheme.onSurface,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -194,7 +205,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.grey.withValues(alpha: 0.2),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -250,7 +261,7 @@ class _DotAnimation extends StatelessWidget {
             width: 8,
             height: 8,
             decoration: BoxDecoration(
-              color: Colors.grey,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
               shape: BoxShape.circle,
             ),
           ),

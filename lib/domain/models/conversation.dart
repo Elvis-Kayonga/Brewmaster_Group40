@@ -15,6 +15,9 @@ class Conversation {
   /// Map of userId → displayName for quick rendering (ERD: participantNames).
   final Map<String, String> participantNames;
 
+  /// Map of userId → photoUrl for avatar rendering. May be absent for older conversations.
+  final Map<String, String> participantPhotoUrls;
+
   /// Related listing, if the conversation was started from a listing (ERD: listingId).
   final String? listingId;
 
@@ -35,6 +38,7 @@ class Conversation {
     required this.conversationId,
     required this.participantIds,
     this.participantNames = const {},
+    this.participantPhotoUrls = const {},
     this.listingId,
     this.lastMessage,
     required this.unreadCount,
@@ -47,7 +51,11 @@ class Conversation {
     return Conversation(
       conversationId: json['conversationId'] as String,
       participantIds: List<String>.from(json['participantIds'] as List),
-      participantNames: (json['participantNames'] as Map<String, dynamic>? ?? {})
+      participantNames: Map<String, dynamic>.from(
+              json['participantNames'] as Map? ?? {})
+          .map((k, v) => MapEntry(k, v as String)),
+      participantPhotoUrls: Map<String, dynamic>.from(
+              json['participantPhotoUrls'] as Map? ?? {})
           .map((k, v) => MapEntry(k, v as String)),
       listingId: json['listingId'] as String?,
       lastMessage: json['lastMessage'] != null
@@ -65,6 +73,7 @@ class Conversation {
       'conversationId': conversationId,
       'participantIds': participantIds,
       'participantNames': participantNames,
+      'participantPhotoUrls': participantPhotoUrls,
       'listingId': listingId,
       'lastMessage': lastMessage?.toJson(),
       // ERD also stores these as flat fields for quick reads
@@ -81,6 +90,7 @@ class Conversation {
   /// Create a copy of the conversation with updated fields
   Conversation copyWith({
     Map<String, String>? participantNames,
+    Map<String, String>? participantPhotoUrls,
     String? listingId,
     Message? lastMessage,
     int? unreadCount,
@@ -90,6 +100,7 @@ class Conversation {
       conversationId: conversationId,
       participantIds: participantIds,
       participantNames: participantNames ?? this.participantNames,
+      participantPhotoUrls: participantPhotoUrls ?? this.participantPhotoUrls,
       listingId: listingId ?? this.listingId,
       lastMessage: lastMessage ?? this.lastMessage,
       unreadCount: unreadCount ?? this.unreadCount,

@@ -61,7 +61,6 @@ class ProfileAvatarButton extends StatelessWidget {
                           label: Text('${savedState.itemCount}'),
                           child: const Icon(Icons.favorite_border),
                         ),
-                        color: AppTheme.primaryDark,
                       );
                     },
                   ),

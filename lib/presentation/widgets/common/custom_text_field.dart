@@ -166,7 +166,7 @@ class CustomTextField extends StatelessWidget {
         helperText: helperText,
         errorText: errorText,
         filled: true,
-        fillColor: fillColor ?? AppTheme.surfaceColor,
+        fillColor: fillColor ?? Theme.of(context).colorScheme.surface,
         contentPadding:
             contentPadding ??
             const EdgeInsets.symmetric(

@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
+import '../../../config/localization/app_localizations.dart';
 import '../../../config/theme.dart';
 import '../../../domain/models/conversation.dart';
 import '../../widgets/common/profile_avatar_button.dart';
@@ -87,13 +88,10 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.backgroundColor,
-        elevation: 0,
+                elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: AppTheme.primaryDark),
+          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -104,10 +102,9 @@ class _ChatScreenState extends State<ChatScreen> {
             );
             final name =
                 widget.conversation.participantNames[otherId]?.trim() ?? '';
-            return name.isNotEmpty ? name : 'Conversation';
+            return name.isNotEmpty ? name : AppLocalizations.of(context).conversation;
           }(),
           style: const TextStyle(
-            color: AppTheme.primaryDark,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -116,6 +113,7 @@ class _ChatScreenState extends State<ChatScreen> {
           const ProfileAvatarButton(),
         ],
       ),
+      resizeToAvoidBottomInset: true,
       body: BlocBuilder<MessagingBloc, MessagingState>(
         builder: (context, state) {
           if (state is MessagingLoading || state is MessagingInitial) {
@@ -134,53 +132,18 @@ class _ChatScreenState extends State<ChatScreen> {
               state is MessagesLoaded ? state.messages : <Message>[];
 
           return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Header ────────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Direct\nMessaging',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryDark,
-                        height: 1.15,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'LIVE CHAT',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.8,
-                        color: AppTheme.primaryColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               // ── Messages or empty state ───────────────────────────
               Expanded(
                 child: messages.isEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: AppTheme.surfaceColor,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Text(
-                            '"Ask about the coffee variety, processing method, altitude, or arrange a shipment directly with the producer."',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontStyle: FontStyle.italic,
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: Text(
+                            AppLocalizations.of(context).sayHi,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 14,
                               color: AppTheme.textSecondary,
                               height: 1.6,
                             ),
@@ -190,8 +153,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     : ListView.builder(
                         controller: _scrollController,
                         reverse: true,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                         itemCount: messages.length,
                         itemBuilder: (context, index) => _MessageBubble(
                           message: messages[index],
@@ -237,13 +199,13 @@ class _MessageBubble extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: isOutgoing ? AppTheme.primaryDark : AppTheme.surfaceColor,
+                color: isOutgoing ? AppTheme.primaryDark : Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
                 message.content,
                 style: TextStyle(
-                  color: isOutgoing ? Colors.white : AppTheme.textPrimary,
+                  color: isOutgoing ? Colors.white : Theme.of(context).colorScheme.onSurface,
                   fontSize: 15,
                   height: 1.4,
                 ),
@@ -313,7 +275,7 @@ class _EliasInputFieldState extends State<_EliasInputField> {
   Future<void> _toggleListening() async {
     if (!_speechAvailable) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Speech recognition not available on this device.')),
+        SnackBar(content: Text(AppLocalizations.of(context).speechNotAvailable)),
       );
       return;
     }
@@ -343,12 +305,11 @@ class _EliasInputFieldState extends State<_EliasInputField> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.fromLTRB(
-          16, 12, 16, 12 + MediaQuery.of(context).viewInsets.bottom),
-      color: AppTheme.backgroundColor,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: Container(
         decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(28),
         ),
         child: Row(
@@ -364,7 +325,7 @@ class _EliasInputFieldState extends State<_EliasInputField> {
                       : AppTheme.textSecondary,
                 ),
                 onPressed: _toggleListening,
-                tooltip: _isListening ? 'Stop listening' : 'Speak',
+                tooltip: _isListening ? AppLocalizations.of(context).stopListening : AppLocalizations.of(context).speak,
               ),
             ),
             Expanded(
@@ -373,7 +334,7 @@ class _EliasInputFieldState extends State<_EliasInputField> {
                 maxLines: null,
                 minLines: 1,
                 decoration: InputDecoration(
-                  hintText: _isListening ? 'Listening...' : 'Type a message...',
+                  hintText: _isListening ? AppLocalizations.of(context).voiceListening : AppLocalizations.of(context).typeAMessage,
                   hintStyle: TextStyle(
                     fontSize: 14,
                     color: _isListening

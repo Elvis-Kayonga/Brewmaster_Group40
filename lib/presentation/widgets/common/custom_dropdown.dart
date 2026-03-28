@@ -107,7 +107,7 @@ class CustomDropdown<T> extends StatelessWidget {
         helperText: helperText,
         errorText: errorText,
         filled: true,
-        fillColor: fillColor ?? AppTheme.surfaceColor,
+        fillColor: fillColor ?? Theme.of(context).colorScheme.surface,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppTheme.padding16,
           vertical: AppTheme.padding12,
@@ -153,7 +153,7 @@ class CustomDropdown<T> extends StatelessWidget {
         helperStyle: AppTheme.caption.copyWith(color: AppTheme.textSecondary),
       ),
       style: AppTheme.body,
-      dropdownColor: AppTheme.surfaceColor,
+      dropdownColor: Theme.of(context).colorScheme.surface,
       menuMaxHeight: menuMaxHeight,
       icon: const Icon(
         Icons.keyboard_arrow_down,
@@ -337,7 +337,7 @@ class _SearchableDropdownState<T> extends State<SearchableDropdown<T>> {
             child: Container(
               constraints: const BoxConstraints(maxHeight: 300),
               decoration: BoxDecoration(
-                color: AppTheme.surfaceColor,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: AppTheme.borderRadiusMediumAll,
                 border: Border.all(color: AppTheme.textHint),
               ),
@@ -452,7 +452,7 @@ class _SearchableDropdownState<T> extends State<SearchableDropdown<T>> {
             hintText: widget.hintText,
             errorText: widget.errorText,
             filled: true,
-            fillColor: AppTheme.surfaceColor,
+            fillColor: Theme.of(context).colorScheme.surface,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: AppTheme.padding16,
               vertical: AppTheme.padding12,

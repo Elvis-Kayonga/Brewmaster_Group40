@@ -1,21 +1,22 @@
 // Feature: brewmaster-marketplace
 // Form screen for creating and editing coffee listings.
-// location field uses "lat,lng" string format matching the canonical model.
+// Location split into address (human-readable) and lat/lng (for map).
 //
 // Requirements: 2.1, 2.2, 2.7, 16.1 (Clean Architecture)
 // Developer: Developer 2
 
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../config/localization/app_localizations.dart';
 import '../../../config/theme.dart';
 import '../../../domain/models/coffee_listing.dart';
 import '../../../domain/models/enums.dart';
 import '../../blocs/listing/listing_bloc.dart';
+import '../../blocs/profile/profile_bloc.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_dropdown.dart';
 import '../../widgets/common/custom_text_field.dart';
@@ -39,7 +40,11 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
   late TextEditingController _altitudeController;
   late TextEditingController _qualityScoreController;
   late TextEditingController _descriptionController;
-  late TextEditingController _locationController;
+  /// Human-readable address (e.g. "Kigali, Rwanda") — shown on listing cards.
+  late TextEditingController _locationAddressController;
+  /// Auto-filled from geocoding; stored as "lat,lng" for map pins.
+  late TextEditingController _latController;
+  late TextEditingController _lngController;
 
   ProcessingMethod? _selectedMethod;
   DateTime? _harvestDate;
@@ -62,10 +67,32 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
         TextEditingController(text: l?.qualityScore.toString() ?? '');
     _descriptionController =
         TextEditingController(text: l?.description ?? '');
-    _locationController =
-        TextEditingController(text: l?.location ?? '');
+    _locationAddressController =
+        TextEditingController(text: l?.locationAddress ?? '');
+
+    // Pre-populate lat/lng from existing location string if editing
+    final coords = _parseCoordsFromLocation(l?.location ?? '');
+    _latController = TextEditingController(
+        text: coords != null ? coords.$1.toStringAsFixed(6) : '');
+    _lngController = TextEditingController(
+        text: coords != null ? coords.$2.toStringAsFixed(6) : '');
+
     _selectedMethod = l?.processingMethod;
     _harvestDate = l?.harvestDate;
+  }
+
+  /// Parse a "lat,lng" or JSON location string into (lat, lng). Returns null
+  /// if the string isn't recognisable as coordinates.
+  (double, double)? _parseCoordsFromLocation(String raw) {
+    if (raw.isEmpty) return null;
+    // Try comma-separated
+    final parts = raw.split(',');
+    if (parts.length == 2) {
+      final lat = double.tryParse(parts[0].trim());
+      final lng = double.tryParse(parts[1].trim());
+      if (lat != null && lng != null) return (lat, lng);
+    }
+    return null;
   }
 
   @override
@@ -76,31 +103,30 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
     _altitudeController.dispose();
     _qualityScoreController.dispose();
     _descriptionController.dispose();
-    _locationController.dispose();
+    _locationAddressController.dispose();
+    _latController.dispose();
+    _lngController.dispose();
     super.dispose();
   }
 
   Future<void> _geocodeLocation() async {
-    final address = _locationController.text.trim();
+    final address = _locationAddressController.text.trim();
     if (address.isEmpty) return;
     setState(() => _isGeocoding = true);
     try {
       final results = await locationFromAddress(address);
       if (results.isNotEmpty && mounted) {
         final loc = results.first;
-        final locationJson = jsonEncode({
-          'latitude': loc.latitude,
-          'longitude': loc.longitude,
-        });
         setState(() {
-          _locationController.text = locationJson;
+          _latController.text = loc.latitude.toStringAsFixed(6);
+          _lngController.text = loc.longitude.toStringAsFixed(6);
         });
       }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Could not find coordinates for that address.')),
+          SnackBar(
+              content: Text(AppLocalizations.of(context).geocodeFailed)),
         );
       }
     } finally {
@@ -116,23 +142,40 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
   }
 
   void _submitForm() {
+    final address = _locationAddressController.text.trim();
     if (_varietyController.text.isEmpty ||
         _quantityController.text.isEmpty ||
         _priceController.text.isEmpty ||
         _altitudeController.text.isEmpty ||
         _qualityScoreController.text.isEmpty ||
         _selectedMethod == null ||
-        _harvestDate == null) {
+        _harvestDate == null ||
+        address.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all required fields')),
+        SnackBar(
+            content: Text(AppLocalizations.of(context).fillRequiredFields)),
       );
       return;
     }
 
+    // Build the coordinate string for the map ("lat,lng").
+    // If the farmer hasn't geocoded yet, we use the address as a fallback
+    // (the map view already handles non-coordinate strings gracefully).
+    final lat = _latController.text.trim();
+    final lng = _lngController.text.trim();
+    final locationCoords =
+        lat.isNotEmpty && lng.isNotEmpty ? '$lat,$lng' : address;
+
     final now = DateTime.now();
+    final profileState = context.read<ProfileBloc>().state;
+    final farmerName = profileState is ProfileLoaded
+        ? profileState.profile.displayName
+        : widget.listing?.farmerName;
+
     final listing = CoffeeListing(
       listingId: widget.listing?.listingId ?? '',
       farmerId: widget.listing?.farmerId ?? widget.farmerId,
+      farmerName: farmerName,
       variety: _varietyController.text,
       quantity: double.parse(_quantityController.text),
       pricePerKg: double.parse(_priceController.text),
@@ -142,7 +185,8 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
       qualityScore: double.parse(_qualityScoreController.text),
       description: _descriptionController.text,
       images: widget.listing?.images ?? [],
-      location: _locationController.text,
+      location: locationCoords,
+      locationAddress: address,
       status: widget.listing?.status ?? ListingStatus.active,
       createdAt: widget.listing?.createdAt ?? now,
       updatedAt: now,
@@ -166,10 +210,11 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.listing != null;
+    final loc = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEdit ? 'Edit Listing' : 'Create Listing'),
+        title: Text(isEdit ? loc.editListing : loc.createListing),
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -178,20 +223,20 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CustomTextField(
-              labelText: 'Variety',
+              labelText: loc.variety,
               controller: _varietyController,
               hintText: 'e.g., Bourbon, Typica',
             ),
             const SizedBox(height: AppTheme.margin16),
             CustomTextField(
-              labelText: 'Quantity (kg)',
+              labelText: loc.quantityKg,
               controller: _quantityController,
               hintText: 'Enter quantity',
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: AppTheme.margin16),
             CustomTextField(
-              labelText: 'Price per kg (USD)',
+              labelText: loc.pricePerKgUsd,
               controller: _priceController,
               hintText: 'Enter price',
               keyboardType: TextInputType.number,
@@ -208,48 +253,50 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
             ),
             const SizedBox(height: AppTheme.margin16),
             CustomTextField(
-              labelText: 'Altitude (m)',
+              labelText: loc.altitudeM,
               controller: _altitudeController,
               hintText: 'Enter altitude',
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: AppTheme.margin16),
             DatePickerWidget(
-              labelText: 'Harvest Date',
+              labelText: loc.harvestDate,
               selectedDate: _harvestDate,
               onDateChanged: (date) =>
                   setState(() => _harvestDate = date),
             ),
             const SizedBox(height: AppTheme.margin16),
             CustomTextField(
-              labelText: 'Quality Score (0-100)',
+              labelText: loc.qualityScore0100,
               controller: _qualityScoreController,
               hintText: 'Enter score',
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: AppTheme.margin16),
             CustomTextField(
-              labelText: 'Description',
+              labelText: loc.description,
               controller: _descriptionController,
-              hintText: 'Describe your coffee',
+              hintText: loc.describeYourCoffee,
               maxLines: 3,
             ),
             const SizedBox(height: AppTheme.margin16),
+
+            // ── Location ─────────────────────────────────────────────────
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: CustomTextField(
-                    labelText: 'Location',
-                    controller: _locationController,
-                    hintText: 'Type address or lat,lng',
+                    labelText: loc.farmLocationAddress,
+                    controller: _locationAddressController,
+                    hintText: 'e.g., Kigali, Rwanda',
                   ),
                 ),
                 const SizedBox(width: 8),
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Tooltip(
-                    message: 'Convert address to coordinates',
+                    message: loc.geocodeTooltip,
                     child: _isGeocoding
                         ? const SizedBox(
                             width: 48,
@@ -270,9 +317,35 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            // Lat/Lng read-only display — auto-filled by geocode button
+            Row(
+              children: [
+                Expanded(
+                  child: CustomTextField(
+                    labelText: loc.latitude,
+                    controller: _latController,
+                    hintText: loc.autoFilled,
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true, signed: true),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: CustomTextField(
+                    labelText: loc.longitude,
+                    controller: _lngController,
+                    hintText: loc.autoFilled,
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true, signed: true),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: AppTheme.margin16),
+
             CustomButton(
-              text: 'Pick Images',
+              text: loc.pickImages,
               onPressed: _pickImages,
               type: ButtonType.outlined,
             ),
@@ -280,12 +353,12 @@ class _ListingFormScreenState extends State<ListingFormScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: AppTheme.padding8),
                 child: Text(
-                    '${_selectedImages.length} image(s) selected'),
+                    '${_selectedImages.length} ${loc.imagesSelected}'),
               ),
             const SizedBox(height: AppTheme.margin24),
             BlocBuilder<ListingBloc, ListingState>(
               builder: (context, state) => CustomButton(
-                text: isEdit ? 'Update Listing' : 'Create Listing',
+                text: isEdit ? loc.updateListing : loc.createListing,
                 onPressed: state is ListingLoading ? null : _submitForm,
                 isLoading: state is ListingLoading,
               ),

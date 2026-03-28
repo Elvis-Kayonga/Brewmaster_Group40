@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../config/localization/app_localizations.dart';
 import '../../../config/theme.dart';
 import '../../../domain/models/saved_lot.dart';
 import '../../blocs/auth/auth_bloc.dart';
@@ -15,14 +16,11 @@ class SavedLotsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.backgroundColor,
-        elevation: 0,
-        title: const Text(
-          'Saved Lots',
-          style: TextStyle(
-            color: AppTheme.primaryDark,
+                elevation: 0,
+        title: Text(
+          AppLocalizations.of(context).savedLotsTitle,
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -35,9 +33,9 @@ class SavedLotsScreen extends StatelessWidget {
                 onPressed: () => context
                     .read<SavedLotsBloc>()
                     .add(const SavedLotsCleared()),
-                child: const Text(
-                  'Clear All',
-                  style: TextStyle(
+                child: Text(
+                  AppLocalizations.of(context).clearAll,
+                  style: const TextStyle(
                     color: AppTheme.errorColor,
                     fontWeight: FontWeight.w600,
                   ),
@@ -49,7 +47,8 @@ class SavedLotsScreen extends StatelessWidget {
       ),
       body: BlocListener<MessagingBloc, MessagingState>(
         listener: (context, state) {
-          if (state is ConversationReady) {
+          if (state is ConversationReady &&
+              ModalRoute.of(context)?.isCurrent == true) {
             Navigator.of(context).push(MaterialPageRoute(
               builder: (_) => ChatScreen(conversation: state.conversation),
             ));
@@ -84,18 +83,17 @@ class _EmptyState extends StatelessWidget {
         children: [
           const Icon(Icons.favorite_border, size: 72, color: AppTheme.textHint),
           const SizedBox(height: 16),
-          const Text(
-            'No saved lots yet',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context).noSavedLots,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: AppTheme.primaryDark,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Tap the heart on any listing in the Shop to save it here.',
-            style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+          Text(
+            AppLocalizations.of(context).noSavedLotsHint,
+            style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
             textAlign: TextAlign.center,
           ),
         ],
@@ -115,7 +113,7 @@ class _SavedLotTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -132,9 +130,9 @@ class _SavedLotTile extends StatelessWidget {
                         height: 140,
                         width: double.infinity,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => _placeholder(),
+                        errorBuilder: (ctx, _, _) => _placeholder(ctx),
                       )
-                    : _placeholder(),
+                    : _placeholder(context),
                 // Remove button
                 Positioned(
                   top: 8,
@@ -182,7 +180,6 @@ class _SavedLotTile extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryDark,
                   ),
                 ),
                 if (lot.farmerName != null)
@@ -197,9 +194,9 @@ class _SavedLotTile extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Price / KG',
-                          style: TextStyle(
+                        Text(
+                          AppLocalizations.of(context).pricePerKgLabel,
+                          style: const TextStyle(
                               fontSize: 10, color: AppTheme.textSecondary),
                         ),
                         Text(
@@ -207,14 +204,13 @@ class _SavedLotTile extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryDark,
                           ),
                         ),
                       ],
                     ),
                     const Spacer(),
                     Text(
-                      '${lot.availableQuantity.toStringAsFixed(0)} kg available',
+                      '${lot.availableQuantity.toStringAsFixed(0)} ${AppLocalizations.of(context).kgAvailable}',
                       style: const TextStyle(
                           fontSize: 11, color: AppTheme.textSecondary),
                     ),
@@ -229,14 +225,12 @@ class _SavedLotTile extends StatelessWidget {
                             .read<MessagingBloc>()
                             .add(StartConversationRequested(lot.farmerId)),
                         icon: const Icon(Icons.chat_bubble_outline, size: 14),
-                        label: const Text(
-                          'Message',
-                          style: TextStyle(
+                        label: Text(
+                          AppLocalizations.of(context).messageButton,
+                          style: const TextStyle(
                               fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppTheme.primaryDark,
-                          side: const BorderSide(color: AppTheme.primaryDark),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20)),
@@ -248,28 +242,28 @@ class _SavedLotTile extends StatelessWidget {
                       child: ElevatedButton.icon(
                         onPressed: () {
                           final authState = context.read<AuthBloc>().state;
-                          final buyerId = authState is AuthAuthenticated
-                              ? authState.profile.id
-                              : '';
+                          final buyer = authState is AuthAuthenticated
+                              ? authState.profile
+                              : null;
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) => PaymentScreen(
                                 listingId: lot.listingId,
                                 farmerId: lot.farmerId,
-                                buyerId: buyerId,
+                                buyerId: buyer?.id ?? '',
                                 amount:
                                     lot.pricePerKg * lot.availableQuantity,
-                                farmerCountry: lot.location,
+                                buyerCountry: buyer?.country,
                               ),
                             ),
                           );
                         },
                         icon: const Icon(Icons.payments_outlined,
                             size: 14, color: Colors.white),
-                        label: const Text(
-                          'Direct Pay',
-                          style: TextStyle(
+                        label: Text(
+                          AppLocalizations.of(context).directPay,
+                          style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
@@ -294,10 +288,10 @@ class _SavedLotTile extends StatelessWidget {
     );
   }
 
-  Widget _placeholder() => Container(
+  Widget _placeholder(BuildContext context) => Container(
         height: 140,
         width: double.infinity,
-        color: AppTheme.inputFillColor,
+        color: Theme.of(context).inputDecorationTheme.fillColor ?? AppTheme.inputFillColor,
         child: const Icon(Icons.coffee, size: 40, color: AppTheme.textHint),
       );
 }

@@ -64,6 +64,15 @@ class _FakeUserRepository implements UserRepository {
   @override
   Stream<UserProfile?> watchUserProfile(String userId) =>
       Stream.value(null);
+
+  @override
+  Future<void> saveListing(String userId, String listingId) async {}
+
+  @override
+  Future<void> unsaveListing(String userId, String listingId) async {}
+
+  @override
+  Future<List<String>> getSavedListings(String userId) async => [];
 }
 
 AuthBloc _makeAuthBloc() => AuthBloc(
@@ -111,7 +120,7 @@ void main() {
         activeListings: 12,
         totalEarnings: 45000.0,
         conversations: 8,
-        views: 250,
+        savedCount: 250,
         responseRate: 92.5,
       );
     }
@@ -413,7 +422,7 @@ void main() {
         expect(dashboard.activeListings, equals(12));
         expect(dashboard.totalEarnings, equals(45000.0));
         expect(dashboard.conversations, equals(8));
-        expect(dashboard.views, equals(250));
+        expect(dashboard.savedCount, equals(250));
         expect(dashboard.responseRate, equals(92.5));
       });
 
@@ -423,7 +432,7 @@ void main() {
         expect(dashboard.activeListings, equals(0));
         expect(dashboard.totalEarnings, equals(0.0));
         expect(dashboard.conversations, equals(0));
-        expect(dashboard.views, equals(0));
+        expect(dashboard.savedCount, equals(0));
         expect(dashboard.responseRate, equals(0.0));
       });
 

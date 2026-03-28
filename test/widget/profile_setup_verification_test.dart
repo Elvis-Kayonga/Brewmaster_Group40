@@ -123,6 +123,15 @@ class _CapturingUserRepository implements UserRepository {
   @override
   Stream<UserProfile?> watchUserProfile(String userId) =>
       const Stream.empty();
+
+  @override
+  Future<void> saveListing(String userId, String listingId) async {}
+
+  @override
+  Future<void> unsaveListing(String userId, String listingId) async {}
+
+  @override
+  Future<List<String>> getSavedListings(String userId) async => [];
 }
 
 /// AuthBloc subclass that immediately emits a pre-seeded state after

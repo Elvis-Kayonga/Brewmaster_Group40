@@ -31,6 +31,9 @@ abstract class MessageRepository {
   /// Total unread message count across all conversations.
   Future<int> getTotalUnreadCount();
 
+  /// One-time migration: backfill participantPhotoUrls on old conversations.
+  Future<void> migrateParticipantPhotoUrls();
+
   /// Paginated fetch of messages in [conversationId] ordered by createdAt
   /// descending. Pass [startAfter] from [PaginatedResult.cursor] for the
   /// next page.

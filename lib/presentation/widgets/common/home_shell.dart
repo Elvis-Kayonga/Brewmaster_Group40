@@ -10,7 +10,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../config/theme.dart';
+import '../../../config/localization/app_localizations.dart';
 import '../../../domain/models/enums.dart';
 import '../../../domain/models/user_profile.dart';
 import '../../blocs/messaging/notification_bloc.dart';
@@ -74,59 +74,59 @@ class _HomeShellState extends State<HomeShell> {
 
   bool get _isFarmer => widget.profile.role == UserRole.farmer;
 
-  List<BottomNavigationBarItem> get _buyerNavItems => const [
+  List<BottomNavigationBarItem> _buyerNavItems(AppLocalizations loc) => [
         BottomNavigationBarItem(
-          icon: Icon(Icons.shopping_bag_outlined),
-          activeIcon: Icon(Icons.shopping_bag),
-          label: 'Shop',
+          icon: const Icon(Icons.shopping_bag_outlined),
+          activeIcon: const Icon(Icons.shopping_bag),
+          label: loc.shop,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.receipt_long_outlined),
-          activeIcon: Icon(Icons.receipt_long),
-          label: 'Orders',
+          icon: const Icon(Icons.receipt_long_outlined),
+          activeIcon: const Icon(Icons.receipt_long),
+          label: loc.orders,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.show_chart_outlined),
-          activeIcon: Icon(Icons.show_chart),
-          label: 'Prices',
+          icon: const Icon(Icons.show_chart_outlined),
+          activeIcon: const Icon(Icons.show_chart),
+          label: loc.prices,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.chat_bubble_outline),
-          activeIcon: Icon(Icons.chat_bubble),
-          label: 'Messages',
+          icon: const Icon(Icons.chat_bubble_outline),
+          activeIcon: const Icon(Icons.chat_bubble),
+          label: loc.messages,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          activeIcon: Icon(Icons.person),
-          label: 'Profile',
+          icon: const Icon(Icons.person_outline),
+          activeIcon: const Icon(Icons.person),
+          label: loc.profile,
         ),
       ];
 
-  List<BottomNavigationBarItem> get _farmerNavItems => const [
+  List<BottomNavigationBarItem> _farmerNavItems(AppLocalizations loc) => [
         BottomNavigationBarItem(
-          icon: Icon(Icons.store_outlined),
-          activeIcon: Icon(Icons.store),
-          label: 'My Store',
+          icon: const Icon(Icons.store_outlined),
+          activeIcon: const Icon(Icons.store),
+          label: loc.myStore,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.receipt_long_outlined),
-          activeIcon: Icon(Icons.receipt_long),
-          label: 'Orders',
+          icon: const Icon(Icons.receipt_long_outlined),
+          activeIcon: const Icon(Icons.receipt_long),
+          label: loc.orders,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.show_chart_outlined),
-          activeIcon: Icon(Icons.show_chart),
-          label: 'Prices',
+          icon: const Icon(Icons.show_chart_outlined),
+          activeIcon: const Icon(Icons.show_chart),
+          label: loc.prices,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.chat_bubble_outline),
-          activeIcon: Icon(Icons.chat_bubble),
-          label: 'Messages',
+          icon: const Icon(Icons.chat_bubble_outline),
+          activeIcon: const Icon(Icons.chat_bubble),
+          label: loc.messages,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          activeIcon: Icon(Icons.person),
-          label: 'Profile',
+          icon: const Icon(Icons.person_outline),
+          activeIcon: const Icon(Icons.person),
+          label: loc.profile,
         ),
       ];
 
@@ -139,40 +139,48 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
-    final navItems = _isFarmer ? _farmerNavItems : _buyerNavItems;
+    final loc = AppLocalizations.of(context);
+    final navItems = _isFarmer ? _farmerNavItems(loc) : _buyerNavItems(loc);
 
     // Clamp index to valid range if role changed
     final safeIndex = _currentIndex.clamp(0, _screens.length - 1);
 
-    return Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
-        children: List.generate(_screens.length, (i) {
-          // Only build a screen once it has been visited — avoids firing all
-          // Firestore queries/streams simultaneously at startup.
-          if (!_visitedIndices.contains(i)) return const SizedBox.shrink();
-          return Offstage(
-            offstage: i != safeIndex,
-            child: _screens[i],
-          );
-        }),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: safeIndex,
-        onTap: _onTabTapped,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: AppTheme.surfaceColor,
-        selectedItemColor: AppTheme.primaryDark,
-        unselectedItemColor: AppTheme.textSecondary,
-        selectedLabelStyle: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _currentIndex != 0) {
+          setState(() {
+            _visitedIndices.add(0);
+            _currentIndex = 0;
+          });
+        }
+      },
+      child: Scaffold(
+        body: Stack(
+          fit: StackFit.expand,
+          children: List.generate(_screens.length, (i) {
+            // Only build a screen once it has been visited — avoids firing all
+            // Firestore queries/streams simultaneously at startup.
+            if (!_visitedIndices.contains(i)) return const SizedBox.shrink();
+            return Offstage(
+              offstage: i != safeIndex,
+              child: _screens[i],
+            );
+          }),
         ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 11,
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: safeIndex,
+          onTap: _onTabTapped,
+          type: BottomNavigationBarType.fixed,
+          selectedLabelStyle: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 11,
+          ),
+          items: navItems,
         ),
-        elevation: 8,
-        items: navItems,
       ),
     );
   }

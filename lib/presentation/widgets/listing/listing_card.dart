@@ -98,6 +98,16 @@ class ListingCard extends StatelessWidget {
                       Text('${listing.qualityScore}/100', style: AppTheme.caption),
                     ],
                   ),
+                  if (listing.farmerName != null && listing.farmerName!.isNotEmpty) ...[
+                    const SizedBox(height: AppTheme.margin4),
+                    Row(
+                      children: [
+                        Icon(Icons.person_outline, size: AppTheme.iconSizeSmall, color: AppTheme.textSecondary),
+                        const SizedBox(width: AppTheme.margin4),
+                        Text(listing.farmerName!, style: AppTheme.caption),
+                      ],
+                    ),
+                  ],
                   if (onEdit != null || onDelete != null) ...[
                     const SizedBox(height: AppTheme.margin12),
                     Row(

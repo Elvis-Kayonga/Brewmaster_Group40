@@ -32,6 +32,11 @@ service cloud.firestore {
         && request.resource.data.keys().hasAll(['id', 'email', 'role', 'displayName']);
       allow update: if isOwner(userId) && noRoleEscalation();
       allow delete: if isOwner(userId);
+
+      // Notification preference doc stored at users/{userId}/preferences/notifications
+      match /preferences/{prefDoc} {
+        allow read, write: if isOwner(userId);
+      }
     }
 
     // -------------------------------------------------------------------------
@@ -64,6 +69,10 @@ service cloud.firestore {
         allow create: if isAuthenticated()
           && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds
           && request.resource.data.senderId == request.auth.uid;
+        // Participants can mark messages as read (isRead field only).
+        allow update: if isAuthenticated()
+          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
       }
     }
 
@@ -86,10 +95,11 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // Market prices (admin-written, read-only for users)
+    // Market prices — written by the app (Stooq API sync), read by all users.
     // -------------------------------------------------------------------------
     match /marketPrices/{priceId} {
-      allow read: if isAuthenticated();
+      allow read:  if isAuthenticated();
+      allow write: if isAuthenticated(); // Client-side sync via CoffeePriceApiService
     }
 
     // -------------------------------------------------------------------------

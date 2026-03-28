@@ -93,7 +93,6 @@ class DatePickerWidget extends StatelessWidget {
           helperText: helperText,
           errorText: errorText,
           filled: true,
-          fillColor: AppTheme.surfaceColor,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: AppTheme.padding16,
             vertical: AppTheme.padding12,
@@ -145,7 +144,7 @@ class DatePickerWidget extends StatelessWidget {
           _formatDate(selectedDate),
           style: AppTheme.body.copyWith(
             color: selectedDate != null
-                ? AppTheme.textPrimary
+                ? null
                 : AppTheme.textHint,
           ),
         ),
@@ -173,11 +172,9 @@ class DatePickerWidget extends StatelessWidget {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
               primary: AppTheme.primaryColor,
               onPrimary: AppTheme.onPrimaryColor,
-              surface: AppTheme.surfaceColor,
-              onSurface: AppTheme.textPrimary,
             ),
           ),
           child: child!,
@@ -270,7 +267,6 @@ class DateRangePickerWidget extends StatelessWidget {
           hintText: hintText,
           errorText: errorText,
           filled: true,
-          fillColor: AppTheme.surfaceColor,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: AppTheme.padding16,
             vertical: AppTheme.padding12,
@@ -308,7 +304,7 @@ class DateRangePickerWidget extends StatelessWidget {
           _formatRange(selectedRange),
           style: AppTheme.body.copyWith(
             color: selectedRange != null
-                ? AppTheme.textPrimary
+                ? null
                 : AppTheme.textHint,
           ),
         ),
@@ -328,11 +324,9 @@ class DateRangePickerWidget extends StatelessWidget {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
               primary: AppTheme.primaryColor,
               onPrimary: AppTheme.onPrimaryColor,
-              surface: AppTheme.surfaceColor,
-              onSurface: AppTheme.textPrimary,
             ),
           ),
           child: child!,
@@ -417,7 +411,6 @@ class TimePickerWidget extends StatelessWidget {
           hintText: hintText,
           errorText: errorText,
           filled: true,
-          fillColor: AppTheme.surfaceColor,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: AppTheme.padding16,
             vertical: AppTheme.padding12,
@@ -457,7 +450,7 @@ class TimePickerWidget extends StatelessWidget {
           _formatTime(selectedTime),
           style: AppTheme.body.copyWith(
             color: selectedTime != null
-                ? AppTheme.textPrimary
+                ? null
                 : AppTheme.textHint,
           ),
         ),
@@ -474,11 +467,9 @@ class TimePickerWidget extends StatelessWidget {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
               primary: AppTheme.primaryColor,
               onPrimary: AppTheme.onPrimaryColor,
-              surface: AppTheme.surfaceColor,
-              onSurface: AppTheme.textPrimary,
             ),
           ),
           child: MediaQuery(
@@ -572,7 +563,6 @@ class DateTimePickerWidget extends StatelessWidget {
           hintText: hintText,
           errorText: errorText,
           filled: true,
-          fillColor: AppTheme.surfaceColor,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: AppTheme.padding16,
             vertical: AppTheme.padding12,
@@ -610,7 +600,7 @@ class DateTimePickerWidget extends StatelessWidget {
           _formatDateTime(selectedDateTime),
           style: AppTheme.body.copyWith(
             color: selectedDateTime != null
-                ? AppTheme.textPrimary
+                ? null
                 : AppTheme.textHint,
           ),
         ),
@@ -637,11 +627,9 @@ class DateTimePickerWidget extends StatelessWidget {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
               primary: AppTheme.primaryColor,
               onPrimary: AppTheme.onPrimaryColor,
-              surface: AppTheme.surfaceColor,
-              onSurface: AppTheme.textPrimary,
             ),
           ),
           child: child!,
@@ -659,11 +647,9 @@ class DateTimePickerWidget extends StatelessWidget {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
               primary: AppTheme.primaryColor,
               onPrimary: AppTheme.onPrimaryColor,
-              surface: AppTheme.surfaceColor,
-              onSurface: AppTheme.textPrimary,
             ),
           ),
           child: MediaQuery(

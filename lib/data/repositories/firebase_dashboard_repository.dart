@@ -41,20 +41,25 @@ class FirebaseDashboardRepository implements DashboardRepository {
           .collection('conversations')
           .where('participantIds', arrayContains: farmerId)
           .get(),
+      _firestore.collection('users').get(),
     ]);
 
     final listingsSnap = results[0];
     final txSnap = results[1];
     final convoSnap = results[2];
+    final usersSnap = results[3];
 
     final activeListings = listingsSnap.docs
         .where((d) => d.data()['status'] == 'active')
         .length;
 
-    final views = listingsSnap.docs.fold<int>(
-      0,
-      (acc, d) => acc + ((d.data()['viewCount'] as num?)?.toInt() ?? 0),
-    );
+    // Count how many buyers have saved any of this farmer's listings.
+    final farmerListingIds = listingsSnap.docs.map((d) => d.id).toSet();
+    final savedCount = usersSnap.docs.fold<int>(0, (acc, doc) {
+      final saved =
+          List<String>.from(doc.data()['savedListings'] as List? ?? []);
+      return acc + saved.where(farmerListingIds.contains).length;
+    });
 
     final completedTx =
         txSnap.docs.where((d) => d.data()['status'] == 'completed').toList();
@@ -137,7 +142,7 @@ class FirebaseDashboardRepository implements DashboardRepository {
       activeListings: activeListings,
       totalEarnings: totalEarnings,
       conversations: totalConversations,
-      views: views,
+      savedCount: savedCount,
       responseRate: responseRate,
       revenueChangePct: revenueChangePct,
       ordersChangePct: ordersChangePct,

@@ -43,6 +43,9 @@ import 'package:brewmaster/presentation/screens/auth/auth_gate.dart';
 import 'package:brewmaster/presentation/screens/auth/login_screen.dart';
 import 'package:brewmaster/presentation/widgets/common/home_shell.dart';
 import 'package:brewmaster/main.dart';
+import 'package:brewmaster/config/theme_notifier.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // ---------------------------------------------------------------------------
 // Fake Firebase User
@@ -87,6 +90,15 @@ class _FakeUserRepository implements UserRepository {
   @override Future<void> createUserProfile(UserProfile p) async {}
   @override Future<void> updateUserProfile(String id, Map<String, dynamic> u) async {}
   @override Stream<UserProfile?> watchUserProfile(String id) => const Stream.empty();
+
+  @override
+  Future<void> saveListing(String userId, String listingId) async {}
+
+  @override
+  Future<void> unsaveListing(String userId, String listingId) async {}
+
+  @override
+  Future<List<String>> getSavedListings(String userId) async => [];
 }
 
 class _FakePaymentRepository implements PaymentRepository {
@@ -118,6 +130,9 @@ class _FakeMessageRepository implements MessageRepository {
   @override Stream<List<Message>> watchMessages(String id) => Stream.value([]);
   @override Future<int> getTotalUnreadCount() async => 0;
   @override dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
+
+  @override
+  Future<void> migrateParticipantPhotoUrls() async {}
 }
 
 class _FakeNotificationRepository implements NotificationRepository {
@@ -173,23 +188,28 @@ UserProfile _fakeProfile({required String uid, required String email}) {
   );
 }
 
+ThemeNotifier? _themeNotifier;
+
 Widget _buildApp({fb.User? user, UserProfile? profile}) {
   final authRepo = _FakeAuthRepository(user);
   final userRepo = _FakeUserRepository(profile);
-  return MultiBlocProvider(
-    providers: [
-      BlocProvider(create: (_) => AuthBloc(authRepository: authRepo, userRepository: userRepo)),
-      BlocProvider(create: (_) => ProfileBloc(userRepository: userRepo)),
-      BlocProvider(create: (_) => PaymentBloc(paymentRepository: _FakePaymentRepository())),
-      BlocProvider(create: (_) => ListingBloc(repository: _FakeListingRepository())),
-      BlocProvider(create: (_) => MessagingBloc(repository: _FakeMessageRepository())),
-      BlocProvider(create: (_) => NotificationBloc(repository: _FakeNotificationRepository())),
-      BlocProvider(create: (_) => ConnectivityBloc(repository: _FakeOfflineSyncRepository())),
-      BlocProvider(create: (_) => VerificationBloc(repository: _FakeVerificationRepository())),
-      BlocProvider(create: (_) => DashboardBloc(repository: _FakeDashboardRepository())),
-      BlocProvider(create: (_) => MarketPriceBloc(repository: _FakeMarketPriceRepository())),
-    ],
-    child: const BrewMasterApp(),
+  return ChangeNotifierProvider<ThemeNotifier>.value(
+    value: _themeNotifier!,
+    child: MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => AuthBloc(authRepository: authRepo, userRepository: userRepo)),
+        BlocProvider(create: (_) => ProfileBloc(userRepository: userRepo)),
+        BlocProvider(create: (_) => PaymentBloc(paymentRepository: _FakePaymentRepository())),
+        BlocProvider(create: (_) => ListingBloc(repository: _FakeListingRepository())),
+        BlocProvider(create: (_) => MessagingBloc(repository: _FakeMessageRepository())),
+        BlocProvider(create: (_) => NotificationBloc(repository: _FakeNotificationRepository())),
+        BlocProvider(create: (_) => ConnectivityBloc(repository: _FakeOfflineSyncRepository())),
+        BlocProvider(create: (_) => VerificationBloc(repository: _FakeVerificationRepository())),
+        BlocProvider(create: (_) => DashboardBloc(repository: _FakeDashboardRepository())),
+        BlocProvider(create: (_) => MarketPriceBloc(repository: _FakeMarketPriceRepository())),
+      ],
+      child: const BrewMasterApp(),
+    ),
   );
 }
 
@@ -198,6 +218,10 @@ Widget _buildApp({fb.User? user, UserProfile? profile}) {
 // ---------------------------------------------------------------------------
 
 void main() {
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
+    _themeNotifier = await ThemeNotifier.load();
+  });
   group(
       'Task 5.1 – AuthGate renders LoginScreen when unauthenticated, '
       'DashboardScreen when authenticated', () {

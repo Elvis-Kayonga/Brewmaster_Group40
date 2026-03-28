@@ -135,6 +135,9 @@ class _FakeMessageRepository implements MessageRepository {
     Object? startAfter,
   }) async =>
       paginated.PaginatedResult(items: [], cursor: null, hasMore: false);
+
+  @override
+  Future<void> migrateParticipantPhotoUrls() async {}
 }
 
 class _FakeUserRepository implements UserRepository {
@@ -150,6 +153,15 @@ class _FakeUserRepository implements UserRepository {
   @override
   Stream<UserProfile?> watchUserProfile(String userId) =>
       Stream.value(null);
+
+  @override
+  Future<void> saveListing(String userId, String listingId) async {}
+
+  @override
+  Future<void> unsaveListing(String userId, String listingId) async {}
+
+  @override
+  Future<List<String>> getSavedListings(String userId) async => [];
 }
 
 Widget _wrap(Widget child) => MaterialApp(

@@ -19,10 +19,11 @@ class CoffeeListing {
   final double qualityScore; // 0 - 100
   final String description;
   final List<String> images;
+  /// Coordinate string used for map pins (e.g. "lat,lng" or JSON).
   final String location;
+  /// Human-readable address shown on cards (e.g. "Kigali, Rwanda").
+  final String? locationAddress;
   final ListingStatus status;
-  /// Number of times this listing has been viewed (ERD: viewCount).
-  final int viewCount;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -44,8 +45,8 @@ class CoffeeListing {
     required this.description,
     required this.images,
     required this.location,
+    this.locationAddress,
     required this.status,
-    this.viewCount = 0,
     required this.createdAt,
     required this.updatedAt,
     this.batchNumber,
@@ -68,8 +69,8 @@ class CoffeeListing {
       'flavorNotes': description,
       'imageUrls': images,
       'location': location,
+      'locationAddress': locationAddress,
       'status': status.name,
-      'viewCount': viewCount,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'batchNumber': batchNumber,
@@ -95,8 +96,8 @@ class CoffeeListing {
       description: (json['flavorNotes'] ?? json['description']) as String,
       images: List<String>.from((json['imageUrls'] ?? json['images']) as List),
       location: json['location'] as String,
+      locationAddress: json['locationAddress'] as String?,
       status: ListingStatusExtension.fromJson(json['status'] as String),
-      viewCount: json['viewCount'] as int? ?? 0,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       batchNumber: json['batchNumber'] as String?,
@@ -120,8 +121,8 @@ class CoffeeListing {
     String? description,
     List<String>? images,
     String? location,
+    String? locationAddress,
     ListingStatus? status,
-    int? viewCount,
     DateTime? createdAt,
     DateTime? updatedAt,
     String? batchNumber,
@@ -141,8 +142,8 @@ class CoffeeListing {
       description: description ?? this.description,
       images: images ?? this.images,
       location: location ?? this.location,
+      locationAddress: locationAddress ?? this.locationAddress,
       status: status ?? this.status,
-      viewCount: viewCount ?? this.viewCount,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       batchNumber: batchNumber ?? this.batchNumber,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../../config/localization/app_localizations.dart';
 import '../../../config/theme.dart';
 import '../../../domain/models/enums.dart';
 import '../../../domain/models/market_price.dart';
@@ -39,23 +40,20 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.backgroundColor,
-        elevation: 0,
+                elevation: 0,
         automaticallyImplyLeading: false,
-        title: const Text(
-          'Brew Master',
-          style: TextStyle(
-            color: AppTheme.primaryDark,
+        title: Text(
+          AppLocalizations.of(context).appName,
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: AppTheme.primaryDark, size: 20),
-            tooltip: 'Sync prices',
+            icon: const Icon(Icons.refresh, size: 20),
+            tooltip: AppLocalizations.of(context).syncPrices,
             onPressed: () => context
                 .read<MarketPriceBloc>()
                 .add(const MarketPricesSyncRequested()),
@@ -66,7 +64,7 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
       body: BlocBuilder<MarketPriceBloc, MarketPriceState>(
         builder: (context, state) {
           if (state is MarketPriceLoading || state is MarketPriceInitial) {
-            return const LoadingIndicator(message: 'Loading market prices…');
+            return LoadingIndicator(message: AppLocalizations.of(context).loadingMarketPrices);
           }
 
           if (state is MarketPriceFailure) {
@@ -79,6 +77,7 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
           }
 
           if (state is MarketPricesLoaded) {
+            final loc = AppLocalizations.of(context);
             final allPrices = state.prices;
             final varieties =
                 allPrices.map((p) => p.variety).toSet().toList()..sort();
@@ -98,23 +97,22 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Market\nPrices',
-                        style: TextStyle(
+                      Text(
+                        loc.marketPrices,
+                        style: const TextStyle(
                           fontSize: 36,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryDark,
                           height: 1.15,
                         ),
                       ),
                       const SizedBox(height: 6),
-                      const Text(
-                        'LIVE COMMODITY INDEX',
+                      Text(
+                        loc.liveCommodityIndex,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 1.8,
-                          color: AppTheme.primaryColor,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                     ],
@@ -131,9 +129,9 @@ class _MarketPricesScreenState extends State<MarketPricesScreen> {
                   ),
                 Expanded(
                   child: prices.isEmpty
-                      ? const Center(
+                      ? Center(
                           child: Text(
-                            'No market prices available.',
+                            loc.noMarketPrices,
                             style: AppTheme.body,
                           ),
                         )
@@ -188,10 +186,19 @@ class _VarietyFilterRow extends StatelessWidget {
             label: Text(variety),
             selected: isSelected,
             onSelected: (_) => onSelected(variety),
-            selectedColor: AppTheme.primaryColor.withValues(alpha: 0.15),
+            selectedColor: AppTheme.primaryColor.withValues(alpha: 0.18),
             checkmarkColor: AppTheme.primaryColor,
-            labelStyle: AppTheme.caption.copyWith(
-              color: isSelected ? AppTheme.primaryColor : AppTheme.textPrimary,
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            side: BorderSide(
+              color: isSelected
+                  ? AppTheme.primaryColor
+                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
+            ),
+            labelStyle: TextStyle(
+              fontSize: 12,
+              color: isSelected
+                  ? AppTheme.primaryColor
+                  : Theme.of(context).colorScheme.onSurface,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
             ),
           );
@@ -234,7 +241,7 @@ class _PriceCard extends StatelessWidget {
             ),
             const SizedBox(height: AppTheme.padding8),
             Text(
-              'Updated: ${DateFormat('d MMM yyyy').format(price.updatedAt)}',
+              '${AppLocalizations.of(context).updated}: ${DateFormat('d MMM yyyy').format(price.updatedAt)}',
               style: AppTheme.caption,
             ),
           ],
@@ -291,23 +298,24 @@ class _PriceRangeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Row(
       children: [
         _PriceColumn(
-            label: 'Low',
+            label: loc.low,
             value: low,
             currency: currency,
             color: AppTheme.textSecondary),
         const Spacer(),
         _PriceColumn(
-            label: 'Average',
+            label: loc.average,
             value: avg,
             currency: currency,
             color: AppTheme.primaryColor,
             isHighlighted: true),
         const Spacer(),
         _PriceColumn(
-            label: 'High',
+            label: loc.high,
             value: high,
             currency: currency,
             color: AppTheme.successColor),

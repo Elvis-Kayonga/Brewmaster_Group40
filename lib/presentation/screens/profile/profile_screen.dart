@@ -10,7 +10,9 @@ import 'package:brewmaster/presentation/widgets/common/loading_indicator.dart';
 import 'package:brewmaster/presentation/widgets/common/error_state_widget.dart';
 import 'package:brewmaster/presentation/widgets/common/status_badge.dart';
 import 'package:brewmaster/presentation/screens/profile/edit_profile_screen.dart';
+import 'package:brewmaster/presentation/screens/profile/settings_screen.dart';
 import 'package:brewmaster/presentation/screens/profile/verification_request_screen.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:brewmaster/presentation/widgets/common/verification_badge.dart';
 
 /// Profile screen displaying user information.
@@ -43,7 +45,7 @@ UserProfile? _profileFromState(ProfileState state) {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: Text(AppLocalizations.of(context).profileTitle),
       ),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, authState) {
@@ -64,7 +66,7 @@ UserProfile? _profileFromState(ProfileState state) {
         },
         builder: (context, state) {
           if (state is ProfileLoading) {
-            return const LoadingIndicator(message: 'Loading profile...');
+            return LoadingIndicator(message: AppLocalizations.of(context).loadingProfile);
           }
 
           final profile = _profileFromState(state);
@@ -72,7 +74,7 @@ UserProfile? _profileFromState(ProfileState state) {
             return ErrorStateWidget(
               message: state is ProfileFailure
                   ? state.message
-                  : 'No profile found.',
+                  : AppLocalizations.of(context).noProfileFound,
               icon: Icons.person_off_outlined,
               onRetry: () {
                 final authState = context.read<AuthBloc>().state;
@@ -85,6 +87,7 @@ UserProfile? _profileFromState(ProfileState state) {
             );
           }
 
+          final loc = AppLocalizations.of(context);
           return SingleChildScrollView(
             padding: const EdgeInsets.all(AppTheme.padding24),
             child: Column(
@@ -121,8 +124,8 @@ UserProfile? _profileFromState(ProfileState state) {
                         children: [
                           StatusBadge(
                             label: profile.role == UserRole.farmer
-                                ? 'Farmer'
-                                : 'Buyer',
+                                ? loc.farmer
+                                : loc.buyer,
                             type: StatusBadgeType.info,
                             icon: profile.role == UserRole.farmer
                                 ? Icons.agriculture
@@ -132,8 +135,8 @@ UserProfile? _profileFromState(ProfileState state) {
                           // Email verification status (isVerified field)
                           StatusBadge(
                             label: profile.isVerified
-                                ? 'Email Verified'
-                                : 'Email Unverified',
+                                ? loc.emailVerified
+                                : loc.emailUnverified,
                             type: profile.isVerified
                                 ? StatusBadgeType.success
                                 : StatusBadgeType.neutral,
@@ -143,7 +146,7 @@ UserProfile? _profileFromState(ProfileState state) {
                             const SizedBox(width: AppTheme.padding8),
                             TextButton.icon(
                               icon: const Icon(Icons.verified_user_outlined),
-                              label: const Text('Verify Email'),
+                              label: Text(loc.verifyEmail),
                               onPressed: () => context
                                   .read<AuthBloc>()
                                   .add(const AuthVerificationEmailRequested()),
@@ -165,7 +168,7 @@ UserProfile? _profileFromState(ProfileState state) {
                       const SizedBox(width: AppTheme.padding8),
                       TextButton.icon(
                         icon: const Icon(Icons.upload_file),
-                        label: const Text('Get Verified'),
+                        label: Text(loc.getVerified),
                         onPressed: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -182,39 +185,39 @@ UserProfile? _profileFromState(ProfileState state) {
 
                 // Role-specific details
                 if (profile.role == UserRole.farmer) ...[
-                  Text('Farm Details', style: AppTheme.heading2),
+                  Text(loc.farmDetailsLabel, style: AppTheme.heading2),
                   const SizedBox(height: AppTheme.padding16),
-                  _buildInfoRow(Icons.landscape, 'Farm Size',
+                  _buildInfoRow(Icons.landscape, loc.farmSize,
                       profile.farmSize != null
                           ? '${profile.farmSize} hectares'
-                          : 'Not set'),
-                  _buildInfoRow(Icons.location_on_outlined, 'Location',
-                      profile.farmLocation ?? 'Not set'),
-                  _buildInfoRow(Icons.coffee, 'Coffee Varieties',
-                      profile.coffeeVarieties?.join(', ') ?? 'Not set'),
-                  _buildInfoRow(Icons.badge_outlined, 'Registration No.',
-                      profile.farmRegistrationNumber ?? 'Not set'),
+                          : loc.notSet),
+                  _buildInfoRow(Icons.location_on_outlined, loc.location,
+                      profile.farmLocation ?? loc.notSet),
+                  _buildInfoRow(Icons.coffee, loc.coffeeVarietiesLabel,
+                      profile.coffeeVarieties?.join(', ') ?? loc.notSet),
+                  _buildInfoRow(Icons.badge_outlined, loc.registrationNo,
+                      profile.farmRegistrationNumber ?? loc.notSet),
                 ],
 
                 if (profile.role == UserRole.buyer) ...[
-                  Text('Business Details', style: AppTheme.heading2),
+                  Text(loc.businessDetailsLabel, style: AppTheme.heading2),
                   const SizedBox(height: AppTheme.padding16),
-                  _buildInfoRow(Icons.business, 'Business Name',
-                      profile.businessName ?? 'Not set'),
-                  _buildInfoRow(Icons.category_outlined, 'Business Type',
-                      profile.businessType ?? 'Not set'),
+                  _buildInfoRow(Icons.business, loc.businessName,
+                      profile.businessName ?? loc.notSet),
+                  _buildInfoRow(Icons.category_outlined, loc.businessType,
+                      profile.businessType ?? loc.notSet),
                   _buildInfoRow(
                       Icons.scale,
-                      'Monthly Volume',
+                      loc.monthlyVolume,
                       profile.monthlyVolume != null
                           ? '${profile.monthlyVolume} kg'
-                          : 'Not set'),
+                          : loc.notSet),
                 ],
 
                 const SizedBox(height: AppTheme.padding32),
 
                 CustomButton(
-                  text: 'Edit Profile',
+                  text: loc.editProfile,
                   type: ButtonType.outlined,
                   isFullWidth: true,
                   leadingIcon: Icons.edit,
@@ -225,11 +228,24 @@ UserProfile? _profileFromState(ProfileState state) {
                     ),
                   ),
                 ),
+                const SizedBox(height: AppTheme.padding12),
+                CustomButton(
+                  text: loc.settings,
+                  type: ButtonType.outlined,
+                  isFullWidth: true,
+                  leadingIcon: Icons.settings_outlined,
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const SettingsScreen(),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: AppTheme.padding16),
                 Center(
                   child: TextButton.icon(
                     icon: const Icon(Icons.logout),
-                    label: const Text('Sign out'),
+                    label: Text(loc.signOut),
                     onPressed: () => context
                         .read<AuthBloc>()
                         .add(const AuthSignOutRequested()),

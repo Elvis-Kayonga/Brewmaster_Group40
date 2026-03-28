@@ -17,4 +17,12 @@ abstract class UserRepository {
   /// Real-time stream of a user's profile document.
   Stream<UserProfile?> watchUserProfile(String userId);
 
+  /// Add a listing ID to the user's savedListings array in Firestore.
+  Future<void> saveListing(String userId, String listingId);
+
+  /// Remove a listing ID from the user's savedListings array in Firestore.
+  Future<void> unsaveListing(String userId, String listingId);
+
+  /// Load the current savedListings array for a user.
+  Future<List<String>> getSavedListings(String userId);
 }

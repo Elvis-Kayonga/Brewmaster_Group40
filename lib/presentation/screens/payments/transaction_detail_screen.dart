@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import '../../../config/localization/app_localizations.dart';
 import '../../../config/theme.dart';
 import '../../../domain/models/escrow_transaction.dart' as models;
 import '../../../domain/models/enums.dart';
@@ -51,11 +52,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => ConfirmationDialog(
-        title: 'Confirm Delivery',
-        message:
-            'Have you delivered the coffee to the buyer? This action cannot be undone.',
-        confirmText: 'Confirm Delivery',
-        cancelText: 'Cancel',
+        title: AppLocalizations.of(context).confirmDeliveryTitle,
+        message: AppLocalizations.of(context).confirmDeliveryMessage,
+        confirmText: AppLocalizations.of(context).confirmDelivery,
+        cancelText: AppLocalizations.of(context).cancel,
         type: ConfirmationDialogType.confirm,
       ),
     );
@@ -67,11 +67,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => ConfirmationDialog(
-        title: 'Confirm Receipt',
-        message:
-            'Have you received the coffee in good condition? Funds will be released to the farmer.',
-        confirmText: 'Confirm & Release Funds',
-        cancelText: 'Cancel',
+        title: AppLocalizations.of(context).confirmReceiptTitle,
+        message: AppLocalizations.of(context).confirmReceiptMessage,
+        confirmText: AppLocalizations.of(context).confirmReleaseFunds,
+        cancelText: AppLocalizations.of(context).cancel,
         type: ConfirmationDialogType.confirm,
       ),
     );
@@ -82,20 +81,22 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   void _raiseDispute(models.Transaction transaction) async {
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Raise Dispute'),
+      builder: (context) {
+        final loc = AppLocalizations.of(context);
+        return AlertDialog(
+        title: Text(loc.raiseDispute),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Please describe the issue with this transaction:',
-              style: TextStyle(fontSize: 14),
+            Text(
+              loc.disputeDescription,
+              style: const TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 16),
             CustomTextField(
               controller: _disputeController,
-              labelText: 'Dispute Reason',
-              hintText: 'Describe the issue...',
+              labelText: loc.disputeReason,
+              hintText: loc.describeIssue,
               maxLines: 4,
               validator: PaymentValidator.validateDisputeReason,
             ),
@@ -103,13 +104,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         ),
         actions: [
           CustomButton(
-            text: 'Cancel',
+            text: loc.cancel,
             onPressed: () => Navigator.pop(context),
             type: ButtonType.text,
             size: ButtonSize.small,
           ),
           CustomButton(
-            text: 'Submit Dispute',
+            text: loc.submitDispute,
             onPressed: () {
               final error = PaymentValidator.validateDisputeReason(
                   _disputeController.text);
@@ -126,7 +127,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             size: ButtonSize.small,
           ),
         ],
-      ),
+      );
+      },
     );
 
     if (result == null || !mounted) return;
@@ -138,13 +140,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar:
-          AppBar(title: const Text('Transaction Details'), centerTitle: true),
+          AppBar(title: Text(AppLocalizations.of(context).transactionDetails), centerTitle: true),
       body: BlocConsumer<PaymentBloc, PaymentState>(
         listener: (context, state) {
           if (state is PaymentActionSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Action completed successfully'),
+              SnackBar(
+                content: Text(AppLocalizations.of(context).actionCompleted),
                 backgroundColor: AppTheme.successColor,
               ),
             );
@@ -175,7 +177,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             return Center(
               child: Text(state is PaymentFailure
                   ? state.message
-                  : 'Transaction not found'),
+                  : AppLocalizations.of(context).transactionNotFound),
             );
           }
 
@@ -219,18 +221,20 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Transaction Information',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(AppLocalizations.of(context).transactionInformation,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const Divider(height: 24),
-            _buildInfoRow('Transaction ID', transaction.id),
+            _buildInfoRow(AppLocalizations.of(context).transactionId, transaction.id),
+            if (widget.isFarmer && transaction.buyerName != null)
+              _buildInfoRow(AppLocalizations.of(context).buyerLabel, transaction.buyerName!),
             _buildInfoRow(
-                'Amount', '\$${transaction.amount.toStringAsFixed(2)}'),
-            _buildInfoRow('Payment Method',
+                AppLocalizations.of(context).amountLabel, '\$${transaction.amount.toStringAsFixed(2)}'),
+            _buildInfoRow(AppLocalizations.of(context).paymentMethod,
                 _getPaymentMethodLabel(transaction.paymentMethod)),
-            _buildInfoRow('Created', dateFormat.format(transaction.createdAt)),
+            _buildInfoRow(AppLocalizations.of(context).createdLabel, dateFormat.format(transaction.createdAt)),
             if (transaction.retryCount > 0)
               _buildInfoRow(
-                  'Retry Attempts', transaction.retryCount.toString()),
+                  AppLocalizations.of(context).retryAttempts, transaction.retryCount.toString()),
           ],
         ),
       ),
@@ -245,8 +249,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Status Timeline',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(AppLocalizations.of(context).statusTimeline,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const Divider(height: 24),
             ...transaction.statusHistory.entries.map((entry) {
               return _buildTimelineItem(
@@ -261,7 +265,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
   Widget _buildDisputeCard(models.Transaction transaction) {
     return Card(
-      color: Colors.orange.shade50,
+      color: AppTheme.warningColor.withValues(alpha: 0.12),
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -270,13 +274,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.warning_amber, color: Colors.orange.shade700),
+                const Icon(Icons.warning_amber, color: AppTheme.warningColor),
                 const SizedBox(width: 8),
-                Text('Dispute Raised',
+                Text(AppLocalizations.of(context).disputeRaised,
                     style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.orange.shade900)),
+                        color: Theme.of(context).colorScheme.onSurface)),
               ],
             ),
             const SizedBox(height: 12),
@@ -289,6 +293,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   }
 
   Widget _buildInfoRow(String label, String value) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
@@ -297,8 +302,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           SizedBox(
             width: 120,
             child: Text('$label:',
-                style: const TextStyle(
-                    fontWeight: FontWeight.w600, color: Colors.grey)),
+                style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface.withValues(alpha: 0.6))),
           ),
           Expanded(
               child: Text(value,
@@ -309,11 +315,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   }
 
   Widget _buildTimelineItem(String status, String time) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         children: [
-          Icon(Icons.check_circle, size: 16, color: Colors.green.shade600),
+          Icon(Icons.check_circle, size: 16, color: AppTheme.successColor),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -322,7 +329,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             ),
           ),
           Text(time,
-              style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: cs.onSurface.withValues(alpha: 0.6))),
         ],
       ),
     );
@@ -333,7 +342,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     if (widget.isFarmer) {
       if (transaction.status == TransactionStatus.fundsHeld) {
         buttons.add(CustomButton(
-          text: 'Confirm Delivery',
+          text: AppLocalizations.of(context).confirmDelivery,
           onPressed: () => _confirmDelivery(transaction),
           type: ButtonType.primary,
           size: ButtonSize.large,
@@ -344,7 +353,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     } else {
       if (transaction.status == TransactionStatus.delivered) {
         buttons.add(CustomButton(
-          text: 'Confirm Receipt & Release Funds',
+          text: AppLocalizations.of(context).confirmReleaseFunds,
           onPressed: () => _confirmReceipt(transaction),
           type: ButtonType.success,
           size: ButtonSize.large,
@@ -358,7 +367,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         transaction.status != TransactionStatus.disputed) {
       if (buttons.isNotEmpty) buttons.add(const SizedBox(height: 12));
       buttons.add(CustomButton(
-        text: 'Raise Dispute',
+        text: AppLocalizations.of(context).raiseDispute,
         onPressed: () => _raiseDispute(transaction),
         type: ButtonType.danger,
         size: ButtonSize.medium,
@@ -370,19 +379,20 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   }
 
   String _getStatusLabel(TransactionStatus status) {
+    final loc = AppLocalizations.of(context);
     switch (status) {
       case TransactionStatus.pending:
-        return 'Pending Payment';
+        return loc.pendingPayment;
       case TransactionStatus.fundsHeld:
-        return 'Funds Held in Escrow';
+        return loc.fundsHeldEscrow;
       case TransactionStatus.delivered:
-        return 'Awaiting Buyer Confirmation';
+        return loc.awaitingBuyerConfirmation;
       case TransactionStatus.completed:
-        return 'Completed';
+        return loc.completed;
       case TransactionStatus.disputed:
-        return 'Disputed';
+        return loc.disputed;
       case TransactionStatus.cancelled:
-        return 'Cancelled';
+        return loc.cancelled;
     }
   }
 
@@ -430,6 +440,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         return 'M-Pesa';
       case PaymentMethod.mtnMobileMoney:
         return 'MTN Mobile Money';
+      case PaymentMethod.flutterwave:
+        return 'Flutterwave';
     }
   }
 }

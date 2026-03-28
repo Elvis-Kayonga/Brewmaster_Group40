@@ -49,11 +49,18 @@ class MessagingBloc extends Bloc<MessagingEvent, MessagingState> {
     }
   }
 
+  bool _migrationDone = false;
+
   Future<void> _onLoadConversations(
     ConversationsLoadRequested event,
     Emitter<MessagingState> emit,
   ) async {
     emit(const MessagingLoading());
+    // Backfill participantPhotoUrls once per session (user is authenticated here).
+    if (!_migrationDone) {
+      _migrationDone = true;
+      _repository.migrateParticipantPhotoUrls().catchError((_) {});
+    }
     await _conversationsSub?.cancel();
     _conversationsSub = _repository.watchConversations().listen(
       (convos) => add(_ConversationsUpdated(convos)),

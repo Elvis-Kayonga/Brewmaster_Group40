@@ -100,6 +100,9 @@ class FakeMessageRepository implements MessageRepository {
           items: List.from(_messages[conversationId] ?? []), hasMore: false);
 
   List<Message> get sentMessages => List.unmodifiable(_sent);
+
+  @override
+  Future<void> migrateParticipantPhotoUrls() async {}
 }
 
 // ---------------------------------------------------------------------------

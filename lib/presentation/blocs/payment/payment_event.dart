@@ -14,6 +14,8 @@ class PaymentInitiateRequested extends PaymentEvent {
   final double amount;
   final String currency;
   final PaymentMethod paymentMethod;
+  /// Flutterwave transaction ID returned by the checkout SDK.
+  final String? flutterwaveTxId;
 
   const PaymentInitiateRequested({
     required this.buyerId,
@@ -22,11 +24,12 @@ class PaymentInitiateRequested extends PaymentEvent {
     required this.amount,
     this.currency = 'USD',
     required this.paymentMethod,
+    this.flutterwaveTxId,
   });
 
   @override
   List<Object?> get props =>
-      [buyerId, farmerId, listingId, amount, currency, paymentMethod];
+      [buyerId, farmerId, listingId, amount, currency, paymentMethod, flutterwaveTxId];
 }
 
 class PaymentProcessRequested extends PaymentEvent {

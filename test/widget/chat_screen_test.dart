@@ -72,6 +72,9 @@ class _FakeMessageRepository implements MessageRepository {
     Object? startAfter,
   }) async =>
       const PaginatedResult(items: [], hasMore: false);
+
+  @override
+  Future<void> migrateParticipantPhotoUrls() async {}
 }
 
 class _FakeNotificationRepository implements NotificationRepository {
@@ -110,6 +113,15 @@ class _FakeUserRepository implements UserRepository {
       String userId, Map<String, dynamic> updates) async {}
   @override
   Stream<UserProfile?> watchUserProfile(String userId) => Stream.value(null);
+
+  @override
+  Future<void> saveListing(String userId, String listingId) async {}
+
+  @override
+  Future<void> unsaveListing(String userId, String listingId) async {}
+
+  @override
+  Future<List<String>> getSavedListings(String userId) async => [];
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

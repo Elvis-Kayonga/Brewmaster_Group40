@@ -72,50 +72,65 @@ class FirebaseNotificationRepository implements NotificationRepository {
 
   @override
   Future<void> updatePreferences(Map<String, bool> preferences) async {
-    final userId = _auth.currentUser?.uid;
-    if (userId == null) return;
-
-    await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('preferences')
-        .doc('notifications')
-        .set({
-      ...preferences,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-
+    // 1. SharedPreferences — primary local store, always succeeds.
     final prefs = await SharedPreferences.getInstance();
     for (final entry in preferences.entries) {
       final key = _prefKeys[entry.key];
       if (key != null) await prefs.setBool(key, entry.value);
+    }
+
+    // 2. Firestore — best-effort cross-device sync; never blocks the UI.
+    final userId = _auth.currentUser?.uid;
+    if (userId != null) {
+      _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('preferences')
+          .doc('notifications')
+          .set({
+        ...preferences,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true))
+          .catchError((_) {});
     }
   }
 
   @override
   Future<Map<String, bool>> getPreferences() async {
     final userId = _auth.currentUser?.uid;
-    if (userId == null) return _defaults();
 
-    try {
-      final doc = await _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('preferences')
-          .doc('notifications')
-          .get();
+    // Try Firestore first when authenticated
+    if (userId != null) {
+      try {
+        final doc = await _firestore
+            .collection('users')
+            .doc(userId)
+            .collection('preferences')
+            .doc('notifications')
+            .get();
 
-      if (doc.exists && doc.data() != null) {
-        final d = doc.data()!;
-        return {
-          'messagesEnabled': d['messagesEnabled'] as bool? ?? true,
-          'listingsEnabled': d['listingsEnabled'] as bool? ?? true,
-          'paymentsEnabled': d['paymentsEnabled'] as bool? ?? true,
-          'promotionsEnabled': d['promotionsEnabled'] as bool? ?? true,
-        };
+        if (doc.exists && doc.data() != null) {
+          final d = doc.data()!;
+          return {
+            'messagesEnabled': d['messagesEnabled'] as bool? ?? true,
+            'listingsEnabled': d['listingsEnabled'] as bool? ?? true,
+            'paymentsEnabled': d['paymentsEnabled'] as bool? ?? true,
+            'promotionsEnabled': d['promotionsEnabled'] as bool? ?? true,
+          };
+        }
+      } catch (_) {
+        // Fall through to SharedPreferences cache
       }
-    } catch (_) {
-      // Fall through to defaults
+    }
+
+    // Fallback: read from SharedPreferences (persisted on last successful save)
+    final prefs = await SharedPreferences.getInstance();
+    final hasAnySaved = _prefKeys.values.any((k) => prefs.containsKey(k));
+    if (hasAnySaved) {
+      return {
+        for (final entry in _prefKeys.entries)
+          entry.key: prefs.getBool(entry.value) ?? true,
+      };
     }
 
     return _defaults();

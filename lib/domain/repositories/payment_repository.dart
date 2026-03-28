@@ -12,6 +12,7 @@ abstract class PaymentRepository {
     required double amount,
     String currency = 'USD',
     required PaymentMethod paymentMethod,
+    String? paymentReference,
   });
 
   /// Process payment for a transaction (moves to fundsHeld on success).

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../../config/localization/app_localizations.dart';
 import '../../../config/theme.dart';
 import '../../../domain/models/notification.dart';
 import '../../blocs/auth/auth_bloc.dart';
@@ -39,14 +40,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.backgroundColor,
-        elevation: 0,
-        title: const Text(
-          'Notifications',
-          style: TextStyle(
-            color: AppTheme.primaryDark,
+                elevation: 0,
+        title: Text(
+          AppLocalizations.of(context).notificationsLabel,
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -59,9 +57,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               if (!hasUnread) return const SizedBox.shrink();
               return TextButton(
                 onPressed: _markAllRead,
-                child: const Text(
-                  'Mark all read',
-                  style: TextStyle(
+                child: Text(
+                  AppLocalizations.of(context).markAllRead,
+                  style: const TextStyle(
                     color: AppTheme.primaryColor,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -79,18 +77,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           }
 
           if (state is! NotificationsLoaded) {
-            return const EmptyStateWidget(
+            return EmptyStateWidget(
               icon: Icons.notifications_none,
-              title: 'No notifications',
-              description: 'You\'re all caught up!',
+              title: AppLocalizations.of(context).noNotificationsTitle,
+              description: AppLocalizations.of(context).noNotificationsDescription,
             );
           }
 
           if (state.notifications.isEmpty) {
-            return const EmptyStateWidget(
+            return EmptyStateWidget(
               icon: Icons.notifications_none,
-              title: 'No notifications',
-              description: 'You\'re all caught up!',
+              title: AppLocalizations.of(context).noNotificationsTitle,
+              description: AppLocalizations.of(context).noNotificationsDescription,
             );
           }
 
@@ -195,7 +193,6 @@ class _NotificationTile extends StatelessWidget {
                             fontWeight: isUnread
                                 ? FontWeight.bold
                                 : FontWeight.w500,
-                            color: AppTheme.primaryDark,
                           ),
                         ),
                       ),
