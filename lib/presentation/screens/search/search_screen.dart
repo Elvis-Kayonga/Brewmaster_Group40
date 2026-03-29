@@ -19,6 +19,7 @@ import '../../../domain/models/search_filters.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/saved_lots/saved_lots_bloc.dart';
 import '../../blocs/listing/listing_bloc.dart';
+import '../../blocs/listing_detail/listing_detail_bloc.dart';
 import '../../blocs/messaging/messaging_bloc.dart';
 import '../../widgets/common/empty_state_widget.dart';
 import '../../widgets/common/loading_indicator.dart';
@@ -580,7 +581,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                       context,
                                       MaterialPageRoute(
                                         builder: (_) => BlocProvider.value(
-                                          value: context.read<ListingBloc>(),
+                                          value: context.read<ListingDetailBloc>(),
                                           child: ListingDetailScreen(
                                             listingId: _selectedMapListing!
                                                 .listingId,
@@ -627,7 +628,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (_) => BlocProvider.value(
-                            value: context.read<ListingBloc>(),
+                            value: context.read<ListingDetailBloc>(),
                             child: ListingDetailScreen(
                                 listingId: listing.listingId),
                           ),

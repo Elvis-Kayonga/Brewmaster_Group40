@@ -28,13 +28,6 @@ class FarmerListingsLoaded extends ListingState {
   List<Object?> get props => [listings];
 }
 
-class ListingDetailLoaded extends ListingState {
-  final CoffeeListing listing;
-  const ListingDetailLoaded(this.listing);
-  @override
-  List<Object?> get props => [listing];
-}
-
 class ListingActionSuccess extends ListingState {
   final String message;
   const ListingActionSuccess(this.message);

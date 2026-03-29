@@ -156,16 +156,29 @@ bool _hasChanges() {
       final uri = Uri.parse(CloudinaryConfig.uploadUrl);
       final request = http.MultipartRequest('POST', uri)
         ..fields['upload_preset'] = CloudinaryConfig.uploadPreset
-        ..fields['public_id'] = 'avatars/${widget.userProfile.id}'
+        ..fields['public_id'] =
+            'avatars/${widget.userProfile.id}_${DateTime.now().millisecondsSinceEpoch}'
         ..files.add(await http.MultipartFile.fromPath('file', file.path));
+      debugPrint('[Photo] Uploading to $uri with preset=${CloudinaryConfig.uploadPreset}');
       final response = await request.send();
       final body = await response.stream.bytesToString();
+      debugPrint('[Photo] Status: ${response.statusCode}, body: $body');
       if (response.statusCode == 200) {
         final json = jsonDecode(body) as Map<String, dynamic>;
         final url = json['secure_url'] as String;
+        debugPrint('[Photo] Upload success: $url');
         setState(() => _photoUrlController.text = url);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Photo upload failed (${response.statusCode}). Please try again.'),
+            ),
+          );
+        }
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[Photo] Exception: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Photo upload failed. Please try again.')),
@@ -295,6 +308,7 @@ bool _hasChanges() {
                             GestureDetector(
                               onTap: _isUploadingPhoto ? null : _pickAndUploadPhoto,
                               child: CircleAvatar(
+                                key: ValueKey(_photoUrlController.text),
                                 radius: 48,
                                 backgroundColor: AppTheme.primaryLight,
                                 backgroundImage: _photoUrlController.text.isNotEmpty

@@ -70,11 +70,19 @@ class _HomeShellState extends State<HomeShell> {
     // always has fresh data (e.g. for ProfileAvatarButton photo updates).
     context.read<ProfileBloc>().add(ProfileWatchRequested(widget.profile.id));
     context.read<NotificationBloc>().add(NotificationsWatchRequested(widget.profile.id));
+    // Request FCM permission and register the device token so push
+    // notifications can be delivered to this device.
+    context.read<NotificationBloc>().add(const NotificationPermissionRequested());
   }
 
   bool get _isFarmer => widget.profile.role == UserRole.farmer;
 
-  List<BottomNavigationBarItem> _buyerNavItems(AppLocalizations loc) => [
+  Widget _chatIcon(IconData icon, int unread) {
+    if (unread == 0) return Icon(icon);
+    return Badge.count(count: unread, child: Icon(icon));
+  }
+
+  List<BottomNavigationBarItem> _buyerNavItems(AppLocalizations loc, int unreadMessages) => [
         BottomNavigationBarItem(
           icon: const Icon(Icons.shopping_bag_outlined),
           activeIcon: const Icon(Icons.shopping_bag),
@@ -91,8 +99,8 @@ class _HomeShellState extends State<HomeShell> {
           label: loc.prices,
         ),
         BottomNavigationBarItem(
-          icon: const Icon(Icons.chat_bubble_outline),
-          activeIcon: const Icon(Icons.chat_bubble),
+          icon: _chatIcon(Icons.chat_bubble_outline, unreadMessages),
+          activeIcon: _chatIcon(Icons.chat_bubble, unreadMessages),
           label: loc.messages,
         ),
         BottomNavigationBarItem(
@@ -102,7 +110,7 @@ class _HomeShellState extends State<HomeShell> {
         ),
       ];
 
-  List<BottomNavigationBarItem> _farmerNavItems(AppLocalizations loc) => [
+  List<BottomNavigationBarItem> _farmerNavItems(AppLocalizations loc, int unreadMessages) => [
         BottomNavigationBarItem(
           icon: const Icon(Icons.store_outlined),
           activeIcon: const Icon(Icons.store),
@@ -119,8 +127,8 @@ class _HomeShellState extends State<HomeShell> {
           label: loc.prices,
         ),
         BottomNavigationBarItem(
-          icon: const Icon(Icons.chat_bubble_outline),
-          activeIcon: const Icon(Icons.chat_bubble),
+          icon: _chatIcon(Icons.chat_bubble_outline, unreadMessages),
+          activeIcon: _chatIcon(Icons.chat_bubble, unreadMessages),
           label: loc.messages,
         ),
         BottomNavigationBarItem(
@@ -140,7 +148,13 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final navItems = _isFarmer ? _farmerNavItems(loc) : _buyerNavItems(loc);
+    final unreadMessages = context.select<NotificationBloc, int>((bloc) =>
+        bloc.state is NotificationsLoaded
+            ? (bloc.state as NotificationsLoaded).unreadCount
+            : 0);
+    final navItems = _isFarmer
+        ? _farmerNavItems(loc, unreadMessages)
+        : _buyerNavItems(loc, unreadMessages);
 
     // Clamp index to valid range if role changed
     final safeIndex = _currentIndex.clamp(0, _screens.length - 1);

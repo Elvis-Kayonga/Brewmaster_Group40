@@ -13,7 +13,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../config/localization/app_localizations.dart';
 import '../../../config/theme.dart';
-import '../../blocs/listing/listing_bloc.dart';
+import '../../blocs/listing_detail/listing_detail_bloc.dart';
 import '../../blocs/messaging/messaging_bloc.dart';
 import '../../widgets/common/error_state_widget.dart';
 import '../../widgets/common/loading_indicator.dart';
@@ -32,7 +32,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<ListingBloc>().add(ListingLoadRequested(widget.listingId));
+    context.read<ListingDetailBloc>().add(ListingDetailLoadRequested(widget.listingId));
   }
 
   /// Parse location — handles both JSON {"latitude": x, "longitude": y}
@@ -98,18 +98,18 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
             );
           }
         },
-        builder: (context, msgState) => BlocBuilder<ListingBloc, ListingState>(
+        builder: (context, msgState) => BlocBuilder<ListingDetailBloc, ListingDetailState>(
           builder: (context, state) {
-            if (state is ListingLoading || state is ListingInitial) {
+            if (state is ListingDetailLoading || state is ListingDetailInitial) {
               return const LoadingIndicator();
             }
 
-            if (state is ListingFailure) {
+            if (state is ListingDetailFailure) {
               return ErrorStateWidget(
                 message: state.message,
                 onRetry: () => context
-                    .read<ListingBloc>()
-                    .add(ListingLoadRequested(widget.listingId)),
+                    .read<ListingDetailBloc>()
+                    .add(ListingDetailLoadRequested(widget.listingId)),
               );
             }
 

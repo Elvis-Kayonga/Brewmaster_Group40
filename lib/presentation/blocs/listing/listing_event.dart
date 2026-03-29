@@ -17,13 +17,6 @@ class FarmerListingsLoadRequested extends ListingEvent {
   List<Object?> get props => [farmerId];
 }
 
-class ListingLoadRequested extends ListingEvent {
-  final String listingId;
-  const ListingLoadRequested(this.listingId);
-  @override
-  List<Object?> get props => [listingId];
-}
-
 class ListingCreateRequested extends ListingEvent {
   final CoffeeListing listing;
   final List<File>? images;

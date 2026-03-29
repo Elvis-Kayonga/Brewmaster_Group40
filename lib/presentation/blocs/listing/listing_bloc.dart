@@ -26,7 +26,6 @@ class ListingBloc extends Bloc<ListingEvent, ListingState> {
         super(const ListingInitial()) {
     on<ActiveListingsLoadRequested>(_onActiveListingsLoad);
     on<FarmerListingsLoadRequested>(_onFarmerListingsLoad);
-    on<ListingLoadRequested>(_onListingLoad);
     on<ListingCreateRequested>(_onListingCreate);
     on<ListingUpdateRequested>(_onListingUpdate);
     on<ListingDeleteRequested>(_onListingDelete);
@@ -57,23 +56,6 @@ class ListingBloc extends Bloc<ListingEvent, ListingState> {
         _repository.watchFarmerListings(event.farmerId).listen((listings) {
       add(_FarmerListingsUpdated(listings));
     }, onError: (e) => add(_FarmerListingsUpdated(const [])));
-  }
-
-  Future<void> _onListingLoad(
-    ListingLoadRequested event,
-    Emitter<ListingState> emit,
-  ) async {
-    emit(const ListingLoading());
-    try {
-      final listing = await _repository.getListing(event.listingId);
-      if (listing == null) {
-        emit(const ListingFailure('Listing not found'));
-      } else {
-        emit(ListingDetailLoaded(listing));
-      }
-    } catch (e) {
-      emit(ListingFailure(e.toString()));
-    }
   }
 
   Future<void> _onListingCreate(

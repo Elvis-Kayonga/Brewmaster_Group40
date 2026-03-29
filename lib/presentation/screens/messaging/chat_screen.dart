@@ -115,6 +115,11 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       resizeToAvoidBottomInset: true,
       body: BlocBuilder<MessagingBloc, MessagingState>(
+        buildWhen: (_, curr) =>
+            curr is MessagingInitial ||
+            curr is MessagingLoading ||
+            curr is MessagesLoaded ||
+            curr is MessagingFailure,
         builder: (context, state) {
           if (state is MessagingLoading || state is MessagingInitial) {
             return const LoadingIndicator();

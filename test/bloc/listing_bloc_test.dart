@@ -166,53 +166,6 @@ void main() {
     });
   });
 
-  group('ListingBloc — ListingLoadRequested', () {
-    test('emits ListingDetailLoaded when listing found', () async {
-      final repo = _FakeListingRepository();
-      final listing = _fakeListing();
-      repo.setListing(listing);
-      final bloc = ListingBloc(repository: repo);
-
-      bloc.add(const ListingLoadRequested( 'listing-1'));
-      await Future<void>.delayed(Duration.zero);
-
-      expect(bloc.state, isA<ListingDetailLoaded>());
-      expect((bloc.state as ListingDetailLoaded).listing, listing);
-
-      bloc.close();
-      repo.dispose();
-    });
-
-    test('emits ListingFailure when listing not found (null)', () async {
-      final repo = _FakeListingRepository();
-      repo.setListing(null);
-      final bloc = ListingBloc(repository: repo);
-
-      bloc.add(const ListingLoadRequested( 'missing'));
-      await Future<void>.delayed(Duration.zero);
-
-      expect(bloc.state, isA<ListingFailure>());
-      expect((bloc.state as ListingFailure).message, 'Listing not found');
-
-      bloc.close();
-      repo.dispose();
-    });
-
-    test('emits ListingFailure on exception', () async {
-      final repo = _FakeListingRepository();
-      repo.setError(Exception('network error'));
-      final bloc = ListingBloc(repository: repo);
-
-      bloc.add(const ListingLoadRequested( 'listing-1'));
-      await Future<void>.delayed(Duration.zero);
-
-      expect(bloc.state, isA<ListingFailure>());
-
-      bloc.close();
-      repo.dispose();
-    });
-  });
-
   group('ListingBloc — ListingCreateRequested', () {
     test('emits ListingActionSuccess on success', () async {
       final repo = _FakeListingRepository();

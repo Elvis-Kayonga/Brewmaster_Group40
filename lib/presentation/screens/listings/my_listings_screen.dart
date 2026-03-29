@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../config/theme.dart';
 import '../../blocs/listing/listing_bloc.dart';
+import '../../blocs/listing_detail/listing_detail_bloc.dart';
 import '../../widgets/common/empty_state_widget.dart';
 import '../../widgets/common/sync_status_indicator.dart';
 import '../../widgets/common/error_state_widget.dart';
@@ -105,7 +106,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (_) => BlocProvider.value(
-                      value: context.read<ListingBloc>(),
+                      value: context.read<ListingDetailBloc>(),
                       child: ListingDetailScreen(
                           listingId: listing.listingId),
                     ),

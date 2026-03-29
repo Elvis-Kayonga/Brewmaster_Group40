@@ -22,10 +22,12 @@ import 'package:brewmaster/data/repositories/firebase_offline_sync_repository.da
 import 'package:brewmaster/data/repositories/firebase_verification_repository.dart';
 import 'package:brewmaster/data/repositories/firebase_dashboard_repository.dart';
 import 'package:brewmaster/data/repositories/firebase_market_price_repository.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
 import 'package:brewmaster/presentation/blocs/connectivity/connectivity_bloc.dart';
 import 'package:brewmaster/presentation/blocs/dashboard/dashboard_bloc.dart';
 import 'package:brewmaster/presentation/blocs/listing/listing_bloc.dart';
+import 'package:brewmaster/presentation/blocs/listing_detail/listing_detail_bloc.dart';
 import 'package:brewmaster/presentation/blocs/market_price/market_price_bloc.dart';
 import 'package:brewmaster/presentation/blocs/profile/profile_bloc.dart';
 import 'package:brewmaster/presentation/blocs/payment/payment_bloc.dart';
@@ -36,11 +38,19 @@ import 'package:brewmaster/presentation/blocs/voice/voice_bloc.dart';
 import 'package:brewmaster/presentation/blocs/verification/verification_bloc.dart';
 import 'package:brewmaster/presentation/screens/auth/auth_gate.dart';
 
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Background FCM message received. Firebase is already initialized by the
+  // plugin before this handler is called, so no re-init is needed here.
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await dotenv.load(fileName: '.env');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   // Enable Firestore offline persistence with a 40 MB cap.
   // CACHE_SIZE_UNLIMITED grows forever and slows startup as the cache expands.
@@ -91,6 +101,9 @@ Future<void> main() async {
           ),
           BlocProvider<ListingBloc>(
             create: (_) => ListingBloc(repository: listingRepository),
+          ),
+          BlocProvider<ListingDetailBloc>(
+            create: (_) => ListingDetailBloc(repository: listingRepository),
           ),
           BlocProvider<MessagingBloc>(
             create: (_) => MessagingBloc(repository: messageRepository),

@@ -13,6 +13,7 @@ import 'package:brewmaster/domain/models/notification.dart';
 import 'package:brewmaster/domain/models/search_filters.dart';
 import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
 import 'package:brewmaster/presentation/blocs/listing/listing_bloc.dart';
+import 'package:brewmaster/presentation/blocs/listing_detail/listing_detail_bloc.dart';
 import 'package:brewmaster/presentation/blocs/messaging/messaging_bloc.dart';
 import 'package:brewmaster/presentation/blocs/messaging/notification_bloc.dart';
 import 'package:brewmaster/presentation/blocs/payment/payment_bloc.dart';
@@ -375,8 +376,8 @@ void main() {
       expect(e.props, contains('f1'));
     });
 
-    test('ListingLoadRequested props', () {
-      const e = ListingLoadRequested('l1');
+    test('ListingDetailLoadRequested props', () {
+      const e = ListingDetailLoadRequested('l1');
       expect(e.listingId, 'l1');
     });
 
@@ -436,6 +437,11 @@ void main() {
     test('ListingDetailLoaded props', () {
       final s = ListingDetailLoaded(_listing());
       expect(s.listing.variety, 'Bourbon');
+    });
+
+    test('ListingDetailFailure props', () {
+      const s = ListingDetailFailure('oops');
+      expect(s.message, 'oops');
     });
 
     test('ListingActionSuccess props', () {
