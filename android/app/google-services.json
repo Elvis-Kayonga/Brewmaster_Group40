@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "371292882083-5to1292sfg0lm96l3pgjkv08v02dcbvv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.brewmaster.brewmaster",
+            "certificate_hash": "37ab45dd91fa15f424726e73f8bcb62c7e957e6d"
+          }
+        },
+        {
           "client_id": "371292882083-gdafj1inupm7iggg3m2i1o0lse116614.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

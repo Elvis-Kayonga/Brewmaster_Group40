@@ -3,10 +3,20 @@
 // Widget tests for ConfirmationDialog, InfoDialog, and InputDialog.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:brewmaster/presentation/widgets/common/confirmation_dialog.dart';
 
-Widget _wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
+Widget _wrap(Widget child) => MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: child));
 
 void main() {
   group('ConfirmationDialog', () {
@@ -17,6 +27,7 @@ void main() {
           message: 'This cannot be undone.',
         ),
       ));
+      await tester.pump();
       expect(find.text('Delete item?'), findsOneWidget);
       expect(find.text('This cannot be undone.'), findsOneWidget);
     });
@@ -29,6 +40,7 @@ void main() {
           message: 'Msg',
         ),
       ));
+      await tester.pump();
       expect(find.text('Confirm'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
     });
@@ -42,6 +54,7 @@ void main() {
           cancelText: 'No',
         ),
       ));
+      await tester.pump();
       expect(find.text('Yes'), findsOneWidget);
       expect(find.text('No'), findsOneWidget);
     });
@@ -55,6 +68,7 @@ void main() {
           onConfirm: () => confirmed = true,
         ),
       ));
+      await tester.pump();
       await tester.tap(find.text('Confirm'));
       await tester.pump();
       expect(confirmed, isTrue);
@@ -69,6 +83,7 @@ void main() {
           onCancel: () => cancelled = true,
         ),
       ));
+      await tester.pump();
       await tester.tap(find.text('Cancel'));
       await tester.pump();
       expect(cancelled, isTrue);
@@ -83,6 +98,7 @@ void main() {
             type: type,
           ),
         ));
+        await tester.pump();
         expect(find.text(type.name), findsOneWidget);
       }
     });
@@ -95,6 +111,7 @@ void main() {
           showIcon: false,
         ),
       ));
+      await tester.pump();
       expect(find.byType(Icon), findsNothing);
     });
 
@@ -106,6 +123,7 @@ void main() {
           icon: Icons.star,
         ),
       ));
+      await tester.pump();
       expect(find.byIcon(Icons.star), findsOneWidget);
     });
 
@@ -117,6 +135,7 @@ void main() {
           additionalContent: Text('Extra info'),
         ),
       ));
+      await tester.pump();
       expect(find.text('Extra info'), findsOneWidget);
     });
 
@@ -128,6 +147,7 @@ void main() {
           type: ConfirmationDialogType.danger,
         ),
       ));
+      await tester.pump();
       expect(find.text('Delete?'), findsOneWidget);
     });
   });
@@ -136,6 +156,13 @@ void main() {
     testWidgets('opens dialog via show()', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
             builder: (context) => TextButton(
               onPressed: () => ConfirmationDialog.show(
@@ -148,6 +175,7 @@ void main() {
           ),
         ),
       );
+      await tester.pump();
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
       expect(find.text('Shown?'), findsOneWidget);
@@ -157,6 +185,13 @@ void main() {
     testWidgets('showDelete() opens delete dialog', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
             builder: (context) => TextButton(
               onPressed: () =>
@@ -166,6 +201,7 @@ void main() {
           ),
         ),
       );
+      await tester.pump();
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
       expect(find.text('Delete record?'), findsOneWidget);
@@ -174,6 +210,13 @@ void main() {
     testWidgets('showDiscardChanges() opens discard dialog', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
             builder: (context) => TextButton(
               onPressed: () =>
@@ -183,6 +226,7 @@ void main() {
           ),
         ),
       );
+      await tester.pump();
       await tester.tap(find.text('Discard'));
       await tester.pumpAndSettle();
       expect(find.text('Discard changes?'), findsOneWidget);
@@ -191,6 +235,13 @@ void main() {
     testWidgets('showLogout() opens logout dialog', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
             builder: (context) => TextButton(
               onPressed: () =>
@@ -200,6 +251,7 @@ void main() {
           ),
         ),
       );
+      await tester.pump();
       await tester.tap(find.text('Logout'));
       await tester.pumpAndSettle();
       expect(find.text('Sign out?'), findsOneWidget);
@@ -211,6 +263,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         const InfoDialog(title: 'Info', message: 'Here is some info.'),
       ));
+      await tester.pump();
       expect(find.text('Info'), findsOneWidget);
       expect(find.text('Here is some info.'), findsOneWidget);
     });
@@ -219,6 +272,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         const InfoDialog(title: 'Info', message: 'Msg'),
       ));
+      await tester.pump();
       expect(find.text('OK'), findsOneWidget);
     });
 
@@ -226,6 +280,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         const InfoDialog(title: 'Info', message: 'Msg', buttonText: 'Got it'),
       ));
+      await tester.pump();
       expect(find.text('Got it'), findsOneWidget);
     });
 
@@ -237,6 +292,7 @@ void main() {
           icon: Icons.info_outline,
         ),
       ));
+      await tester.pump();
       expect(find.byIcon(Icons.info_outline), findsOneWidget);
     });
 
@@ -244,6 +300,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         const InfoDialog(title: 'Info', message: 'Msg'),
       ));
+      await tester.pump();
       expect(find.byType(Icon), findsNothing);
     });
   });
@@ -253,6 +310,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         const InputDialog(title: 'Enter name'),
       ));
+      await tester.pump();
       expect(find.text('Enter name'), findsOneWidget);
     });
 
@@ -263,6 +321,7 @@ void main() {
           message: 'Please enter your name.',
         ),
       ));
+      await tester.pump();
       expect(find.text('Please enter your name.'), findsOneWidget);
     });
 
@@ -270,11 +329,13 @@ void main() {
       await tester.pumpWidget(_wrap(
         const InputDialog(title: 'Input', hintText: 'Type here...'),
       ));
+      await tester.pump();
       expect(find.text('Type here...'), findsOneWidget);
     });
 
     testWidgets('confirm and cancel buttons present', (tester) async {
       await tester.pumpWidget(_wrap(const InputDialog(title: 'Input')));
+      await tester.pump();
       expect(find.text('Confirm'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
     });
@@ -283,6 +344,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         const InputDialog(title: 'Edit', initialValue: 'existing text'),
       ));
+      await tester.pump();
       expect(find.text('existing text'), findsOneWidget);
     });
 
@@ -293,6 +355,7 @@ void main() {
           validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
         ),
       ));
+      await tester.pump();
       await tester.tap(find.text('Confirm'));
       await tester.pump();
       expect(find.text('Required'), findsOneWidget);
@@ -305,6 +368,7 @@ void main() {
           validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
         ),
       ));
+      await tester.pump();
       await tester.tap(find.text('Confirm'));
       await tester.pump();
       expect(find.text('Required'), findsOneWidget);
@@ -317,6 +381,13 @@ void main() {
     testWidgets('InfoDialog.show() opens dialog', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
             builder: (context) => TextButton(
               onPressed: () => InfoDialog.show(
@@ -329,6 +400,7 @@ void main() {
           ),
         ),
       );
+      await tester.pump();
       await tester.tap(find.text('Open Info'));
       await tester.pumpAndSettle();
       expect(find.text('Static Info'), findsOneWidget);

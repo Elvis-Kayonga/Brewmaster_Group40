@@ -3,6 +3,8 @@
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:brewmaster/domain/models/coffee_listing.dart';
@@ -165,6 +167,13 @@ class _FakeUserRepository implements UserRepository {
 }
 
 Widget _wrap(Widget child) => MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: MultiBlocProvider(
         providers: [
           BlocProvider(
@@ -224,6 +233,7 @@ void main() {
 
     testWidgets('displays list view', (tester) async {
       await tester.pumpWidget(_wrap(const SearchScreen()));
+      await tester.pump();
       await tester.pump();
       expect(find.byType(ListView), findsWidgets);
     });

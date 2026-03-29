@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_core_platform_interface/test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -95,6 +97,13 @@ models.Transaction _makeTxWith({
 
 Widget _buildScreen(PaymentBloc paymentBloc, {bool isFarmer = false}) =>
     MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: BlocProvider<PaymentBloc>(
         create: (_) => paymentBloc,
         child: TransactionDetailScreen(
@@ -121,6 +130,8 @@ void main() {
         ..emit(PaymentTransactionLoaded(_makeTx()));
       await tester.pumpWidget(_buildScreen(pb));
       await tester.pump();
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Transaction Details'), findsOneWidget);
     });
 
@@ -131,6 +142,7 @@ void main() {
         ..emit(PaymentTransactionLoaded(_makeTx()));
       await tester.pumpWidget(_buildScreen(pb));
       await tester.pump();
+      await tester.pump();
       expect(find.text('tx-001'), findsOneWidget);
     });
 
@@ -140,6 +152,7 @@ void main() {
         ..emit(PaymentTransactionLoaded(_makeTx()));
       await tester.pumpWidget(_buildScreen(pb));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Funds Held in Escrow'), findsOneWidget);
     });
 
@@ -148,6 +161,7 @@ void main() {
       final pb = PaymentBloc(paymentRepository: repo)
         ..emit(PaymentTransactionLoaded(_makeTx()));
       await tester.pumpWidget(_buildScreen(pb));
+      await tester.pump();
       await tester.pump();
       expect(find.textContaining('250.00'), findsOneWidget);
     });
@@ -159,6 +173,7 @@ void main() {
       final pb = PaymentBloc(paymentRepository: _NeverLoadRepo());
       await tester.pumpWidget(_buildScreen(pb));
       await tester.pump();
+      await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
@@ -166,6 +181,7 @@ void main() {
         (tester) async {
       final pb = PaymentBloc(paymentRepository: _ErrorLoadRepo());
       await tester.pumpWidget(_buildScreen(pb));
+      await tester.pump();
       await tester.pump();
       expect(find.textContaining('Transaction not found'), findsWidgets);
     });
@@ -179,11 +195,12 @@ void main() {
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb, isFarmer: true));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Confirm Delivery'), findsOneWidget);
     });
 
     testWidgets(
-        'buyer view shows "Confirm Receipt & Release Funds" button for delivered status',
+        'buyer view shows "Confirm & Release Funds" button for delivered status',
         (tester) async {
       final tx = _makeTxWith(status: TransactionStatus.delivered);
       final repo = FakePaymentRepository()..transaction = tx;
@@ -191,7 +208,8 @@ void main() {
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb, isFarmer: false));
       await tester.pump();
-      expect(find.text('Confirm Receipt & Release Funds'), findsOneWidget);
+      await tester.pump();
+      expect(find.text('Confirm & Release Funds'), findsOneWidget);
     });
 
     testWidgets('buyer view shows "Raise Dispute" button for fundsHeld status',
@@ -202,11 +220,12 @@ void main() {
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb, isFarmer: false));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Raise Dispute'), findsOneWidget);
     });
 
     testWidgets(
-        'buyer view does NOT show "Confirm Receipt & Release Funds" for fundsHeld status',
+        'buyer view does NOT show "Confirm & Release Funds" for fundsHeld status',
         (tester) async {
       final tx = _makeTxWith(status: TransactionStatus.fundsHeld);
       final repo = FakePaymentRepository()..transaction = tx;
@@ -214,7 +233,8 @@ void main() {
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb, isFarmer: false));
       await tester.pump();
-      expect(find.text('Confirm Receipt & Release Funds'), findsNothing);
+      await tester.pump();
+      expect(find.text('Confirm & Release Funds'), findsNothing);
     });
 
     testWidgets(
@@ -225,6 +245,7 @@ void main() {
       final pb = PaymentBloc(paymentRepository: repo)
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb, isFarmer: false));
+      await tester.pump();
       await tester.pump();
       expect(find.text('Raise Dispute'), findsNothing);
     });
@@ -238,6 +259,7 @@ void main() {
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb, isFarmer: false));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Raise Dispute'), findsNothing);
     });
 
@@ -250,6 +272,7 @@ void main() {
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb, isFarmer: true));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Confirm Delivery'), findsNothing);
     });
 
@@ -260,6 +283,7 @@ void main() {
       final pb = PaymentBloc(paymentRepository: repo)
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb));
+      await tester.pump();
       await tester.pump();
       expect(find.text('Pending Payment'), findsOneWidget);
     });
@@ -272,6 +296,7 @@ void main() {
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Completed'), findsOneWidget);
     });
 
@@ -283,6 +308,7 @@ void main() {
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Disputed'), findsOneWidget);
     });
 
@@ -293,6 +319,7 @@ void main() {
       final pb = PaymentBloc(paymentRepository: repo)
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb));
+      await tester.pump();
       await tester.pump();
       expect(find.text('Cancelled'), findsOneWidget);
     });
@@ -309,6 +336,7 @@ void main() {
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Dispute Raised'), findsOneWidget);
       expect(find.text('Coffee was not as described'), findsOneWidget);
     });
@@ -320,6 +348,7 @@ void main() {
       final pb = PaymentBloc(paymentRepository: repo)
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb));
+      await tester.pump();
       await tester.pump();
       expect(find.text('Awaiting Buyer Confirmation'), findsOneWidget);
     });
@@ -342,6 +371,7 @@ void main() {
       final pb = PaymentBloc(paymentRepository: repo)
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb));
+      await tester.pump();
       await tester.pump();
       expect(find.text('MTN Mobile Money'), findsOneWidget);
     });
@@ -368,6 +398,7 @@ void main() {
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Status Timeline'), findsOneWidget);
       // Timeline items render as check_circle icons
       expect(find.byIcon(Icons.check_circle), findsWidgets);
@@ -393,6 +424,7 @@ void main() {
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb));
       await tester.pump();
+      await tester.pump();
       expect(find.textContaining('2'), findsWidgets);
     });
 
@@ -402,6 +434,7 @@ void main() {
       final pb = PaymentBloc(paymentRepository: repo)
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb, isFarmer: true));
+      await tester.pump();
       await tester.pump();
 
       pb.emit(PaymentActionSuccess(tx));
@@ -417,6 +450,7 @@ void main() {
       final pb = PaymentBloc(paymentRepository: repo)
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb));
+      await tester.pump();
       await tester.pump();
 
       pb.emit(const PaymentFailure('Payment processing failed'));
@@ -435,6 +469,7 @@ void main() {
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb, isFarmer: true));
       await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.text('Confirm Delivery'));
       await tester.pump();
@@ -452,6 +487,7 @@ void main() {
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb, isFarmer: false));
       await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.text('Raise Dispute'));
       await tester.pump();
@@ -460,7 +496,7 @@ void main() {
     });
 
     testWidgets(
-        'tapping "Confirm Receipt & Release Funds" opens confirmation dialog',
+        'tapping "Confirm & Release Funds" opens confirmation dialog',
         (tester) async {
       final tx = _makeTxWith(status: TransactionStatus.delivered);
       final repo = FakePaymentRepository()..transaction = tx;
@@ -468,8 +504,9 @@ void main() {
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb, isFarmer: false));
       await tester.pump();
+      await tester.pump();
 
-      await tester.tap(find.text('Confirm Receipt & Release Funds'));
+      await tester.tap(find.text('Confirm & Release Funds'));
       await tester.pump();
 
       expect(find.byType(AlertDialog), findsOneWidget);
@@ -482,6 +519,7 @@ void main() {
       final pb = PaymentBloc(paymentRepository: repo)
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb, isFarmer: false));
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.text('Raise Dispute'));
@@ -501,6 +539,7 @@ void main() {
       final pb = PaymentBloc(paymentRepository: repo)
         ..emit(PaymentTransactionLoaded(tx));
       await tester.pumpWidget(_buildScreen(pb, isFarmer: true));
+      await tester.pump();
       await tester.pump();
       expect(find.text('Confirm Delivery'), findsNothing);
       expect(find.text('Raise Dispute'), findsNothing);

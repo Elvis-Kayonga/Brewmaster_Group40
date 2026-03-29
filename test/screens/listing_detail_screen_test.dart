@@ -8,6 +8,8 @@ import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_core_platform_interface/test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -16,7 +18,7 @@ import 'package:brewmaster/domain/models/enums.dart';
 import 'package:brewmaster/domain/models/paginated_result.dart';
 import 'package:brewmaster/domain/models/search_filters.dart';
 import 'package:brewmaster/domain/repositories/listing_repository.dart';
-import 'package:brewmaster/presentation/blocs/listing/listing_bloc.dart';
+import 'package:brewmaster/presentation/blocs/listing_detail/listing_detail_bloc.dart';
 import 'package:brewmaster/presentation/blocs/messaging/messaging_bloc.dart';
 import 'package:brewmaster/presentation/screens/listings/listing_detail_screen.dart';
 
@@ -101,10 +103,17 @@ Widget _wrap({
           ..error = listingError ? Exception('Something went wrong') : null);
 
   return MaterialApp(
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
     home: MultiBlocProvider(
       providers: [
-        BlocProvider<ListingBloc>(
-          create: (_) => ListingBloc(repository: listingRepo),
+        BlocProvider<ListingDetailBloc>(
+          create: (_) => ListingDetailBloc(repository: listingRepo),
         ),
         BlocProvider<MessagingBloc>(
           create: (_) {
@@ -133,12 +142,15 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_wrap(neverResolve: true));
       await tester.pump();
+      await tester.pump();
+      await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsWidgets);
     });
 
     testWidgets('shows error state when getListing throws', (tester) async {
       await tester.pumpWidget(_wrap(listingError: true));
+      await tester.pump();
       await tester.pump();
 
       expect(find.textContaining('Something went wrong'), findsOneWidget);
@@ -148,6 +160,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_wrap(listingError: true));
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('COFFEE PROFILE'), findsNothing);
     });
@@ -156,6 +169,7 @@ void main() {
         (tester) async {
       final listing = _makeListing();
       await tester.pumpWidget(_wrap(listingForRepo: listing));
+      await tester.pump();
       await tester.pump();
 
       expect(find.text('COFFEE PROFILE'), findsOneWidget);
@@ -169,6 +183,7 @@ void main() {
       final listing = _makeListing(images: const []);
       await tester.pumpWidget(_wrap(listingForRepo: listing));
       await tester.pump();
+      await tester.pump();
 
       expect(find.byIcon(Icons.coffee), findsOneWidget);
     });
@@ -176,6 +191,7 @@ void main() {
     testWidgets('shows spec fields in detail card', (tester) async {
       final listing = _makeListing();
       await tester.pumpWidget(_wrap(listingForRepo: listing));
+      await tester.pump();
       await tester.pump();
 
       expect(find.text('Altitude'), findsOneWidget);
@@ -188,6 +204,7 @@ void main() {
       final listing = _makeListing();
       await tester.pumpWidget(_wrap(listingForRepo: listing));
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('CONTACT FARMER'), findsOneWidget);
     });
@@ -199,6 +216,7 @@ void main() {
       await tester.pumpWidget(
           _wrap(listingForRepo: listing, messagingLoading: true));
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('CONTACT FARMER'), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsWidgets);
@@ -206,6 +224,7 @@ void main() {
 
     testWidgets('shows close button in app bar', (tester) async {
       await tester.pumpWidget(_wrap(neverResolve: true));
+      await tester.pump();
       await tester.pump();
 
       expect(find.byIcon(Icons.close), findsOneWidget);
@@ -216,6 +235,7 @@ void main() {
       final listing = _makeListing(location: '');
       await tester.pumpWidget(_wrap(listingForRepo: listing));
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('FARM LOCATION'), findsNothing);
     });
@@ -223,6 +243,7 @@ void main() {
     testWidgets('shows description text in detail view', (tester) async {
       final listing = _makeListing();
       await tester.pumpWidget(_wrap(listingForRepo: listing));
+      await tester.pump();
       await tester.pump();
 
       expect(
@@ -238,6 +259,7 @@ void main() {
       );
       await tester.pumpWidget(_wrap(listingForRepo: listing));
       await tester.pump();
+      await tester.pump();
       expect(find.text('FARM LOCATION'), findsOneWidget);
     });
 
@@ -245,6 +267,7 @@ void main() {
         (tester) async {
       final listing = _makeListing(location: '1.2921, 36.8219');
       await tester.pumpWidget(_wrap(listingForRepo: listing));
+      await tester.pump();
       await tester.pump();
       expect(find.text('FARM LOCATION'), findsOneWidget);
     });
@@ -255,12 +278,14 @@ void main() {
       final listing = _makeListing(location: 'invalid-location');
       await tester.pumpWidget(_wrap(listingForRepo: listing));
       await tester.pump();
+      await tester.pump();
       expect(find.text('FARM LOCATION'), findsNothing);
     });
 
     testWidgets('MessagingFailure shows snackbar', (tester) async {
       final listing = _makeListing();
       await tester.pumpWidget(_wrap(listingForRepo: listing));
+      await tester.pump();
       await tester.pump();
 
       // Access the MessagingBloc and emit a failure
@@ -278,6 +303,7 @@ void main() {
       final listing = _makeListing();
       await tester.pumpWidget(_wrap(listingForRepo: listing));
       await tester.pump();
+      await tester.pump();
       // The harvest year is 2024
       expect(find.textContaining('2024'), findsWidgets);
     });
@@ -285,6 +311,7 @@ void main() {
     testWidgets('shows WASHED processing method in detail', (tester) async {
       final listing = _makeListing();
       await tester.pumpWidget(_wrap(listingForRepo: listing));
+      await tester.pump();
       await tester.pump();
       // processingMethod.name.toUpperCase() → 'WASHED'
       expect(find.text('WASHED'), findsOneWidget);

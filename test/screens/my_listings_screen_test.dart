@@ -6,6 +6,8 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_core_platform_interface/test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -93,6 +95,13 @@ Widget _wrap({
   final repo = pendingRepo ??
       (FakeListingRepository()..listings = listings ?? []);
   return MaterialApp(
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
     home: MultiBlocProvider(
       providers: [
         BlocProvider<ListingBloc>(
@@ -121,12 +130,15 @@ void main() {
     testWidgets('shows app bar title "My Listings"', (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
+      await tester.pump();
       expect(find.text('My Listings'), findsOneWidget);
     });
 
     testWidgets('shows loading indicator while stream is pending', (tester) async {
       final repo = _PendingListingRepository();
       await tester.pumpWidget(_wrap(pendingRepo: repo));
+      await tester.pump();
       await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsWidgets);
@@ -135,6 +147,7 @@ void main() {
 
     testWidgets('shows empty state when no listings', (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       expect(find.text('No listings yet'), findsOneWidget);
@@ -145,12 +158,14 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('Create Listing'), findsOneWidget);
     });
 
     testWidgets('shows FAB with add icon', (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       expect(find.byType(FloatingActionButton), findsOneWidget);
@@ -164,12 +179,14 @@ void main() {
       ];
       await tester.pumpWidget(_wrap(listings: listings));
       await tester.pump();
+      await tester.pump();
 
       expect(find.byType(ListView), findsOneWidget);
     });
 
     testWidgets('shows snack bar on ListingActionSuccess', (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       final ctx = tester.element(find.byType(MyListingsScreen));
@@ -185,6 +202,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
 
       final ctx = tester.element(find.byType(MyListingsScreen));
       BlocProvider.of<ListingBloc>(ctx)
@@ -198,11 +216,13 @@ void main() {
     testWidgets('shows listing variety name in card', (tester) async {
       await tester.pumpWidget(_wrap(listings: [_makeListing(variety: 'Gesha')]));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Gesha'), findsOneWidget);
     });
 
     testWidgets('shows Edit and Delete buttons on listing card', (tester) async {
       await tester.pumpWidget(_wrap(listings: [_makeListing()]));
+      await tester.pump();
       await tester.pump();
       expect(find.text('Edit'), findsOneWidget);
       expect(find.text('Delete'), findsOneWidget);
@@ -210,6 +230,7 @@ void main() {
 
     testWidgets('tapping Delete button opens confirmation dialog', (tester) async {
       await tester.pumpWidget(_wrap(listings: [_makeListing()]));
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.text('Delete'));
@@ -221,6 +242,7 @@ void main() {
 
     testWidgets('tapping Cancel in delete dialog dismisses it', (tester) async {
       await tester.pumpWidget(_wrap(listings: [_makeListing()]));
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.text('Delete'));
@@ -236,6 +258,7 @@ void main() {
 
     testWidgets('tapping Delete in dialog dispatches delete event', (tester) async {
       await tester.pumpWidget(_wrap(listings: [_makeListing(id: 'listing-99')]));
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.text('Delete'));
@@ -255,6 +278,7 @@ void main() {
         _makeListing(id: 'l2', variety: 'Robusta'),
       ]));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Arabica'), findsOneWidget);
       expect(find.text('Robusta'), findsOneWidget);
     });
@@ -262,6 +286,7 @@ void main() {
     testWidgets('shows ErrorStateWidget on ListingFailure from builder',
         (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       final ctx = tester.element(find.byType(MyListingsScreen));
@@ -277,6 +302,7 @@ void main() {
     testWidgets('tapping "Try again" on error state dispatches reload event',
         (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       // Emit failure to show ErrorStateWidget
@@ -299,6 +325,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
 
       // Tap action button — onAction callback (lines 85-90)
       await tester.tap(find.text('Create Listing'));
@@ -310,6 +337,7 @@ void main() {
 
     testWidgets('tapping FAB navigates to create listing', (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       // Tap FAB — onPressed callback (lines 151-156)
@@ -323,6 +351,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_wrap(listings: [_makeListing()]));
       await tester.pump();
+      await tester.pump();
 
       // Tap Edit — onEdit callback (lines 114-119)
       await tester.tap(find.text('Edit'));
@@ -335,6 +364,7 @@ void main() {
     testWidgets('tapping a listing card executes onTap callback',
         (tester) async {
       await tester.pumpWidget(_wrap(listings: [_makeListing(variety: 'Kenya')]));
+      await tester.pump();
       await tester.pump();
 
       // Tap the listing card — onTap callback (lines 104-110)

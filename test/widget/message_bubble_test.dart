@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:brewmaster/presentation/widgets/message/message_bubble.dart';
 import 'package:brewmaster/domain/models/message.dart';
@@ -23,6 +25,13 @@ void main() {
 
     Widget createTestWidget({required bool isOutgoing}) {
       return MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: MessageBubble(
             message: testMessage,
@@ -34,11 +43,13 @@ void main() {
 
     testWidgets('displays message content', (tester) async {
       await tester.pumpWidget(createTestWidget(isOutgoing: true));
+      await tester.pump();
       expect(find.text('Test message content'), findsOneWidget);
     });
 
     testWidgets('outgoing message aligns right', (tester) async {
       await tester.pumpWidget(createTestWidget(isOutgoing: true));
+      await tester.pump();
       
       final align = tester.widget<Align>(find.byType(Align).first);
       expect(align.alignment, Alignment.centerRight);
@@ -46,6 +57,7 @@ void main() {
 
     testWidgets('incoming message aligns left', (tester) async {
       await tester.pumpWidget(createTestWidget(isOutgoing: false));
+      await tester.pump();
       
       final align = tester.widget<Align>(find.byType(Align).first);
       expect(align.alignment, Alignment.centerLeft);
@@ -53,17 +65,20 @@ void main() {
 
     testWidgets('displays timestamp', (tester) async {
       await tester.pumpWidget(createTestWidget(isOutgoing: true));
+      await tester.pump();
       expect(find.byType(Text), findsWidgets);
     });
 
     testWidgets('outgoing message shows read status icon', (tester) async {
       await tester.pumpWidget(createTestWidget(isOutgoing: true));
+      await tester.pump();
       expect(find.byIcon(Icons.done), findsOneWidget);
     });
 
     testWidgets('read message shows double check icon', (tester) async {
       testMessage = testMessage.copyWith(isRead: true);
       await tester.pumpWidget(createTestWidget(isOutgoing: true));
+      await tester.pump();
       expect(find.byIcon(Icons.done_all), findsOneWidget);
     });
 
@@ -82,6 +97,13 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: MessageBubble(
               message: listingMessage,
@@ -90,6 +112,7 @@ void main() {
           ),
         ),
       );
+      await tester.pump();
 
       expect(find.text('Check this listing'), findsOneWidget);
       expect(find.byIcon(Icons.local_offer), findsOneWidget);
@@ -100,6 +123,13 @@ void main() {
       
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: MessageBubble(
               message: testMessage,
@@ -109,6 +139,7 @@ void main() {
           ),
         ),
       );
+      await tester.pump();
 
       await tester.tap(find.text('Test message content'));
       await tester.pump();
@@ -119,31 +150,54 @@ void main() {
   group('TypingIndicator Widget Tests', () {
     testWidgets('displays when visible is true', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: TypingIndicator(isVisible: true),
           ),
         ),
       );
+      await tester.pump();
 
       expect(find.byType(TypingIndicator), findsOneWidget);
     });
 
     testWidgets('hides when visible is false', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: TypingIndicator(isVisible: false),
           ),
         ),
       );
+      await tester.pump();
 
       expect(find.byType(SizedBox), findsOneWidget);
     });
 
     testWidgets('animates dots', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: TypingIndicator(isVisible: true),
           ),

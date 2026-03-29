@@ -15,12 +15,15 @@
 // 12. ThemeNotifier.setDark persists and is restored by load()
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:brewmaster/config/theme_notifier.dart';
+import 'package:brewmaster/config/locale_notifier.dart';
 import 'package:brewmaster/presentation/blocs/messaging/notification_bloc.dart';
 import 'package:brewmaster/presentation/screens/profile/settings_screen.dart';
 
@@ -33,6 +36,7 @@ Future<Widget> _buildScreen({
   NotificationBloc? bloc,
 }) async {
   final t = theme ?? await ThemeNotifier.load();
+  final l = await LocaleNotifier.load();
   final b = bloc ??
       NotificationBloc(repository: FakeNotificationRepository())
         ..emit(const NotificationPreferencesLoaded({
@@ -41,11 +45,23 @@ Future<Widget> _buildScreen({
           'paymentsEnabled': true,
           'promotionsEnabled': true,
         }));
-  return ChangeNotifierProvider<ThemeNotifier>.value(
-    value: t,
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider<ThemeNotifier>.value(value: t),
+      ChangeNotifierProvider<LocaleNotifier>.value(value: l),
+    ],
     child: BlocProvider<NotificationBloc>.value(
       value: b,
-      child: const MaterialApp(home: SettingsScreen()),
+      child: MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const SettingsScreen(),
+      ),
     ),
   );
 }
@@ -103,6 +119,8 @@ void main() {
     testWidgets('shows "Settings" in app bar', (tester) async {
       await tester.pumpWidget(await _buildScreen());
       await tester.pump();
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Settings'), findsOneWidget);
     });
 
@@ -110,12 +128,14 @@ void main() {
         (tester) async {
       await tester.pumpWidget(await _buildScreen());
       await tester.pump();
+      await tester.pump();
       expect(find.text('APPEARANCE'), findsOneWidget);
       expect(find.text('NOTIFICATIONS'), findsOneWidget);
     });
 
     testWidgets('dark mode toggle starts off (light mode)', (tester) async {
       await tester.pumpWidget(await _buildScreen());
+      await tester.pump();
       await tester.pump();
       expect(find.text('Dark Mode'), findsOneWidget);
       final darkSwitch =
@@ -128,6 +148,7 @@ void main() {
       final theme = await ThemeNotifier.load();
       await tester.pumpWidget(await _buildScreen(theme: theme));
       await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.byType(Switch).first);
       await tester.pump();
@@ -138,6 +159,7 @@ void main() {
     testWidgets('renders all four notification tiles', (tester) async {
       await tester.pumpWidget(await _buildScreen());
       await tester.pump();
+      await tester.pump();
       expect(find.text('Messages'), findsOneWidget);
       expect(find.text('New Listings'), findsOneWidget);
       expect(find.text('Payments'), findsOneWidget);
@@ -146,6 +168,7 @@ void main() {
 
     testWidgets('shows correct updated subtitles', (tester) async {
       await tester.pumpWidget(await _buildScreen());
+      await tester.pump();
       await tester.pump();
       expect(find.text('Alerts when new coffee lots are posted'), findsOneWidget);
       expect(find.text('Transaction status & dispute alerts'), findsOneWidget);
@@ -158,6 +181,7 @@ void main() {
     testWidgets('renders 5 Switch widgets (dark mode + 4 notifications)',
         (tester) async {
       await tester.pumpWidget(await _buildScreen());
+      await tester.pump();
       await tester.pump();
       expect(find.byType(Switch), findsNWidgets(5));
     });
@@ -176,6 +200,7 @@ void main() {
 
       await tester.pumpWidget(await _buildScreen(bloc: bloc));
       await tester.pump();
+      await tester.pump();
 
       // Switch at index 1 is Messages (index 0 is dark mode)
       await tester.tap(find.byType(Switch).at(1));
@@ -188,11 +213,17 @@ void main() {
     testWidgets('shows footer persistence note', (tester) async {
       await tester.pumpWidget(await _buildScreen());
       await tester.pump();
-      expect(find.textContaining('persist across app restarts'), findsOneWidget);
+      await tester.pump();
+      // Footer may be off-screen; check widget tree including offstage
+      expect(
+        find.textContaining('persist across app restarts', skipOffstage: false),
+        findsOneWidget,
+      );
     });
 
     testWidgets('back button is present', (tester) async {
       await tester.pumpWidget(await _buildScreen());
+      await tester.pump();
       await tester.pump();
       expect(find.byIcon(Icons.arrow_back_ios_new), findsOneWidget);
     });
@@ -200,22 +231,36 @@ void main() {
     testWidgets('back button pops navigator', (tester) async {
       bool popped = false;
       final theme = await ThemeNotifier.load();
+      final locale = await LocaleNotifier.load();
       final bloc = NotificationBloc(repository: FakeNotificationRepository());
 
       await tester.pumpWidget(
-        ChangeNotifierProvider<ThemeNotifier>.value(
-          value: theme,
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<ThemeNotifier>.value(value: theme),
+            ChangeNotifierProvider<LocaleNotifier>.value(value: locale),
+          ],
           child: BlocProvider<NotificationBloc>.value(
             value: bloc,
             child: MaterialApp(
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Builder(
                 builder: (ctx) => ElevatedButton(
                   onPressed: () {
                     Navigator.push<void>(
                       ctx,
                       MaterialPageRoute<void>(
-                        builder: (_) => ChangeNotifierProvider<ThemeNotifier>.value(
-                          value: theme,
+                        builder: (_) => MultiProvider(
+                          providers: [
+                            ChangeNotifierProvider<ThemeNotifier>.value(value: theme),
+                            ChangeNotifierProvider<LocaleNotifier>.value(value: locale),
+                          ],
                           child: BlocProvider<NotificationBloc>.value(
                             value: bloc,
                             child: const SettingsScreen(),
@@ -231,6 +276,8 @@ void main() {
           ),
         ),
       );
+      await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();

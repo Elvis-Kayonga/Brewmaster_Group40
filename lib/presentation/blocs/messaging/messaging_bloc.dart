@@ -64,7 +64,10 @@ class MessagingBloc extends Bloc<MessagingEvent, MessagingState> {
     await _conversationsSub?.cancel();
     _conversationsSub = _repository.watchConversations().listen(
       (convos) => add(_ConversationsUpdated(convos)),
-      onError: (e) => add(_StreamError(e.toString())),
+      onError: (e) {
+        _conversationsSub?.cancel();
+        add(_StreamError(e.toString()));
+      },
     );
   }
 
@@ -83,7 +86,10 @@ class MessagingBloc extends Bloc<MessagingEvent, MessagingState> {
     await _messagesSub?.cancel();
     _messagesSub = _repository.watchMessages(event.conversationId).listen(
       (msgs) => add(_MessagesUpdated(msgs)),
-      onError: (e) => add(_StreamError(e.toString())),
+      onError: (e) {
+        _messagesSub?.cancel();
+        add(_StreamError(e.toString()));
+      },
     );
   }
 

@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brewmaster/domain/models/escrow_transaction.dart' as models;
@@ -126,6 +128,13 @@ Widget _buildTestWidget({required String userId, required bool isFarmer}) {
       BlocProvider(create: (_) => ProfileBloc(userRepository: _FakeUserRepository())),
     ],
     child: MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: TransactionHistoryScreen(userId: userId, isFarmer: isFarmer),
     ),
   );

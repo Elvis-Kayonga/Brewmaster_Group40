@@ -5,6 +5,8 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -75,6 +77,13 @@ void main() {
       String? buyerCountry,
     }) {
       return MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
         home: BlocProvider(
           create: (_) =>
               PaymentBloc(paymentRepository: _FakePaymentRepository()),
@@ -92,6 +101,7 @@ void main() {
     testWidgets('renders summary, terms and Flutterwave step buttons',
         (WidgetTester tester) async {
       await tester.pumpWidget(createTestWidget());
+      await tester.pump();
       // Allow the exchange rate fetch to complete (returns 400 in test env,
       // which is caught and falls back to USD, setting _loadingRate = false).
       await tester.pumpAndSettle();
@@ -113,6 +123,7 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(amount: 1200, buyerCountry: 'Kenya'),
       );
+      await tester.pump();
 
       // USD amounts always show in the summary rows
       expect(find.text('Amount (USD):'), findsOneWidget);
@@ -125,6 +136,7 @@ void main() {
     testWidgets('toggles terms checkbox from row interaction',
         (WidgetTester tester) async {
       await tester.pumpWidget(createTestWidget());
+      await tester.pump();
 
       final checkboxFinder = find.byType(Checkbox);
       expect(tester.widget<Checkbox>(checkboxFinder).value, isFalse);
@@ -150,6 +162,7 @@ void main() {
           buyerCountry: 'Uganda',
         ),
       );
+      await tester.pump();
 
       final widget = tester.widget<PaymentScreen>(find.byType(PaymentScreen));
       expect(widget.listingId, 'listing-x');

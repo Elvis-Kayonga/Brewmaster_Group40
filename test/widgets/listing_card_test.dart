@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:brewmaster/domain/models/coffee_listing.dart';
 import 'package:brewmaster/domain/models/enums.dart';
@@ -9,7 +11,15 @@ import 'package:brewmaster/presentation/widgets/listing/listing_card.dart';
 class _MockHttpOverrides extends HttpOverrides {}
 
 Widget _wrap(Widget child) =>
-    MaterialApp(home: Scaffold(body: SingleChildScrollView(child: child)));
+    MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: SingleChildScrollView(child: child)));
 
 CoffeeListing _makeListing({
   String listingId = 'l1',
@@ -54,6 +64,7 @@ void main() {
         listing: _makeListing(),
         onTap: () {},
       )));
+      await tester.pump();
       expect(find.text('Arabica'), findsOneWidget);
     });
 
@@ -62,6 +73,7 @@ void main() {
         listing: _makeListing(quantity: 100, pricePerKg: 8.5),
         onTap: () {},
       )));
+      await tester.pump();
       expect(find.textContaining('100'), findsAtLeastNWidgets(1));
       expect(find.textContaining('8.5'), findsAtLeastNWidgets(1));
     });
@@ -71,6 +83,7 @@ void main() {
         listing: _makeListing(altitude: 1800),
         onTap: () {},
       )));
+      await tester.pump();
       expect(find.textContaining('1800'), findsOneWidget);
     });
 
@@ -79,6 +92,7 @@ void main() {
         listing: _makeListing(qualityScore: 87),
         onTap: () {},
       )));
+      await tester.pump();
       expect(find.textContaining('87'), findsAtLeastNWidgets(1));
     });
 
@@ -87,6 +101,7 @@ void main() {
         listing: _makeListing(status: ListingStatus.active),
         onTap: () {},
       )));
+      await tester.pump();
       expect(find.textContaining('active'), findsAtLeastNWidgets(1));
     });
 
@@ -96,6 +111,7 @@ void main() {
         listing: _makeListing(),
         onTap: () => tapped = true,
       )));
+      await tester.pump();
       await tester.tap(find.byType(InkWell));
       expect(tapped, isTrue);
     });
@@ -106,6 +122,7 @@ void main() {
         onTap: () {},
         onEdit: () {},
       )));
+      await tester.pump();
       expect(find.text('Edit'), findsOneWidget);
     });
 
@@ -115,6 +132,7 @@ void main() {
         onTap: () {},
         onDelete: () {},
       )));
+      await tester.pump();
       expect(find.text('Delete'), findsOneWidget);
     });
 
@@ -125,6 +143,7 @@ void main() {
         onTap: () {},
         onEdit: () => called = true,
       )));
+      await tester.pump();
       await tester.tap(find.text('Edit'));
       expect(called, isTrue);
     });
@@ -136,6 +155,7 @@ void main() {
         onTap: () {},
         onDelete: () => called = true,
       )));
+      await tester.pump();
       await tester.tap(find.text('Delete'));
       expect(called, isTrue);
     });
@@ -145,6 +165,7 @@ void main() {
         listing: _makeListing(),
         onTap: () {},
       )));
+      await tester.pump();
       expect(find.text('Edit'), findsNothing);
       expect(find.text('Delete'), findsNothing);
     });
@@ -154,6 +175,7 @@ void main() {
         listing: _makeListing(images: const []),
         onTap: () {},
       )));
+      await tester.pump();
       // Without images, no image container is rendered
       expect(find.byType(ListingCard), findsOneWidget);
     });
@@ -163,6 +185,7 @@ void main() {
         listing: _makeListing(status: ListingStatus.sold),
         onTap: () {},
       )));
+      await tester.pump();
       expect(find.textContaining('sold'), findsAtLeastNWidgets(1));
     });
 
@@ -171,6 +194,7 @@ void main() {
         listing: _makeListing(status: ListingStatus.draft),
         onTap: () {},
       )));
+      await tester.pump();
       expect(find.textContaining('draft'), findsAtLeastNWidgets(1));
     });
 
@@ -180,6 +204,7 @@ void main() {
         onTap: () {},
         farmerVerificationStatus: VerificationStatus.verified,
       )));
+      await tester.pump();
       expect(find.byType(ListingCard), findsOneWidget);
     });
 
@@ -188,6 +213,7 @@ void main() {
         listing: _makeListing(farmerName: 'John Kamau'),
         onTap: () {},
       )));
+      await tester.pump();
       expect(find.text('John Kamau'), findsOneWidget);
     });
 
@@ -196,6 +222,7 @@ void main() {
         listing: _makeListing(farmerName: null),
         onTap: () {},
       )));
+      await tester.pump();
       expect(find.byIcon(Icons.person_outline), findsNothing);
     });
 
@@ -204,6 +231,7 @@ void main() {
         listing: _makeListing(farmerName: ''),
         onTap: () {},
       )));
+      await tester.pump();
       expect(find.byIcon(Icons.person_outline), findsNothing);
     });
   });

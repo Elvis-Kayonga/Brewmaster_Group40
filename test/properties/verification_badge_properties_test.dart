@@ -6,6 +6,8 @@
 // Developer: Developer 1 + Developer 2
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:brewmaster/domain/models/enums.dart';
 import 'package:brewmaster/presentation/widgets/common/verification_badge.dart';
@@ -15,7 +17,15 @@ import 'package:brewmaster/presentation/widgets/common/verification_badge.dart';
 // ---------------------------------------------------------------------------
 
 /// Wrap a widget in a minimal MaterialApp for pumpWidget.
-Widget _wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
+Widget _wrap(Widget child) => MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: child));
 
 // ---------------------------------------------------------------------------
 // Badge propagation tests
@@ -28,6 +38,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(const VerificationBadge(status: VerificationStatus.verified)),
       );
+      await tester.pump();
       expect(find.byIcon(Icons.verified), findsOneWidget);
       expect(find.text('Verified'), findsOneWidget);
     });
@@ -37,6 +48,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(const VerificationBadge(status: VerificationStatus.pending)),
       );
+      await tester.pump();
       expect(find.byIcon(Icons.hourglass_top), findsOneWidget);
       expect(find.text('Pending'), findsOneWidget);
     });
@@ -46,6 +58,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(const VerificationBadge(status: VerificationStatus.rejected)),
       );
+      await tester.pump();
       expect(find.byIcon(Icons.cancel), findsOneWidget);
       expect(find.text('Rejected'), findsOneWidget);
     });
@@ -54,6 +67,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(const VerificationBadge(status: VerificationStatus.unverified)),
       );
+      await tester.pump();
       expect(find.byType(Icon), findsNothing);
       expect(find.text('Unverified'), findsNothing);
     });
@@ -66,6 +80,7 @@ void main() {
           compact: true,
         )),
       );
+      await tester.pump();
       expect(find.byType(Tooltip), findsOneWidget);
       expect(find.byIcon(Icons.verified), findsOneWidget);
       // No label text in compact mode
@@ -80,6 +95,7 @@ void main() {
           compact: true,
         )),
       );
+      await tester.pump();
       final tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
       expect(tooltip.message, 'Pending');
     });
@@ -92,6 +108,7 @@ void main() {
           compact: true,
         )),
       );
+      await tester.pump();
       final tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
       expect(tooltip.message, 'Rejected');
     });
@@ -103,6 +120,7 @@ void main() {
           compact: true,
         )),
       );
+      await tester.pump();
       expect(find.byType(Tooltip), findsNothing);
       expect(find.byType(Icon), findsNothing);
     });
@@ -198,6 +216,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(const VerificationBadge(status: VerificationStatus.verified)),
       );
+      await tester.pump();
       final icon = tester.widget<Icon>(find.byIcon(Icons.verified));
       expect(icon.color, const Color(0xFF388E3C));
     });
@@ -206,6 +225,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(const VerificationBadge(status: VerificationStatus.pending)),
       );
+      await tester.pump();
       final icon = tester.widget<Icon>(find.byIcon(Icons.hourglass_top));
       expect(icon.color, const Color(0xFFF57F17));
     });
@@ -214,6 +234,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(const VerificationBadge(status: VerificationStatus.rejected)),
       );
+      await tester.pump();
       final icon = tester.widget<Icon>(find.byIcon(Icons.cancel));
       expect(icon.color, const Color(0xFFD32F2F));
     });

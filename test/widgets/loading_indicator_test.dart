@@ -1,44 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:brewmaster/presentation/widgets/common/loading_indicator.dart';
 
 Widget _wrap(Widget child) =>
-    MaterialApp(home: Scaffold(body: child));
+    MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: child));
 
 void main() {
   group('LoadingIndicator', () {
     testWidgets('renders CircularProgressIndicator', (tester) async {
       await tester.pumpWidget(_wrap(const LoadingIndicator()));
+      await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsAtLeastNWidgets(1));
     });
 
     testWidgets('renders with small size', (tester) async {
       await tester.pumpWidget(_wrap(const LoadingIndicator(size: LoadingSize.small)));
+      await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsAtLeastNWidgets(1));
     });
 
     testWidgets('renders with large size', (tester) async {
       await tester.pumpWidget(_wrap(const LoadingIndicator(size: LoadingSize.large)));
+      await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsAtLeastNWidgets(1));
     });
 
     testWidgets('shows message when provided', (tester) async {
       await tester.pumpWidget(_wrap(const LoadingIndicator(message: 'Please wait...')));
+      await tester.pump();
       expect(find.text('Please wait...'), findsOneWidget);
     });
 
     testWidgets('does not show message when not provided', (tester) async {
       await tester.pumpWidget(_wrap(const LoadingIndicator()));
+      await tester.pump();
       expect(find.byType(Text), findsNothing);
     });
 
     testWidgets('centered indicator wraps in Center', (tester) async {
       await tester.pumpWidget(_wrap(const LoadingIndicator(centered: true)));
+      await tester.pump();
       expect(find.byType(Center), findsAtLeastNWidgets(1));
     });
 
     testWidgets('non-centered indicator does not have extra Center', (tester) async {
       await tester.pumpWidget(_wrap(const LoadingIndicator(centered: false)));
+      await tester.pump();
       // No Center widget is added by LoadingIndicator itself when centered=false
       final centers = tester.widgetList<Center>(find.byType(Center));
       // The Scaffold adds none, LoadingIndicator(centered:false) adds none
@@ -47,6 +64,7 @@ void main() {
 
     testWidgets('custom color is applied', (tester) async {
       await tester.pumpWidget(_wrap(const LoadingIndicator(color: Colors.red)));
+      await tester.pump();
       final indicator = tester.widget<CircularProgressIndicator>(
         find.byType(CircularProgressIndicator),
       );
@@ -55,6 +73,7 @@ void main() {
 
     testWidgets('custom strokeWidth is applied', (tester) async {
       await tester.pumpWidget(_wrap(const LoadingIndicator(strokeWidth: 6.0)));
+      await tester.pump();
       final indicator = tester.widget<CircularProgressIndicator>(
         find.byType(CircularProgressIndicator),
       );
@@ -65,11 +84,13 @@ void main() {
   group('InlineLoadingIndicator', () {
     testWidgets('renders with default size', (tester) async {
       await tester.pumpWidget(_wrap(const InlineLoadingIndicator()));
+      await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
     testWidgets('renders with custom size', (tester) async {
       await tester.pumpWidget(_wrap(const InlineLoadingIndicator(size: 24.0)));
+      await tester.pump();
       final sizedBox = tester.widget<SizedBox>(
         find.ancestor(of: find.byType(CircularProgressIndicator), matching: find.byType(SizedBox)).first,
       );
@@ -78,6 +99,7 @@ void main() {
 
     testWidgets('renders with custom color', (tester) async {
       await tester.pumpWidget(_wrap(const InlineLoadingIndicator(color: Colors.green)));
+      await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
   });
@@ -88,6 +110,7 @@ void main() {
         isLoading: false,
         child: const Text('Content'),
       )));
+      await tester.pump();
       expect(find.text('Content'), findsOneWidget);
     });
 
@@ -96,6 +119,7 @@ void main() {
         isLoading: true,
         child: const Text('Content'),
       )));
+      await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsAtLeastNWidgets(1));
     });
 
@@ -104,6 +128,7 @@ void main() {
         isLoading: false,
         child: const Text('Content'),
       )));
+      await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
@@ -114,6 +139,7 @@ void main() {
         message: 'Saving...',
         child: const SizedBox.expand(child: Text('Content')),
       )));
+      await tester.pump();
       await tester.binding.setSurfaceSize(null);
       expect(find.text('Saving...'), findsAtLeastNWidgets(1));
     });
@@ -122,6 +148,7 @@ void main() {
   group('ShimmerLoading', () {
     testWidgets('renders with given dimensions', (tester) async {
       await tester.pumpWidget(_wrap(const ShimmerLoading(width: 200, height: 50)));
+      await tester.pump();
       expect(find.byType(ShimmerLoading), findsOneWidget);
     });
 
@@ -139,6 +166,7 @@ void main() {
         data: null,
         contentBuilder: (data) => Text(data),
       )));
+      await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsAtLeastNWidgets(1));
     });
 
@@ -148,6 +176,7 @@ void main() {
         data: 'Hello',
         contentBuilder: (data) => Text(data),
       )));
+      await tester.pump();
       expect(find.text('Hello'), findsOneWidget);
     });
 
@@ -158,6 +187,7 @@ void main() {
         errorMessage: 'Something went wrong',
         contentBuilder: (data) => Text(data),
       )));
+      await tester.pump();
       expect(find.text('Something went wrong'), findsOneWidget);
     });
 
@@ -169,6 +199,7 @@ void main() {
         onRetry: () {},
         contentBuilder: (data) => Text(data),
       )));
+      await tester.pump();
       expect(find.text('Retry'), findsOneWidget);
     });
 
@@ -179,6 +210,7 @@ void main() {
         contentBuilder: (data) => Text(data),
         emptyWidget: const Text('Empty'),
       )));
+      await tester.pump();
       expect(find.text('Empty'), findsOneWidget);
     });
 
@@ -190,6 +222,7 @@ void main() {
         errorBuilder: (e) => Text('Custom: $e'),
         contentBuilder: (data) => Text(data),
       )));
+      await tester.pump();
       expect(find.text('Custom: Custom error'), findsOneWidget);
     });
   });

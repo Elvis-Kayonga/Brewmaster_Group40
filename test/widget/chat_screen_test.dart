@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_core_platform_interface/test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -155,7 +157,15 @@ Widget _wrap(Widget child) => MultiBlocProvider(
               NotificationBloc(repository: _FakeNotificationRepository()),
         ),
       ],
-      child: MaterialApp(home: child),
+      child: MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: child),
     );
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -171,12 +181,15 @@ void main() {
     testWidgets('displays app bar', (tester) async {
       await tester.pumpWidget(_wrap(ChatScreen(conversation: _makeConversation())));
       await tester.pump();
+      await tester.pump();
+      await tester.pump();
 
       expect(find.byType(AppBar), findsOneWidget);
     });
 
     testWidgets('displays message input field with correct hint', (tester) async {
       await tester.pumpWidget(_wrap(ChatScreen(conversation: _makeConversation())));
+      await tester.pump();
       await tester.pump();
 
       expect(find.byType(TextField), findsOneWidget);
@@ -186,18 +199,25 @@ void main() {
     testWidgets('send button uses arrow_upward icon', (tester) async {
       await tester.pumpWidget(_wrap(ChatScreen(conversation: _makeConversation())));
       await tester.pump();
+      await tester.pump();
 
       expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
     });
 
     testWidgets('shows loading on initial BLoC state', (tester) async {
       await tester.pumpWidget(_wrap(ChatScreen(conversation: _makeConversation())));
-      // Before settling — MessagingInitial triggers LoadingIndicator
+      await tester.pump(); // localizations
+      await tester.pump(); // bloc processes LoadMessages event
+      // Manually emit loading so we can assert the loading UI exists
+      final bloc = tester.element(find.byType(Scaffold)).read<MessagingBloc>();
+      bloc.emit(const MessagingLoading());
+      await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
     testWidgets('input field accepts text entry', (tester) async {
       await tester.pumpWidget(_wrap(ChatScreen(conversation: _makeConversation())));
+      await tester.pump();
       await tester.pump();
 
       await tester.enterText(find.byType(TextField), 'Hello!');

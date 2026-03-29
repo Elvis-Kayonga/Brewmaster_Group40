@@ -6,6 +6,8 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_core_platform_interface/test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -150,6 +152,13 @@ Widget _wrap({
 
   final userRepo = FakeUserRepository();
   return MaterialApp(
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
     home: MultiBlocProvider(
       providers: [
         BlocProvider<MessagingBloc>(
@@ -243,12 +252,15 @@ void main() {
     testWidgets('shows app bar with "Brew Master" title', (tester) async {
       await tester.pumpWidget(_wrap(neverLoad: true));
       await tester.pump();
-      expect(find.text('Brew Master'), findsOneWidget);
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('BrewMaster'), findsOneWidget);
     });
 
     testWidgets('shows loading indicator while conversations are loading',
         (tester) async {
       await tester.pumpWidget(_wrap(neverLoad: true));
+      await tester.pump();
       await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
@@ -257,12 +269,14 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_wrap(loadError: true));
       await tester.pump();
+      await tester.pump();
       expect(find.textContaining('Network error'), findsOneWidget);
     });
 
     testWidgets('shows "No Messages" empty state when conversations list is empty',
         (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
       expect(find.text('No Messages'), findsOneWidget);
     });
@@ -271,6 +285,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_wrap(conversations: [_makeConversation()]));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Messages'), findsOneWidget);
     });
 
@@ -278,12 +293,14 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_wrap(conversations: [_makeConversation()]));
       await tester.pump();
+      await tester.pump();
       expect(find.text('DIRECT MESSAGING'), findsOneWidget);
     });
 
     testWidgets('shows search text field when conversations are loaded',
         (tester) async {
       await tester.pumpWidget(_wrap(conversations: [_makeConversation()]));
+      await tester.pump();
       await tester.pump();
       expect(find.byType(TextField), findsOneWidget);
     });
@@ -296,6 +313,7 @@ void main() {
         ]),
       );
       await tester.pump();
+      await tester.pump();
       expect(find.text('Alice'), findsOneWidget);
     });
 
@@ -306,6 +324,7 @@ void main() {
           _makeConversation(id: 'conv-002a', otherUserId: 'user-003', otherName: 'Bob'),
         ]),
       );
+      await tester.pump();
       await tester.pump();
       expect(find.text('Alice'), findsOneWidget);
       expect(find.text('Bob'), findsOneWidget);
@@ -318,11 +337,13 @@ void main() {
         ]),
       );
       await tester.pump();
+      await tester.pump();
       expect(find.text('3'), findsOneWidget);
     });
 
     testWidgets('shows search placeholder hint text', (tester) async {
       await tester.pumpWidget(_wrap(conversations: [_makeConversation()]));
+      await tester.pump();
       await tester.pump();
       expect(find.text('Search conversations...'), findsOneWidget);
     });
@@ -331,6 +352,7 @@ void main() {
         'empty state shows descriptive text about starting conversations',
         (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
       expect(
         find.textContaining('connect with farmers or buyers'),
@@ -343,6 +365,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(conversations: [_makeConversation(otherName: 'Alice')]),
       );
+      await tester.pump();
       await tester.pump();
 
       await tester.enterText(find.byType(TextField), 'Ali');

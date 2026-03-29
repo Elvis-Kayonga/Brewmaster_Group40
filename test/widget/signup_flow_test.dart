@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
@@ -129,7 +131,15 @@ Widget _buildApp({
         create: (_) => ProfileBloc(userRepository: userRepo),
       ),
     ],
-    child: MaterialApp(home: home),
+    child: MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: home),
   );
 }
 
@@ -147,6 +157,9 @@ void main() {
 
     await tester.pumpWidget(
         _buildApp(home: const SignupScreen(), authRepo: authRepo, userRepo: userRepo));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
 
     expect(find.byType(TextFormField), findsWidgets);
     expect(find.text('Sign up as Buyer'), findsAtLeastNWidgets(1));
@@ -159,6 +172,8 @@ void main() {
 
     await tester.pumpWidget(
         _buildApp(home: const LoginScreen(), authRepo: authRepo, userRepo: userRepo));
+    await tester.pump();
+    await tester.pump();
 
     expect(find.byType(TextFormField), findsWidgets);
     expect(find.text('Sign In as Buyer'), findsAtLeastNWidgets(1));
@@ -174,6 +189,8 @@ void main() {
 
     await tester.pumpWidget(
         _buildApp(home: const SignupScreen(), authRepo: authRepo, userRepo: userRepo));
+    await tester.pump();
+    await tester.pump();
 
     // Field order: Full Name (0), Email (1), Password (2), Confirm Password (3)
     await tester.enterText(find.byType(TextFormField).at(0), 'Test User');

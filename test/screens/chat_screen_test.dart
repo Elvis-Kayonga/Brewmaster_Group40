@@ -7,6 +7,8 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_core_platform_interface/test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -221,6 +223,13 @@ Widget _wrap({
 
   final userRepo = FakeUserRepository();
   return MaterialApp(
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
     home: MultiBlocProvider(
       providers: [
         BlocProvider<MessagingBloc>(
@@ -259,12 +268,15 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_wrap(neverLoad: true));
       await tester.pump();
+      await tester.pump();
+      await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
     testWidgets('shows error message when watchMessages throws',
         (tester) async {
       await tester.pumpWidget(_wrap(loadError: true));
+      await tester.pump();
       await tester.pump();
       expect(find.textContaining('Failed to load messages'), findsOneWidget);
     });
@@ -273,12 +285,14 @@ void main() {
       final conv = _makeConversation(otherName: 'Bob');
       await tester.pumpWidget(_wrap(conversation: conv));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Bob'), findsOneWidget);
     });
 
     testWidgets('shows empty-state hint text when no messages exist',
         (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
       expect(
         find.textContaining('Ask about the coffee variety'),
@@ -291,6 +305,7 @@ void main() {
       final msg = _makeMessage(content: 'Good morning!');
       await tester.pumpWidget(_wrap(messages: [msg]));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Good morning!'), findsOneWidget);
     });
 
@@ -302,6 +317,7 @@ void main() {
       ];
       await tester.pumpWidget(_wrap(messages: messages));
       await tester.pump();
+      await tester.pump();
       expect(find.text('First message'), findsOneWidget);
       expect(find.text('Second message'), findsOneWidget);
     });
@@ -310,11 +326,13 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
       expect(find.text('Type a message...'), findsOneWidget);
     });
 
     testWidgets('shows send button icon in the input area', (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
       expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
     });
@@ -322,11 +340,13 @@ void main() {
     testWidgets('shows microphone icon in the input field', (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
       expect(find.byIcon(Icons.mic_none), findsOneWidget);
     });
 
     testWidgets('shows back arrow in the app bar', (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
       expect(find.byIcon(Icons.arrow_back_ios_new), findsOneWidget);
     });
@@ -344,12 +364,14 @@ void main() {
       );
       await tester.pumpWidget(_wrap(conversation: conv));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Conversation'), findsOneWidget);
     });
 
     testWidgets('entering text in the input field enables the send button',
         (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       // Before typing the send button container uses textHint colour (disabled)
@@ -362,6 +384,7 @@ void main() {
 
     testWidgets('shows retry option on error state', (tester) async {
       await tester.pumpWidget(_wrap(loadError: true));
+      await tester.pump();
       await tester.pump();
       // ErrorStateWidget typically renders a retry button
       expect(

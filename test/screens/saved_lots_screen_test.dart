@@ -6,6 +6,8 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_core_platform_interface/test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -75,6 +77,13 @@ Widget _wrap({List<SavedLot> initialLots = const []}) {
       ),
     ],
     child: MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: const SavedLotsScreen(),
     ),
   );
@@ -95,6 +104,8 @@ void main() {
     testWidgets('shows "Saved Lots" title in app bar', (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Saved Lots'), findsOneWidget);
     });
 
@@ -102,11 +113,13 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
       expect(find.text('Clear All'), findsNothing);
     });
 
     testWidgets('shows Clear All button when list has items', (tester) async {
       await tester.pumpWidget(_wrap(initialLots: [_makeLot()]));
+      await tester.pump();
       await tester.pump();
       expect(find.text('Clear All'), findsOneWidget);
     });
@@ -116,17 +129,20 @@ void main() {
     testWidgets('shows empty state icon when no saved lots', (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
       expect(find.byIcon(Icons.favorite_border), findsOneWidget);
     });
 
     testWidgets('shows "No saved lots yet" text when empty', (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
       expect(find.text('No saved lots yet'), findsOneWidget);
     });
 
     testWidgets('shows hint text when empty', (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
       expect(
         find.textContaining('Tap the heart on any listing'),
@@ -139,12 +155,14 @@ void main() {
     testWidgets('shows lot variety name', (tester) async {
       await tester.pumpWidget(_wrap(initialLots: [_makeLot(variety: 'Gesha')]));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Gesha'), findsOneWidget);
     });
 
     testWidgets('shows lot location in upper case', (tester) async {
       await tester.pumpWidget(
           _wrap(initialLots: [_makeLot(location: 'Kenya')]));
+      await tester.pump();
       await tester.pump();
       expect(find.text('KENYA'), findsOneWidget);
     });
@@ -153,12 +171,14 @@ void main() {
       await tester.pumpWidget(
           _wrap(initialLots: [_makeLot(pricePerKg: 7.25)]));
       await tester.pump();
+      await tester.pump();
       expect(find.text('\$7.25'), findsOneWidget);
     });
 
     testWidgets('shows available quantity', (tester) async {
       await tester.pumpWidget(
           _wrap(initialLots: [_makeLot(availableQuantity: 150)]));
+      await tester.pump();
       await tester.pump();
       expect(find.textContaining('150'), findsOneWidget);
     });
@@ -167,6 +187,7 @@ void main() {
       await tester.pumpWidget(
           _wrap(initialLots: [_makeLot(farmerName: 'Alice Grower')]));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Alice Grower'), findsOneWidget);
     });
 
@@ -174,6 +195,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(
           _wrap(initialLots: [_makeLot(farmerName: null)]));
+      await tester.pump();
       await tester.pump();
       // The only text nodes visible should be the location, variety, etc.
       // A null farmerName means no extra Text widget with a farmer name.
@@ -184,6 +206,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_wrap(initialLots: [_makeLot()]));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Message'), findsOneWidget);
       expect(find.text('Direct Pay'), findsOneWidget);
     });
@@ -191,6 +214,7 @@ void main() {
     testWidgets('shows placeholder image when imageUrl is null',
         (tester) async {
       await tester.pumpWidget(_wrap(initialLots: [_makeLot(imageUrl: null)]));
+      await tester.pump();
       await tester.pump();
       expect(find.byIcon(Icons.coffee), findsOneWidget);
     });
@@ -202,6 +226,7 @@ void main() {
         _makeLot(listingId: 'lot-1', variety: 'Arabica'),
         _makeLot(listingId: 'lot-2', variety: 'Robusta'),
       ]));
+      await tester.pump();
       await tester.pump();
       expect(find.text('Arabica'), findsOneWidget);
       expect(find.text('Robusta'), findsOneWidget);
@@ -215,6 +240,7 @@ void main() {
         _makeLot(listingId: 'lot-1'),
         _makeLot(listingId: 'lot-2', variety: 'Robusta'),
       ]));
+      await tester.pump();
       await tester.pump();
 
       // Confirm items are visible
@@ -236,6 +262,7 @@ void main() {
         _makeLot(listingId: 'lot-1', variety: 'Arabica'),
       ]));
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('Arabica'), findsOneWidget);
 
@@ -251,6 +278,7 @@ void main() {
 
     testWidgets('tapping Direct Pay pushes a new route', (tester) async {
       await tester.pumpWidget(_wrap(initialLots: [_makeLot()]));
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.text('Direct Pay'));

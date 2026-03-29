@@ -1,6 +1,8 @@
 // Smoke test: verifies the app's unauthenticated entry point renders correctly.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
@@ -66,7 +68,15 @@ void main() {
             create: (_) => ProfileBloc(userRepository: userRepo),
           ),
         ],
-        child: const MaterialApp(home: AuthGate()),
+        child: MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: AuthGate()),
       ),
     );
     await tester.pumpAndSettle();

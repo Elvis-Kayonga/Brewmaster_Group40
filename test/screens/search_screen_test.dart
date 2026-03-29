@@ -9,6 +9,8 @@ import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_core_platform_interface/test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -19,6 +21,7 @@ import 'package:brewmaster/domain/models/search_filters.dart';
 import 'package:brewmaster/domain/repositories/listing_repository.dart';
 import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
 import 'package:brewmaster/presentation/blocs/listing/listing_bloc.dart';
+import 'package:brewmaster/presentation/blocs/listing_detail/listing_detail_bloc.dart';
 import 'package:brewmaster/presentation/blocs/messaging/messaging_bloc.dart';
 import 'package:brewmaster/presentation/blocs/messaging/notification_bloc.dart';
 import 'package:brewmaster/presentation/blocs/profile/profile_bloc.dart';
@@ -117,6 +120,9 @@ Widget _wrap({
       BlocProvider<ListingBloc>(
         create: (_) => ListingBloc(repository: repo),
       ),
+      BlocProvider<ListingDetailBloc>(
+        create: (_) => ListingDetailBloc(repository: repo),
+      ),
       BlocProvider<MessagingBloc>(
         create: (_) => MessagingBloc(repository: FakeMessageRepository()),
       ),
@@ -137,6 +143,13 @@ Widget _wrap({
       ),
     ],
     child: MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: const SearchScreen(),
     ),
   );
@@ -154,15 +167,18 @@ void main() {
   // ── Header & static UI ──────────────────────────────────────────────────────
 
   group('SearchScreen — header and static UI', () {
-    testWidgets('shows "Brew Master" in app bar', (tester) async {
+    testWidgets('shows "BrewMaster" in app bar', (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
+      await tester.pump();
 
-      expect(find.text('Brew Master'), findsOneWidget);
+      expect(find.text('BrewMaster'), findsOneWidget);
     });
 
     testWidgets('shows "Direct Trade Shop" heading', (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       expect(find.textContaining('Direct Trade'), findsOneWidget);
@@ -170,6 +186,7 @@ void main() {
 
     testWidgets('shows subtitle about specialty lots', (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       expect(
@@ -181,6 +198,7 @@ void main() {
     testWidgets('shows search TextField with hint text', (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
 
       expect(
         find.widgetWithText(TextField, 'Search varieties, origins, or producers'),
@@ -191,12 +209,14 @@ void main() {
     testWidgets('shows "ADVANCED FILTERS" button', (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('ADVANCED FILTERS'), findsOneWidget);
     });
 
     testWidgets('shows map icon button', (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       expect(find.byIcon(Icons.map_outlined), findsOneWidget);
@@ -209,6 +229,7 @@ void main() {
     testWidgets('shows loading indicator while stream is pending', (tester) async {
       final repo = _PendingListingRepository();
       await tester.pumpWidget(_wrap(pendingRepo: repo));
+      await tester.pump();
       await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsWidgets);
@@ -224,6 +245,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_wrap(listings: []));
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('No listings found'), findsOneWidget);
     });
@@ -232,12 +254,14 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_wrap(listings: []));
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('Try adjusting your filters'), findsOneWidget);
     });
 
     testWidgets('shows search_off icon in empty state', (tester) async {
       await tester.pumpWidget(_wrap(listings: []));
+      await tester.pump();
       await tester.pump();
 
       expect(find.byIcon(Icons.search_off), findsOneWidget);
@@ -251,6 +275,7 @@ void main() {
       // When watchActiveListings throws/errors, bloc emits empty listings
       // via onError handler — screen shows empty state widget.
       await tester.pumpWidget(_wrap(listings: []));
+      await tester.pump();
       await tester.pump();
 
       // Manually emit a ListingFailure to trigger the empty state branch
@@ -274,6 +299,7 @@ void main() {
       ];
       await tester.pumpWidget(_wrap(listings: listings));
       await tester.pump();
+      await tester.pump();
 
       expect(find.byType(ListView), findsOneWidget);
     });
@@ -286,6 +312,7 @@ void main() {
         _makeListing(id: 'abcd1234', variety: 'Typica'),
       ];
       await tester.pumpWidget(_wrap(listings: listings));
+      await tester.pump();
       await tester.pump();
 
       expect(find.text('Typica'), findsOneWidget);
@@ -300,6 +327,7 @@ void main() {
       ];
       await tester.pumpWidget(_wrap(listings: listings));
       await tester.pump();
+      await tester.pump();
 
       expect(find.textContaining('15.75'), findsOneWidget);
     });
@@ -312,6 +340,7 @@ void main() {
         _makeListing(id: 'abcd1234', quantity: 250.0),
       ];
       await tester.pumpWidget(_wrap(listings: listings));
+      await tester.pump();
       await tester.pump();
 
       expect(find.textContaining('250'), findsOneWidget);
@@ -326,6 +355,7 @@ void main() {
       ];
       await tester.pumpWidget(_wrap(listings: listings));
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('ETHIOPIA'), findsOneWidget);
     });
@@ -339,6 +369,7 @@ void main() {
       ];
       await tester.pumpWidget(_wrap(listings: listings));
       await tester.pump();
+      await tester.pump();
 
       expect(find.textContaining('Berry and citrus notes.'), findsOneWidget);
     });
@@ -349,6 +380,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       final listings = [_makeListing()];
       await tester.pumpWidget(_wrap(listings: listings));
+      await tester.pump();
       await tester.pump();
 
       expect(find.text('Price / KG'), findsOneWidget);
@@ -361,6 +393,7 @@ void main() {
       final listings = [_makeListing()];
       await tester.pumpWidget(_wrap(listings: listings));
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('Message'), findsOneWidget);
     });
@@ -372,6 +405,7 @@ void main() {
       final listings = [_makeListing()];
       await tester.pumpWidget(_wrap(listings: listings));
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('Direct Pay'), findsOneWidget);
     });
@@ -382,6 +416,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       final listings = [_makeListing(qualityScore: 80.0)];
       await tester.pumpWidget(_wrap(listings: listings));
+      await tester.pump();
       await tester.pump();
 
       // qualityScore 80 / 20 = 4.0 star rating
@@ -395,6 +430,7 @@ void main() {
       final listings = [_makeListing(id: 'abcd1234')];
       await tester.pumpWidget(_wrap(listings: listings));
       await tester.pump();
+      await tester.pump();
 
       // First 4 chars of listingId uppercased: ABCD
       expect(find.textContaining('TRC-ABCD'), findsOneWidget);
@@ -407,6 +443,7 @@ void main() {
       final listings = [_makeListing(images: const [])];
       await tester.pumpWidget(_wrap(listings: listings));
       await tester.pump();
+      await tester.pump();
 
       expect(find.byIcon(Icons.coffee), findsOneWidget);
     });
@@ -418,6 +455,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       final listings = [_makeListing()];
       await tester.pumpWidget(_wrap(listings: listings));
+      await tester.pump();
       await tester.pump();
 
       expect(find.byIcon(Icons.favorite_border), findsOneWidget);
@@ -432,6 +470,7 @@ void main() {
         _makeListing(id: 'efgh5678', variety: 'Gesha'),
       ];
       await tester.pumpWidget(_wrap(listings: listings));
+      await tester.pump();
       await tester.pump();
 
       expect(find.text('Bourbon'), findsOneWidget);
@@ -452,6 +491,7 @@ void main() {
         _makeListing(id: 'efgh5678', variety: 'Gesha'),
       ];
       await tester.pumpWidget(_wrap(listings: listings));
+      await tester.pump();
       await tester.pump();
 
       await tester.enterText(
@@ -475,6 +515,7 @@ void main() {
       ];
       await tester.pumpWidget(_wrap(listings: listings));
       await tester.pump();
+      await tester.pump();
 
       await tester.enterText(
         find.byType(TextField).first,
@@ -495,6 +536,7 @@ void main() {
       ];
       await tester.pumpWidget(_wrap(listings: listings));
       await tester.pump();
+      await tester.pump();
 
       await tester.enterText(
         find.byType(TextField).first,
@@ -514,6 +556,7 @@ void main() {
         _makeListing(id: 'efgh5678', variety: 'Gesha'),
       ];
       await tester.pumpWidget(_wrap(listings: listings));
+      await tester.pump();
       await tester.pump();
 
       await tester.enterText(find.byType(TextField).first, 'Gesha');
@@ -544,6 +587,7 @@ void main() {
       ];
       await tester.pumpWidget(_wrap(listings: listings));
       await tester.pump();
+      await tester.pump();
 
       await tester.enterText(find.byType(TextField).first, 'Alice');
       await tester.pump();
@@ -563,6 +607,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.text('ADVANCED FILTERS'));
       await tester.pump();
@@ -579,6 +624,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.text('ADVANCED FILTERS'));
@@ -599,6 +645,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.text('ADVANCED FILTERS'));
       await tester.pump();
@@ -616,6 +663,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.text('ADVANCED FILTERS'));
       await tester.pump();
@@ -630,6 +678,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.text('ADVANCED FILTERS'));
@@ -646,6 +695,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.text('ADVANCED FILTERS'));
       await tester.pump();
@@ -659,6 +709,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.text('ADVANCED FILTERS'));
@@ -678,6 +729,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.text('ADVANCED FILTERS'));
       await tester.pump();
@@ -694,6 +746,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.text('ADVANCED FILTERS'));
@@ -714,6 +767,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.text('ADVANCED FILTERS'));
       await tester.pump();
@@ -732,6 +786,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.text('ADVANCED FILTERS'));
       await tester.pump();
@@ -748,6 +803,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.text('ADVANCED FILTERS'));
@@ -772,6 +828,7 @@ void main() {
       final listings = [_makeListing(id: 'abcd1234', variety: 'Bourbon')];
       await tester.pumpWidget(_wrap(listings: listings));
       await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.text('ADVANCED FILTERS'));
       await tester.pump();
@@ -793,6 +850,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.text('ADVANCED FILTERS'));
@@ -825,6 +883,7 @@ void main() {
       ];
       await tester.pumpWidget(_wrap(listings: listings));
       await tester.pump();
+      await tester.pump();
 
       expect(find.byIcon(Icons.map_outlined), findsOneWidget);
 
@@ -843,6 +902,7 @@ void main() {
         _makeListing(id: 'abcd1234', location: 'Kenya'),
       ];
       await tester.pumpWidget(_wrap(listings: listings));
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.byIcon(Icons.map_outlined));
@@ -866,6 +926,7 @@ void main() {
       ];
       await tester.pumpWidget(_wrap(listings: listings));
       await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.byIcon(Icons.map_outlined));
       await tester.pump();
@@ -884,6 +945,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       final listings = [_makeListing(id: 'abcd1234')];
       await tester.pumpWidget(_wrap(listings: listings));
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.byIcon(Icons.favorite_border));
@@ -904,6 +966,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       final listings = [_makeListing(id: 'abcd1234')];
       await tester.pumpWidget(_wrap(listings: listings));
+      await tester.pump();
       await tester.pump();
 
       // Pre-save via bloc directly (UI won't reflect SavedLotsBloc changes
@@ -940,6 +1003,7 @@ void main() {
       final listings = [_makeListing(id: 'abcd1234', variety: 'Bourbon')];
       await tester.pumpWidget(_wrap(listings: listings));
       await tester.pump();
+      await tester.pump();
 
       // Use expectLater to check no exceptions are thrown during tap
       await tester.tap(find.text('Bourbon'));
@@ -956,6 +1020,7 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.text('ADVANCED FILTERS'));
@@ -985,6 +1050,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       final listings = [_makeListing(id: 'abcd1234', variety: 'Bourbon')];
       await tester.pumpWidget(_wrap(listings: listings));
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.byIcon(Icons.favorite_border));
@@ -1046,9 +1112,18 @@ void main() {
                   NotificationBloc(repository: FakeNotificationRepository()),
             ),
           ],
-          child: const MaterialApp(home: SearchScreen()),
+          child: MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: SearchScreen()),
         ),
       );
+      await tester.pump();
       await tester.pump();
 
       // Heart should be filled (favorite icon) since listing is saved
@@ -1074,6 +1149,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       final listings = [_makeListing(id: 'abcd1234')];
       await tester.pumpWidget(_wrap(listings: listings));
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.text('Message'));
@@ -1122,9 +1198,18 @@ void main() {
                   PaymentBloc(paymentRepository: FakePaymentRepository()),
             ),
           ],
-          child: const MaterialApp(home: SearchScreen()),
+          child: MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: SearchScreen()),
         ),
       );
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.text('Direct Pay'));
@@ -1152,6 +1237,7 @@ void main() {
       ];
       await tester.pumpWidget(_wrap(listings: listings));
       await tester.pump();
+      await tester.pump();
 
       // Switch to map view
       await tester.tap(find.byIcon(Icons.map_outlined));
@@ -1176,6 +1262,7 @@ void main() {
         ),
       ];
       await tester.pumpWidget(_wrap(listings: listings));
+      await tester.pump();
       await tester.pump();
 
       // Switch to map view

@@ -4,8 +4,12 @@
 /// Developer: Developer 5 (refactored to BLoC by Developer 1)
 library;
 
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -87,10 +91,35 @@ class _FakeMarketPriceRepository implements MarketPriceRepository {
   DateTime? get lastSyncTime => null;
 }
 
+/// Repository that never completes — keeps the bloc in loading state.
+class _NeverCompletingMarketPriceRepository implements MarketPriceRepository {
+  @override
+  Future<List<MarketPrice>> getMarketPrices() =>
+      Completer<List<MarketPrice>>().future;
+  @override
+  Future<List<MarketPrice>> getPricesForVariety(String variety,
+          {QualityGrade? grade}) =>
+      Completer<List<MarketPrice>>().future;
+  @override
+  Future<List<MarketPrice>> syncDailyPrices() =>
+      Completer<List<MarketPrice>>().future;
+  @override
+  Stream<List<MarketPrice>> watchMarketPrices() => const Stream.empty();
+  @override
+  DateTime? get lastSyncTime => null;
+}
+
 void main() {
   group('MarketPricesScreen Widget Tests', () {
     Widget createTestWidget() {
       return MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
         home: MultiBlocProvider(
           providers: [
             BlocProvider(
@@ -109,8 +138,31 @@ void main() {
       testWidgets(
         'Should display loading indicator on initial load',
         (WidgetTester tester) async {
-          await tester.pumpWidget(createTestWidget());
-          // Check before pump() — bloc hasn't processed the event yet
+          // Use a never-completing repo so the bloc stays in loading state.
+          await tester.pumpWidget(MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: MultiBlocProvider(
+              providers: [
+                BlocProvider(
+                  create: (_) => MarketPriceBloc(
+                      repository: _NeverCompletingMarketPriceRepository()),
+                ),
+                BlocProvider(create: (_) => _makeAuthBloc()),
+                BlocProvider(
+                    create: (_) =>
+                        ProfileBloc(userRepository: _FakeUserRepository())),
+              ],
+              child: const MarketPricesScreen(),
+            ),
+          ));
+          await tester.pump(); // localizations
+          await tester.pump(); // bloc emits MarketPriceLoading
           expect(find.byType(LoadingIndicator), findsOneWidget);
           expect(find.text('Loading market prices…'), findsOneWidget);
         },
@@ -121,9 +173,10 @@ void main() {
         (WidgetTester tester) async {
           await tester.pumpWidget(createTestWidget());
           await tester.pump();
+          await tester.pump();
 
           expect(find.byType(AppBar), findsOneWidget);
-          expect(find.text('Brew Master'), findsOneWidget);
+          expect(find.text('BrewMaster'), findsOneWidget);
         },
       );
     });
@@ -134,8 +187,9 @@ void main() {
         (WidgetTester tester) async {
           await tester.pumpWidget(createTestWidget());
           await tester.pump();
+          await tester.pump();
 
-          expect(find.text('Brew Master'), findsOneWidget);
+          expect(find.text('BrewMaster'), findsOneWidget);
         },
       );
 
@@ -143,6 +197,7 @@ void main() {
         'Should have sync/refresh button',
         (WidgetTester tester) async {
           await tester.pumpWidget(createTestWidget());
+          await tester.pump();
           await tester.pump();
 
           final refreshIcon = find.byIcon(Icons.refresh);
@@ -163,6 +218,7 @@ void main() {
         (WidgetTester tester) async {
           await tester.pumpWidget(createTestWidget());
           await tester.pump();
+          await tester.pump();
 
           await tester.tap(find.byIcon(Icons.refresh));
           await tester.pump();
@@ -178,6 +234,7 @@ void main() {
         (WidgetTester tester) async {
           await tester.pumpWidget(createTestWidget());
           await tester.pump();
+          await tester.pump();
 
           expect(find.byType(MarketPricesScreen), findsOneWidget);
         },
@@ -187,6 +244,7 @@ void main() {
         'Should use BlocBuilder for state management',
         (WidgetTester tester) async {
           await tester.pumpWidget(createTestWidget());
+          await tester.pump();
           await tester.pump();
 
           expect(
@@ -267,6 +325,7 @@ void main() {
         (WidgetTester tester) async {
           await tester.pumpWidget(createTestWidget());
           await tester.pump();
+          await tester.pump();
 
           expect(find.byType(Scaffold), findsOneWidget);
           expect(find.byType(AppBar), findsOneWidget);
@@ -279,6 +338,7 @@ void main() {
         'Should handle rapid refresh button taps',
         (WidgetTester tester) async {
           await tester.pumpWidget(createTestWidget());
+          await tester.pump();
           await tester.pump();
 
           for (int i = 0; i < 5; i++) {
@@ -297,6 +357,13 @@ void main() {
         (WidgetTester tester) async {
           await tester.pumpWidget(
             MaterialApp(
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: Builder(
                   builder: (context) => ElevatedButton(
@@ -322,11 +389,13 @@ void main() {
               ),
             ),
           );
+          await tester.pump();
+          await tester.pump();
 
           await tester.tap(find.text('View Prices'));
           await tester.pumpAndSettle();
 
-          expect(find.text('Brew Master'), findsOneWidget);
+          expect(find.text('BrewMaster'), findsOneWidget);
 
           final NavigatorState navigator =
               tester.state(find.byType(Navigator).first);
@@ -344,6 +413,7 @@ void main() {
         (WidgetTester tester) async {
           await tester.pumpWidget(createTestWidget());
           await tester.pump();
+          await tester.pump();
 
           final iconButton = tester.widget<IconButton>(
             find.ancestor(
@@ -360,6 +430,7 @@ void main() {
         (WidgetTester tester) async {
           await tester.pumpWidget(createTestWidget());
           await tester.pump();
+          await tester.pump();
 
           expect(find.byType(AppBar), findsOneWidget);
         },
@@ -372,6 +443,7 @@ void main() {
         (WidgetTester tester) async {
           await tester.pumpWidget(createTestWidget());
           await tester.pump();
+          await tester.pump();
 
           expect(find.byType(MarketPricesScreen), findsOneWidget);
         },
@@ -381,6 +453,7 @@ void main() {
         'Should handle concurrent sync requests',
         (WidgetTester tester) async {
           await tester.pumpWidget(createTestWidget());
+          await tester.pump();
           await tester.pump();
 
           await tester.tap(find.byIcon(Icons.refresh));

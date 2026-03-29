@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_core_platform_interface/test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -40,6 +42,13 @@ Widget _buildScreen({
   bool isOnboarding = false,
 }) =>
     MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: MultiBlocProvider(
         providers: [
           BlocProvider<AuthBloc>(create: (_) => authBloc),
@@ -80,6 +89,8 @@ void main() {
         verificationBloc: _makeVerificationBloc(),
       ));
       await tester.pump();
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Verify Identity'), findsOneWidget);
     });
 
@@ -89,6 +100,7 @@ void main() {
         verificationBloc: _makeVerificationBloc(),
       ));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Submit for Verification'), findsOneWidget);
     });
 
@@ -97,6 +109,7 @@ void main() {
         authBloc: _makeAuthBloc(),
         verificationBloc: _makeVerificationBloc(),
       ));
+      await tester.pump();
       await tester.pump();
       expect(find.text('Pick Documents'), findsOneWidget);
     });
@@ -109,6 +122,7 @@ void main() {
         verificationBloc: _makeVerificationBloc(),
       ));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Submit Verification Documents'), findsOneWidget);
     });
 
@@ -118,6 +132,7 @@ void main() {
         authBloc: _makeAuthBloc(),
         verificationBloc: _makeVerificationBloc(),
       ));
+      await tester.pump();
       await tester.pump();
       expect(
         find.textContaining('national ID'),
@@ -136,6 +151,7 @@ void main() {
         verificationBloc: vb,
       ));
       await tester.pump();
+      await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
@@ -148,6 +164,7 @@ void main() {
         authBloc: _makeAuthBloc(),
         verificationBloc: _makeVerificationBloc(),
       ));
+      await tester.pump();
       await tester.pump();
 
       // Submit button is disabled when no files are selected (onPressed: null)
@@ -167,6 +184,7 @@ void main() {
         verificationBloc: vb,
       ));
       await tester.pump();
+      await tester.pump();
       expect(
         find.text('Your documents are under review.'),
         findsOneWidget,
@@ -182,6 +200,7 @@ void main() {
         verificationBloc: vb,
       ));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Your account has been verified.'), findsOneWidget);
     });
 
@@ -193,6 +212,7 @@ void main() {
         authBloc: _makeAuthBloc(),
         verificationBloc: vb,
       ));
+      await tester.pump();
       await tester.pump();
       expect(
         find.textContaining('submission was rejected'),
@@ -209,6 +229,7 @@ void main() {
         verificationBloc: vb,
       ));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Re-submit Documents'), findsOneWidget);
     });
 
@@ -221,6 +242,7 @@ void main() {
         authBloc: _makeAuthBloc(),
         verificationBloc: vb,
       ));
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.text('Re-submit Documents'));
@@ -241,6 +263,7 @@ void main() {
         authBloc: _makeAuthBloc(),
         verificationBloc: vb,
       ));
+      await tester.pump();
       await tester.pump();
 
       // Emit success state to trigger the listener
@@ -266,6 +289,7 @@ void main() {
         verificationBloc: vb,
       ));
       await tester.pump();
+      await tester.pump();
 
       vb.emit(const VerificationFailure('Upload failed. Please try again.'));
       await tester.pump();
@@ -286,6 +310,7 @@ void main() {
         isOnboarding: true,
       ));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Skip for now'), findsOneWidget);
     });
 
@@ -296,6 +321,7 @@ void main() {
         verificationBloc: _makeVerificationBloc(),
         isOnboarding: false,
       ));
+      await tester.pump();
       await tester.pump();
       expect(find.text('Skip for now'), findsNothing);
     });
@@ -310,6 +336,7 @@ void main() {
         verificationBloc: vb,
       ));
       await tester.pump();
+      await tester.pump();
       expect(find.byIcon(Icons.hourglass_top), findsOneWidget);
     });
 
@@ -321,6 +348,7 @@ void main() {
         verificationBloc: vb,
       ));
       await tester.pump();
+      await tester.pump();
       expect(find.byIcon(Icons.verified), findsOneWidget);
     });
 
@@ -331,6 +359,7 @@ void main() {
         authBloc: _makeAuthBloc(),
         verificationBloc: vb,
       ));
+      await tester.pump();
       await tester.pump();
       expect(find.byIcon(Icons.cancel_outlined), findsOneWidget);
     });

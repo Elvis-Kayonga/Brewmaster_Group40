@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -122,9 +125,23 @@ class _FakeUserRepository implements UserRepository {
   Future<List<String>> getSavedListings(String userId) async => [];
 }
 
+/// Message repository whose watchConversations never emits — keeps bloc loading.
+class _NeverEmittingMessageRepository implements MessageRepository {
+  @override
+  Stream<List<Conversation>> watchConversations() => StreamController<List<Conversation>>().stream;
+  @override
+  Stream<List<Message>> watchMessages(String id) => Stream.value([]);
+  @override
+  Future<int> getTotalUnreadCount() async => 0;
+  @override
+  Future<void> migrateParticipantPhotoUrls() async {}
+  @override
+  dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
+}
+
 // ── Helper ────────────────────────────────────────────────────────────────────
 
-Widget _wrap(Widget child) => MultiBlocProvider(
+Widget _wrap(Widget child, {MessageRepository? messageRepo}) => MultiBlocProvider(
       providers: [
         BlocProvider<AuthBloc>(
           create: (_) => AuthBloc(
@@ -133,7 +150,8 @@ Widget _wrap(Widget child) => MultiBlocProvider(
           ),
         ),
         BlocProvider<MessagingBloc>(
-          create: (_) => MessagingBloc(repository: _FakeMessageRepository()),
+          create: (_) => MessagingBloc(
+              repository: messageRepo ?? _FakeMessageRepository()),
         ),
         BlocProvider<ProfileBloc>(
           create: (_) => ProfileBloc(userRepository: _FakeUserRepository()),
@@ -143,7 +161,15 @@ Widget _wrap(Widget child) => MultiBlocProvider(
               NotificationBloc(repository: _FakeNotificationRepository()),
         ),
       ],
-      child: MaterialApp(home: child),
+      child: MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: child),
     );
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -153,13 +179,20 @@ void main() {
     testWidgets('displays app bar', (tester) async {
       await tester.pumpWidget(_wrap(const ConversationsScreen()));
       await tester.pump();
+      await tester.pump();
+      await tester.pump();
 
       expect(find.byType(AppBar), findsOneWidget);
-      expect(find.text('Brew Master'), findsOneWidget);
+      expect(find.text('BrewMaster'), findsOneWidget);
     });
 
     testWidgets('shows loading indicator on initial state', (tester) async {
-      await tester.pumpWidget(_wrap(const ConversationsScreen()));
+      await tester.pumpWidget(_wrap(
+        const ConversationsScreen(),
+        messageRepo: _NeverEmittingMessageRepository(),
+      ));
+      await tester.pump(); // localizations
+      await tester.pump(); // bloc emits MessagingLoading
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 

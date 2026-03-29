@@ -2,6 +2,8 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:brewmaster/domain/models/coffee_listing.dart';
@@ -40,6 +42,13 @@ class _FakeListingRepository implements ListingRepository {
 }
 
 Widget _wrap(Widget child) => MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: BlocProvider(
         create: (_) => ListingBloc(repository: _FakeListingRepository()),
         child: child,
@@ -50,6 +59,7 @@ void main() {
   group('ListingFormScreen Widget Tests', () {
     testWidgets('renders with all form fields', (tester) async {
       await tester.pumpWidget(_wrap(const ListingFormScreen()));
+      await tester.pump();
       expect(find.text('Create Listing'), findsWidgets);
       expect(find.byType(TextField), findsWidgets);
     });
@@ -67,6 +77,7 @@ void main() {
 
     testWidgets('shows image picker button', (tester) async {
       await tester.pumpWidget(_wrap(const ListingFormScreen()));
+      await tester.pump();
       expect(find.text('Pick Images'), findsOneWidget);
     });
   });

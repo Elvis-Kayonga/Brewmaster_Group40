@@ -5,6 +5,8 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_core_platform_interface/test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -17,6 +19,13 @@ import '../helpers/fake_repositories.dart';
 
 Widget _wrap({AuthBloc? bloc}) {
   return MaterialApp(
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
     home: BlocProvider<AuthBloc>(
       create: (_) =>
           bloc ??
@@ -42,11 +51,14 @@ void main() {
     testWidgets('shows "Join BrewMaster" heading', (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Join BrewMaster'), findsOneWidget);
     });
 
     testWidgets('shows "Sign up as Buyer" button by default', (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
       expect(find.text('Sign up as Buyer'), findsOneWidget);
     });
@@ -58,6 +70,7 @@ void main() {
 
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
       expect(find.text('Sign up with Google'), findsOneWidget);
     });
 
@@ -68,6 +81,7 @@ void main() {
 
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
       expect(find.text('Sign In'), findsOneWidget);
     });
 
@@ -77,6 +91,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
       expect(find.text('Full Name'), findsOneWidget);
       expect(find.text('Email Address'), findsOneWidget);
@@ -93,6 +108,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       // The _RoleToggle shows "Buy" and "Sell" options
@@ -113,6 +129,7 @@ void main() {
 
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.text('Sign up as Buyer'));
       await tester.pump();
@@ -126,6 +143,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       final fields = find.byType(TextFormField);
@@ -152,6 +170,7 @@ void main() {
 
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
 
       final fields = find.byType(TextFormField);
       if (fields.evaluate().length >= 4) {
@@ -174,6 +193,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       final fields = find.byType(TextFormField);
@@ -201,6 +221,7 @@ void main() {
 
       await tester.pumpWidget(_wrap(bloc: ab));
       await tester.pump();
+      await tester.pump();
 
       // Emit failure after initial render (triggers listener)
       ab.emit(const AuthFailure('Registration failed'));
@@ -219,6 +240,7 @@ void main() {
 
       await tester.pumpWidget(_wrap(bloc: ab));
       await tester.pump();
+      await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsWidgets);
     });
@@ -235,6 +257,13 @@ void main() {
         BlocProvider<AuthBloc>(
           create: (_) => ab,
           child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Builder(
               builder: (ctx) => ElevatedButton(
                 onPressed: () {
@@ -254,6 +283,8 @@ void main() {
           ),
         ),
       );
+      await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
@@ -277,6 +308,7 @@ void main() {
 
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.text('Sign up with Google'));
       await tester.pump();
@@ -298,6 +330,13 @@ void main() {
         BlocProvider<AuthBloc>(
           create: (_) => ab,
           child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Builder(
               builder: (ctx) => ElevatedButton(
                 onPressed: () {
@@ -317,6 +356,8 @@ void main() {
           ),
         ),
       );
+      await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();

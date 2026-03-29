@@ -6,6 +6,8 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_core_platform_interface/test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -119,6 +121,13 @@ Widget _wrap({
   final notifRepo = FakeNotificationRepository();
 
   return MaterialApp(
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
     home: MultiBlocProvider(
       providers: [
         BlocProvider<MarketPriceBloc>(
@@ -155,6 +164,8 @@ void main() {
     testWidgets('shows loading indicator when sync is pending', (tester) async {
       await tester.pumpWidget(_wrap(neverSync: true));
       await tester.pump();
+      await tester.pump();
+      await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsWidgets);
     });
@@ -163,12 +174,14 @@ void main() {
       await tester.pumpWidget(
           _wrap(syncError: true, errorMessage: 'Failed to sync prices'));
       await tester.pump();
+      await tester.pump();
 
       expect(find.textContaining('Failed to sync prices'), findsOneWidget);
     });
 
     testWidgets('shows "Market Prices" header when loaded', (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       expect(find.textContaining('Market'), findsWidgets);
@@ -178,6 +191,7 @@ void main() {
     testWidgets('shows LIVE COMMODITY INDEX subtitle', (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('LIVE COMMODITY INDEX'), findsOneWidget);
     });
@@ -185,6 +199,7 @@ void main() {
     testWidgets('shows "No market prices available." when list is empty',
         (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
 
       expect(find.text('No market prices available.'), findsOneWidget);
@@ -194,6 +209,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_wrap(prices: [_makePrice(variety: 'Bourbon')]));
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('Bourbon'), findsWidgets);
     });
@@ -201,6 +217,7 @@ void main() {
     testWidgets('shows grade chip on price card', (tester) async {
       await tester
           .pumpWidget(_wrap(prices: [_makePrice(grade: QualityGrade.specialty)]));
+      await tester.pump();
       await tester.pump();
 
       expect(find.text('Specialty'), findsOneWidget);
@@ -210,6 +227,7 @@ void main() {
       await tester
           .pumpWidget(_wrap(prices: [_makePrice(grade: QualityGrade.premium)]));
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('Premium'), findsOneWidget);
     });
@@ -218,12 +236,14 @@ void main() {
       await tester
           .pumpWidget(_wrap(prices: [_makePrice(grade: QualityGrade.standard)]));
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('Standard'), findsOneWidget);
     });
 
     testWidgets('shows Low, Average, High price labels', (tester) async {
       await tester.pumpWidget(_wrap(prices: [_makePrice()]));
+      await tester.pump();
       await tester.pump();
 
       expect(find.text('Low'), findsOneWidget);
@@ -233,6 +253,7 @@ void main() {
 
     testWidgets('shows updated date on price card', (tester) async {
       await tester.pumpWidget(_wrap(prices: [_makePrice()]));
+      await tester.pump();
       await tester.pump();
 
       // Date format: 'd MMM yyyy' → "1 Jun 2024"
@@ -247,6 +268,7 @@ void main() {
       ];
       await tester.pumpWidget(_wrap(prices: prices));
       await tester.pump();
+      await tester.pump();
 
       expect(find.byType(FilterChip), findsWidgets);
     });
@@ -254,15 +276,17 @@ void main() {
     testWidgets('shows refresh icon button in app bar', (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
 
       expect(find.byIcon(Icons.refresh), findsOneWidget);
     });
 
-    testWidgets('shows "Brew Master" app bar title', (tester) async {
+    testWidgets('shows "BrewMaster" app bar title', (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
 
-      expect(find.text('Brew Master'), findsOneWidget);
+      expect(find.text('BrewMaster'), findsOneWidget);
     });
 
     testWidgets('shows multiple price cards for multiple prices', (tester) async {
@@ -272,12 +296,14 @@ void main() {
       ];
       await tester.pumpWidget(_wrap(prices: prices));
       await tester.pump();
+      await tester.pump();
 
       expect(find.byType(Card), findsNWidgets(2));
     });
 
     testWidgets('shows currency and price values on card', (tester) async {
       await tester.pumpWidget(_wrap(prices: [_makePrice(avg: 7.50, currency: 'USD')]));
+      await tester.pump();
       await tester.pump();
 
       expect(find.textContaining('7.50'), findsWidgets);

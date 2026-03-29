@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:brewmaster/presentation/widgets/common/custom_dropdown.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(body: Padding(padding: const EdgeInsets.all(8), child: child)),
     );
 
@@ -44,6 +53,7 @@ void main() {
         items: _items,
         hintText: 'Select an option',
       )));
+      await tester.pump();
       expect(find.text('Select an option'), findsOneWidget);
     });
 
@@ -52,6 +62,7 @@ void main() {
         items: _items,
         labelText: 'Choose Option',
       )));
+      await tester.pump();
       expect(find.text('Choose Option'), findsOneWidget);
     });
 
@@ -61,6 +72,7 @@ void main() {
         labelText: 'Choose',
         isRequired: true,
       )));
+      await tester.pump();
       expect(find.text('Choose *'), findsOneWidget);
     });
 
@@ -69,6 +81,7 @@ void main() {
         items: _items,
         helperText: 'Pick one',
       )));
+      await tester.pump();
       expect(find.text('Pick one'), findsOneWidget);
     });
 
@@ -77,6 +90,7 @@ void main() {
         items: _items,
         errorText: 'Required',
       )));
+      await tester.pump();
       expect(find.text('Required'), findsOneWidget);
     });
 
@@ -85,6 +99,7 @@ void main() {
         items: _items,
         prefixIcon: Icons.sort,
       )));
+      await tester.pump();
       expect(find.byIcon(Icons.sort), findsOneWidget);
     });
 
@@ -94,6 +109,7 @@ void main() {
         items: _items,
         onChanged: (v) => selected = v,
       )));
+      await tester.pump();
       await tester.tap(find.byType(DropdownButtonFormField<String>));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Option A').last);
@@ -108,6 +124,7 @@ void main() {
         enabled: false,
         onChanged: (v) => selected = v,
       )));
+      await tester.pump();
       // When disabled, onChanged is null so nothing changes
       expect(selected, isNull);
     });
@@ -117,12 +134,20 @@ void main() {
         items: _itemsWithIcons,
         showItemIcons: true,
       )));
+      await tester.pump();
       expect(find.byType(CustomDropdown<String>), findsOneWidget);
     });
 
     testWidgets('validates with custom validator', (tester) async {
       final formKey = GlobalKey<FormState>();
       await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: Form(
             key: formKey,
@@ -133,6 +158,7 @@ void main() {
           ),
         ),
       ));
+      await tester.pump();
       formKey.currentState!.validate();
       await tester.pump();
       expect(find.text('Required'), findsOneWidget);
@@ -147,6 +173,7 @@ void main() {
         items: stringItems,
         hintText: 'Choose fruit',
       )));
+      await tester.pump();
       expect(find.text('Choose fruit'), findsOneWidget);
     });
 
@@ -155,6 +182,7 @@ void main() {
         items: stringItems,
         value: 'Banana',
       )));
+      await tester.pump();
       expect(find.text('Banana'), findsOneWidget);
     });
 
@@ -164,6 +192,7 @@ void main() {
         items: stringItems,
         onChanged: (v) => selected = v,
       )));
+      await tester.pump();
       await tester.tap(find.byType(DropdownButtonFormField<String>));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Apple').last);
@@ -176,6 +205,7 @@ void main() {
         items: stringItems,
         labelText: 'Fruit',
       )));
+      await tester.pump();
       expect(find.text('Fruit'), findsOneWidget);
     });
   });
@@ -192,6 +222,7 @@ void main() {
         items: searchItems,
         hintText: 'Select variety',
       )));
+      await tester.pump();
       expect(find.text('Select variety'), findsAtLeastNWidgets(1));
     });
 
@@ -200,6 +231,7 @@ void main() {
         items: searchItems,
         labelText: 'Variety',
       )));
+      await tester.pump();
       expect(find.text('Variety'), findsOneWidget);
     });
 
@@ -209,6 +241,7 @@ void main() {
         labelText: 'Variety',
         isRequired: true,
       )));
+      await tester.pump();
       expect(find.text('Variety *'), findsOneWidget);
     });
 
@@ -217,6 +250,7 @@ void main() {
         items: searchItems,
         value: 'arabica',
       )));
+      await tester.pump();
       expect(find.text('Arabica'), findsOneWidget);
     });
 
@@ -226,6 +260,7 @@ void main() {
         enabled: false,
         hintText: 'Choose',
       )));
+      await tester.pump();
       await tester.tap(find.byType(SearchableDropdown<String>));
       await tester.pump();
       // overlay should not open, so no ListView visible
@@ -237,6 +272,7 @@ void main() {
         items: searchItems,
         hintText: 'Select variety',
       )));
+      await tester.pump();
       await tester.tap(find.byType(SearchableDropdown<String>));
       await tester.pump();
       expect(find.text('Arabica'), findsOneWidget);
@@ -249,6 +285,7 @@ void main() {
         items: searchItems,
         hintText: 'Select variety',
       )));
+      await tester.pump();
       await tester.tap(find.byType(SearchableDropdown<String>));
       await tester.pump();
       expect(find.text('Arabica'), findsOneWidget);
@@ -263,6 +300,7 @@ void main() {
         items: searchItems,
         hintText: 'Select variety',
       )));
+      await tester.pump();
       await tester.tap(find.byType(SearchableDropdown<String>));
       await tester.pump();
       expect(find.byIcon(Icons.search), findsOneWidget);
@@ -273,6 +311,7 @@ void main() {
         items: searchItems,
         hintText: 'Select variety',
       )));
+      await tester.pump();
       await tester.tap(find.byType(SearchableDropdown<String>));
       await tester.pump();
 
@@ -289,6 +328,7 @@ void main() {
         items: searchItems,
         hintText: 'Select variety',
       )));
+      await tester.pump();
       await tester.tap(find.byType(SearchableDropdown<String>));
       await tester.pump();
 
@@ -309,6 +349,7 @@ void main() {
         onChanged: (v) => selected = v,
         hintText: 'Select variety',
       )));
+      await tester.pump();
       await tester.tap(find.byType(SearchableDropdown<String>));
       await tester.pump();
 
@@ -324,6 +365,7 @@ void main() {
         onChanged: (_) {},
         hintText: 'Select variety',
       )));
+      await tester.pump();
       await tester.tap(find.byType(SearchableDropdown<String>));
       await tester.pump();
       expect(find.text('Arabica'), findsOneWidget);
@@ -340,6 +382,7 @@ void main() {
         items: searchItems,
         errorText: 'Please select',
       )));
+      await tester.pump();
       expect(find.text('Please select'), findsOneWidget);
     });
 
@@ -348,6 +391,7 @@ void main() {
         items: searchItems,
         hintText: 'Select variety',
       )));
+      await tester.pump();
       await tester.tap(find.byType(SearchableDropdown<String>));
       await tester.pump();
       expect(find.text('Arabica'), findsOneWidget);
@@ -366,6 +410,7 @@ void main() {
         items: itemsWithIcons,
         hintText: 'Choose',
       )));
+      await tester.pump();
       await tester.tap(find.byType(SearchableDropdown<String>));
       await tester.pump();
       expect(find.byIcon(Icons.star), findsOneWidget);

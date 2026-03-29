@@ -6,6 +6,8 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_core_platform_interface/test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -118,6 +120,13 @@ Widget _wrap({
   final userRepo = FakeUserRepository();
 
   return MaterialApp(
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
     home: MultiBlocProvider(
       providers: [
         BlocProvider<PaymentBloc>(
@@ -155,6 +164,8 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_wrap(neverLoad: true));
       await tester.pump();
+      await tester.pump();
+      await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsWidgets);
     });
 
@@ -162,11 +173,13 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
       expect(find.text('My Orders'), findsOneWidget);
     });
 
     testWidgets('shows subtitle text when loaded', (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
       expect(find.textContaining('Track your coffee purchases'), findsOneWidget);
     });
@@ -174,6 +187,7 @@ void main() {
     testWidgets('shows empty state widget when transactions list is empty',
         (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
       expect(find.text('No Transactions Yet'), findsOneWidget);
       expect(
@@ -185,6 +199,7 @@ void main() {
     testWidgets('shows "View all" button when empty', (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
       expect(find.text('View all'), findsOneWidget);
     });
 
@@ -193,7 +208,8 @@ void main() {
         _wrap(transactions: [_makeTransaction(status: TransactionStatus.fundsHeld)]),
       );
       await tester.pump();
-      expect(find.text('In Escrow'), findsOneWidget);
+      await tester.pump();
+      expect(find.text('In escrow'), findsOneWidget);
     });
 
     testWidgets('shows LIVE TRACE: ACTIVE badge for active statuses',
@@ -201,6 +217,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(transactions: [_makeTransaction(status: TransactionStatus.fundsHeld)]),
       );
+      await tester.pump();
       await tester.pump();
       expect(find.text('LIVE TRACE: ACTIVE'), findsOneWidget);
     });
@@ -210,6 +227,7 @@ void main() {
         _wrap(transactions: [_makeTransaction(status: TransactionStatus.completed)]),
       );
       await tester.pump();
+      await tester.pump();
       expect(find.text('Delivered'), findsOneWidget);
     });
 
@@ -217,6 +235,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(transactions: [_makeTransaction(status: TransactionStatus.cancelled)]),
       );
+      await tester.pump();
       await tester.pump();
       expect(find.text('Cancelled'), findsOneWidget);
     });
@@ -226,13 +245,15 @@ void main() {
         _wrap(transactions: [_makeTransaction(status: TransactionStatus.disputed)]),
       );
       await tester.pump();
-      expect(find.text('Under Dispute'), findsOneWidget);
+      await tester.pump();
+      expect(find.text('Under dispute'), findsOneWidget);
     });
 
     testWidgets('shows pending transaction card title', (tester) async {
       await tester.pumpWidget(
         _wrap(transactions: [_makeTransaction(status: TransactionStatus.pending)]),
       );
+      await tester.pump();
       await tester.pump();
       expect(find.text('Awaiting Payment'), findsOneWidget);
     });
@@ -241,6 +262,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(transactions: [_makeTransaction(status: TransactionStatus.delivered)]),
       );
+      await tester.pump();
       await tester.pump();
       expect(find.text('In Transit'), findsOneWidget);
     });
@@ -251,6 +273,7 @@ void main() {
         _wrap(transactions: [_makeTransaction(id: 'abcdef12')]),
       );
       await tester.pump();
+      await tester.pump();
       expect(find.text('TRC-ORD-ABCD'), findsOneWidget);
     });
 
@@ -259,14 +282,16 @@ void main() {
         _wrap(transactions: [_makeTransaction(status: TransactionStatus.fundsHeld)]),
       );
       await tester.pump();
+      await tester.pump();
       expect(find.text('Origin'), findsOneWidget);
       expect(find.text('Delivery'), findsOneWidget);
     });
 
-    testWidgets('shows "Brew Master" app bar title', (tester) async {
+    testWidgets('shows "BrewMaster" app bar title', (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
-      expect(find.text('Brew Master'), findsOneWidget);
+      await tester.pump();
+      expect(find.text('BrewMaster'), findsOneWidget);
     });
 
     testWidgets('shows multiple transaction cards', (tester) async {
@@ -276,6 +301,7 @@ void main() {
           _makeTransaction(id: 'bbbb2222', status: TransactionStatus.completed),
         ]),
       );
+      await tester.pump();
       await tester.pump();
       expect(find.text('Awaiting Payment'), findsOneWidget);
       expect(find.text('Delivered'), findsOneWidget);

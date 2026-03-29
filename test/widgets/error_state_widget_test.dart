@@ -3,10 +3,20 @@
 // Widget tests for ErrorStateWidget and its specialised variants.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:brewmaster/presentation/widgets/common/error_state_widget.dart';
 
-Widget _wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
+Widget _wrap(Widget child) => MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: child));
 
 void main() {
   group('ErrorStateWidget', () {
@@ -14,6 +24,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         const ErrorStateWidget(message: 'Something went wrong'),
       ));
+      await tester.pump();
       expect(find.text('Something went wrong'), findsOneWidget);
     });
 
@@ -24,6 +35,7 @@ void main() {
           title: 'Error Title',
         ),
       ));
+      await tester.pump();
       expect(find.text('Error Title'), findsOneWidget);
       expect(find.text('Msg'), findsOneWidget);
     });
@@ -36,6 +48,7 @@ void main() {
           onRetry: () => retried = true,
         ),
       ));
+      await tester.pump();
       expect(find.text('Try again'), findsOneWidget);
       await tester.tap(find.text('Try again'));
       await tester.pump();
@@ -46,6 +59,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         const ErrorStateWidget(message: 'Error'),
       ));
+      await tester.pump();
       expect(find.text('Try again'), findsNothing);
     });
 
@@ -59,6 +73,7 @@ void main() {
           onSecondaryAction: () => secondaryTapped = true,
         ),
       ));
+      await tester.pump();
       expect(find.text('Go back'), findsOneWidget);
       await tester.tap(find.text('Go back'));
       await tester.pump();
@@ -69,6 +84,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         const ErrorStateWidget(message: 'Compact error', compact: true),
       ));
+      await tester.pump();
       expect(find.text('Compact error'), findsOneWidget);
     });
 
@@ -80,6 +96,7 @@ void main() {
           showExpandableDetails: true,
         ),
       ));
+      await tester.pump();
       expect(find.text('Show details'), findsOneWidget);
     });
 
@@ -90,6 +107,7 @@ void main() {
           icon: Icons.wifi_off,
         ),
       ));
+      await tester.pump();
       expect(find.byIcon(Icons.wifi_off), findsOneWidget);
     });
 
@@ -100,6 +118,7 @@ void main() {
           iconColor: Colors.orange,
         ),
       ));
+      await tester.pump();
       expect(find.text('Error'), findsOneWidget);
     });
 
@@ -111,6 +130,7 @@ void main() {
           onRetry: () {},
         ),
       ));
+      await tester.pump();
       expect(find.text('Refresh'), findsOneWidget);
     });
   });
@@ -118,6 +138,7 @@ void main() {
   group('NetworkErrorWidget', () {
     testWidgets('renders connection error message', (tester) async {
       await tester.pumpWidget(_wrap(const NetworkErrorWidget()));
+      await tester.pump();
       expect(find.text('Connection error'), findsOneWidget);
     });
 
@@ -126,6 +147,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         NetworkErrorWidget(onRetry: () => retried = true),
       ));
+      await tester.pump();
       await tester.tap(find.text('Try again'));
       await tester.pump();
       expect(retried, isTrue);
@@ -135,6 +157,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         const NetworkErrorWidget(compact: true),
       ));
+      await tester.pump();
       expect(find.text('Connection error'), findsOneWidget);
     });
   });
@@ -142,6 +165,7 @@ void main() {
   group('ServerErrorWidget', () {
     testWidgets('renders server error message', (tester) async {
       await tester.pumpWidget(_wrap(const ServerErrorWidget()));
+      await tester.pump();
       expect(find.text('Server error'), findsOneWidget);
     });
 
@@ -149,11 +173,13 @@ void main() {
       await tester.pumpWidget(_wrap(
         const ServerErrorWidget(errorCode: '500'),
       ));
+      await tester.pump();
       expect(find.text('Show details'), findsOneWidget);
     });
 
     testWidgets('no expandable details when errorCode is null', (tester) async {
       await tester.pumpWidget(_wrap(const ServerErrorWidget()));
+      await tester.pump();
       expect(find.text('Show details'), findsNothing);
     });
   });
@@ -161,6 +187,7 @@ void main() {
   group('PermissionErrorWidget', () {
     testWidgets('renders permission required title', (tester) async {
       await tester.pumpWidget(_wrap(const PermissionErrorWidget()));
+      await tester.pump();
       expect(find.text('Permission required'), findsOneWidget);
     });
 
@@ -168,6 +195,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         const PermissionErrorWidget(permissionName: 'Camera'),
       ));
+      await tester.pump();
       expect(find.textContaining('Camera'), findsOneWidget);
     });
 
@@ -176,6 +204,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         PermissionErrorWidget(onRequestPermission: () => granted = true),
       ));
+      await tester.pump();
       await tester.tap(find.text('Grant permission'));
       await tester.pump();
       expect(granted, isTrue);
@@ -185,6 +214,7 @@ void main() {
   group('AuthErrorWidget', () {
     testWidgets('renders session expired message', (tester) async {
       await tester.pumpWidget(_wrap(const AuthErrorWidget()));
+      await tester.pump();
       expect(find.text('Session expired'), findsOneWidget);
     });
 
@@ -193,6 +223,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         AuthErrorWidget(onLogin: () => loggedIn = true),
       ));
+      await tester.pump();
       await tester.tap(find.text('Sign in'));
       await tester.pump();
       expect(loggedIn, isTrue);
@@ -204,6 +235,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         const ErrorBanner(message: 'Failed to load'),
       ));
+      await tester.pump();
       expect(find.text('Failed to load'), findsOneWidget);
     });
 
@@ -215,6 +247,7 @@ void main() {
           onRetry: () => retried = true,
         ),
       ));
+      await tester.pump();
       expect(find.byIcon(Icons.refresh), findsOneWidget);
       await tester.tap(find.byIcon(Icons.refresh));
       await tester.pump();
@@ -229,6 +262,7 @@ void main() {
           onDismiss: () => dismissed = true,
         ),
       ));
+      await tester.pump();
       await tester.tap(find.byIcon(Icons.close));
       await tester.pump();
       expect(dismissed, isTrue);
@@ -238,6 +272,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         const ErrorBanner(message: 'Error'),
       ));
+      await tester.pump();
       expect(find.byIcon(Icons.refresh), findsNothing);
       expect(find.byIcon(Icons.close), findsNothing);
     });

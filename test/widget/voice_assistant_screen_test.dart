@@ -1,6 +1,8 @@
 // test/widget/voice_assistant_screen_test.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:brewmaster/presentation/blocs/voice/voice_bloc.dart';
@@ -11,6 +13,13 @@ import 'package:brewmaster/presentation/blocs/voice/voice_bloc.dart';
 Widget _buildScreen({VoiceAssistantBloc? bloc}) {
   final b = bloc ?? VoiceAssistantBloc();
   return MaterialApp(
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
     home: BlocProvider<VoiceAssistantBloc>.value(
       value: b,
       child: const _VoiceAssistantViewExposed(),
@@ -26,7 +35,7 @@ class _VoiceAssistantViewExposed extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F0EB),
-      appBar: AppBar(title: const Text('Brew Master')),
+      appBar: AppBar(title: const Text('BrewMaster')),
       body: BlocBuilder<VoiceAssistantBloc, VoiceAssistantState>(
         builder: (context, state) {
           if (state is VoiceAssistantIdle) {
@@ -95,32 +104,45 @@ void main() {
   group('VoiceAssistantScreen — Idle state', () {
     testWidgets('shows app bar with Brew Master title', (tester) async {
       await tester.pumpWidget(_buildScreen());
-      expect(find.text('Brew Master'), findsOneWidget);
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('BrewMaster'), findsOneWidget);
     });
 
     testWidgets('shows mic icon', (tester) async {
       await tester.pumpWidget(_buildScreen());
+      await tester.pump();
+      await tester.pump();
       expect(find.byKey(const Key('mic_icon')), findsOneWidget);
     });
 
     testWidgets('shows Chief Curator title', (tester) async {
       await tester.pumpWidget(_buildScreen());
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Chief Curator'), findsOneWidget);
     });
 
     testWidgets('shows greeting description text', (tester) async {
       await tester.pumpWidget(_buildScreen());
+      await tester.pump();
+      await tester.pump();
       expect(find.textContaining('Greetings, Clarisse'), findsOneWidget);
     });
 
     testWidgets('shows INITIALIZE SESSION button', (tester) async {
       await tester.pumpWidget(_buildScreen());
+      await tester.pump();
+      await tester.pump();
       expect(find.byKey(const Key('initialize_session_button')), findsOneWidget);
       expect(find.text('INITIALIZE SESSION'), findsOneWidget);
     });
 
     testWidgets('does not show END SESSION button in idle state', (tester) async {
       await tester.pumpWidget(_buildScreen());
+      await tester.pump();
+      await tester.pump();
       expect(find.byKey(const Key('end_session_button')), findsNothing);
     });
   });
@@ -129,6 +151,8 @@ void main() {
     testWidgets('tapping INITIALIZE SESSION transitions to active state',
         (tester) async {
       await tester.pumpWidget(_buildScreen());
+      await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.byKey(const Key('initialize_session_button')));
       await tester.pump();
@@ -139,6 +163,8 @@ void main() {
 
     testWidgets('active state shows END SESSION button', (tester) async {
       await tester.pumpWidget(_buildScreen());
+      await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.byKey(const Key('initialize_session_button')));
       await tester.pump();
@@ -148,6 +174,8 @@ void main() {
 
     testWidgets('active state hides INITIALIZE SESSION button', (tester) async {
       await tester.pumpWidget(_buildScreen());
+      await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.byKey(const Key('initialize_session_button')));
       await tester.pump();
@@ -163,6 +191,7 @@ void main() {
         ..add(const VoiceSessionStartRequested());
       await tester.pumpWidget(_buildScreen(bloc: bloc));
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('Chief Curator — Active'), findsOneWidget);
       bloc.close();
@@ -172,6 +201,7 @@ void main() {
       final bloc = VoiceAssistantBloc()
         ..add(const VoiceSessionStartRequested());
       await tester.pumpWidget(_buildScreen(bloc: bloc));
+      await tester.pump();
       await tester.pump();
 
       bloc.add(const VoiceListenToggled());
@@ -187,6 +217,7 @@ void main() {
       final bloc = VoiceAssistantBloc()
         ..add(const VoiceSessionStartRequested());
       await tester.pumpWidget(_buildScreen(bloc: bloc));
+      await tester.pump();
       await tester.pump();
 
       bloc.add(const VoiceTranscriptReceived('What is the best altitude?'));
@@ -204,6 +235,7 @@ void main() {
         ..add(const VoiceSessionStartRequested());
       await tester.pumpWidget(_buildScreen(bloc: bloc));
       await tester.pump();
+      await tester.pump();
 
       bloc.add(const VoiceResponseReceived('1800m is ideal for specialty.'));
       await tester.pump();
@@ -220,6 +252,7 @@ void main() {
         ..add(const VoiceSessionStartRequested());
       await tester.pumpWidget(_buildScreen(bloc: bloc));
       await tester.pump();
+      await tester.pump();
 
       expect(find.byKey(const Key('transcript_bubble')), findsNothing);
       bloc.close();
@@ -231,6 +264,7 @@ void main() {
       final bloc = VoiceAssistantBloc()
         ..add(const VoiceSessionStartRequested());
       await tester.pumpWidget(_buildScreen(bloc: bloc));
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.byKey(const Key('end_session_button')));
@@ -248,6 +282,7 @@ void main() {
         ..add(const VoiceErrorOccurred('Microphone unavailable'));
       await tester.pumpWidget(_buildScreen(bloc: bloc));
       await tester.pump();
+      await tester.pump();
 
       expect(find.byKey(const Key('error_message')), findsOneWidget);
       expect(find.text('Microphone unavailable'), findsOneWidget);
@@ -258,6 +293,7 @@ void main() {
         ..add(const VoiceErrorOccurred('Microphone unavailable'));
       await tester.pumpWidget(_buildScreen(bloc: bloc));
       await tester.pump();
+      await tester.pump();
 
       expect(find.byKey(const Key('retry_button')), findsOneWidget);
     });
@@ -267,6 +303,7 @@ void main() {
       final bloc = VoiceAssistantBloc()
         ..add(const VoiceErrorOccurred('Microphone unavailable'));
       await tester.pumpWidget(_buildScreen(bloc: bloc));
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.byKey(const Key('retry_button')));

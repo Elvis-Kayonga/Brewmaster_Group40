@@ -16,6 +16,8 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_core_platform_interface/test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -129,6 +131,13 @@ Widget _buildScreen(
       BlocProvider<ProfileBloc>(create: (_) => profileBloc),
     ],
     child: MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: EditProfileScreen(userProfile: profile),
     ),
   );
@@ -148,6 +157,9 @@ void main() {
   group('EditProfileScreen — App Bar', () {
     testWidgets('shows "Edit Profile" as the app bar title', (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Edit Profile'), findsOneWidget);
     });
   });
@@ -157,26 +169,36 @@ void main() {
   group('EditProfileScreen — Farmer', () {
     testWidgets('renders Edit Profile title', (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Edit Profile'), findsOneWidget);
     });
 
     testWidgets('pre-fills display name', (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('John Farmer'), findsOneWidget);
     });
 
     testWidgets('shows Farmer role badge', (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Farmer'), findsOneWidget);
     });
 
     testWidgets('shows Email Verified badge when isVerified=true', (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Email Verified'), findsOneWidget);
     });
 
     testWidgets('shows Display Name field', (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
       // CustomTextField appends ' *' for isRequired=true fields,
       // so the rendered label is 'Display Name *'.
       expect(find.textContaining('Display Name'), findsOneWidget);
@@ -184,6 +206,8 @@ void main() {
 
     testWidgets('shows farmer-specific fields', (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Farm Size (hectares)'), findsOneWidget);
       expect(find.text('Farm Location'), findsOneWidget);
       expect(find.text('Coffee Varieties'), findsOneWidget);
@@ -192,6 +216,8 @@ void main() {
 
     testWidgets('does not show buyer fields for farmer', (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Business Name'), findsNothing);
       expect(find.text('Business Type'), findsNothing);
       expect(find.text('Monthly Volume (kg)'), findsNothing);
@@ -199,21 +225,29 @@ void main() {
 
     testWidgets('shows Save Changes button', (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Save Changes'), findsOneWidget);
     });
 
     testWidgets('shows camera icon when no photo URL', (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.byIcon(Icons.camera_alt), findsOneWidget);
     });
 
     testWidgets('shows edit overlay icon on avatar', (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.byIcon(Icons.edit), findsOneWidget);
     });
 
     testWidgets('tapping save with valid name does not crash', (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
       // Scroll so that button is visible before tapping
       await tester.ensureVisible(find.text('Save Changes'));
       await tester.tap(find.text('Save Changes'), warnIfMissed: false);
@@ -223,21 +257,29 @@ void main() {
 
     testWidgets('pre-fills farm size', (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('5.0'), findsOneWidget);
     });
 
     testWidgets('pre-fills farm location', (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Kigali'), findsOneWidget);
     });
 
     testWidgets('pre-fills coffee varieties', (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Arabica, Robusta'), findsOneWidget);
     });
 
     testWidgets('pre-fills farm registration number', (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('REG123'), findsOneWidget);
     });
   });
@@ -247,16 +289,22 @@ void main() {
   group('EditProfileScreen — Buyer', () {
     testWidgets('shows Buyer role badge', (tester) async {
       await tester.pumpWidget(_buildScreen(_buyerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Buyer'), findsOneWidget);
     });
 
     testWidgets('shows Email Unverified badge when isVerified=false', (tester) async {
       await tester.pumpWidget(_buildScreen(_buyerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Email Unverified'), findsOneWidget);
     });
 
     testWidgets('shows buyer-specific fields', (tester) async {
       await tester.pumpWidget(_buildScreen(_buyerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Business Name'), findsOneWidget);
       expect(find.text('Business Type'), findsOneWidget);
       expect(find.text('Monthly Volume (kg)'), findsOneWidget);
@@ -264,6 +312,8 @@ void main() {
 
     testWidgets('does not show farmer fields for buyer', (tester) async {
       await tester.pumpWidget(_buildScreen(_buyerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Farm Size (hectares)'), findsNothing);
       expect(find.text('Farm Location'), findsNothing);
       expect(find.text('Coffee Varieties'), findsNothing);
@@ -272,21 +322,29 @@ void main() {
 
     testWidgets('pre-fills business name', (tester) async {
       await tester.pumpWidget(_buildScreen(_buyerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Coffee Co'), findsOneWidget);
     });
 
     testWidgets('pre-fills business type', (tester) async {
       await tester.pumpWidget(_buildScreen(_buyerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Roaster'), findsOneWidget);
     });
 
     testWidgets('shows Save Changes button', (tester) async {
       await tester.pumpWidget(_buildScreen(_buyerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Save Changes'), findsOneWidget);
     });
 
     testWidgets('clears display name and shows validation error', (tester) async {
       await tester.pumpWidget(_buildScreen(_buyerProfile()));
+      await tester.pump();
+      await tester.pump();
       final field = find.ancestor(
         of: find.text('Jane Buyer'),
         matching: find.byType(TextFormField),
@@ -313,6 +371,7 @@ void main() {
 
       await tester.pumpWidget(_buildScreen(_farmerProfile(), bloc: pb));
       await tester.pump();
+      await tester.pump();
 
       // CustomButton renders a SizedBox wrapping a CircularProgressIndicator
       // when isLoading=true (state is ProfileLoading).
@@ -325,6 +384,7 @@ void main() {
         ..emit(const ProfileLoading());
 
       await tester.pumpWidget(_buildScreen(_farmerProfile(), bloc: pb));
+      await tester.pump();
       await tester.pump();
 
       // The ElevatedButton has onPressed == null when isLoading.
@@ -343,6 +403,7 @@ void main() {
 
       await tester.pumpWidget(_buildScreen(_farmerProfile(), bloc: pb));
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('Something went wrong'), findsOneWidget);
     });
@@ -354,6 +415,7 @@ void main() {
       final pb = ProfileBloc(userRepository: repo);
 
       await tester.pumpWidget(_buildScreen(_farmerProfile(), bloc: pb));
+      await tester.pump();
       await tester.pump();
 
       // Emit failure AFTER initial render — BlocConsumer listener fires.
@@ -383,6 +445,13 @@ void main() {
             BlocProvider<ProfileBloc>(create: (_) => pb),
           ],
           child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Builder(
               builder: (ctx) => ElevatedButton(
                 onPressed: () {
@@ -402,6 +471,8 @@ void main() {
           ),
         ),
       );
+      await tester.pump();
+      await tester.pump();
 
       // Navigate to EditProfileScreen.
       await tester.tap(find.text('Open Edit'));
@@ -425,6 +496,8 @@ void main() {
         'shows validation error when display name is cleared and saved',
         (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
 
       // Clear the Display Name field.
       final nameField = find.ancestor(
@@ -446,6 +519,8 @@ void main() {
         'shows validation error for invalid farm size (non-numeric)',
         (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
 
       final farmSizeField = find.ancestor(
         of: find.text('5.0'),
@@ -463,6 +538,8 @@ void main() {
 
     testWidgets('shows validation error for negative farm size', (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
 
       final farmSizeField = find.ancestor(
         of: find.text('5.0'),
@@ -481,6 +558,8 @@ void main() {
         'shows validation error for invalid monthly volume (buyer)',
         (tester) async {
       await tester.pumpWidget(_buildScreen(_buyerProfile()));
+      await tester.pump();
+      await tester.pump();
 
       // Find Monthly Volume field by label text.
       final volumeField = find.ancestor(
@@ -503,6 +582,8 @@ void main() {
       final pb = ProfileBloc(userRepository: repo);
 
       await tester.pumpWidget(_buildScreen(_farmerProfile(), bloc: pb));
+      await tester.pump();
+      await tester.pump();
 
       await tester.ensureVisible(find.text('Save Changes'));
       await tester.tap(find.text('Save Changes'), warnIfMissed: false);
@@ -519,21 +600,29 @@ void main() {
   group('EditProfileScreen — Role and verification badges', () {
     testWidgets('shows Farmer badge for farmer profile', (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Farmer'), findsOneWidget);
     });
 
     testWidgets('shows Buyer badge for buyer profile', (tester) async {
       await tester.pumpWidget(_buildScreen(_buyerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Buyer'), findsOneWidget);
     });
 
     testWidgets('shows Email Verified for verified farmer', (tester) async {
       await tester.pumpWidget(_buildScreen(_farmerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Email Verified'), findsOneWidget);
     });
 
     testWidgets('shows Email Unverified for unverified buyer', (tester) async {
       await tester.pumpWidget(_buildScreen(_buyerProfile()));
+      await tester.pump();
+      await tester.pump();
       expect(find.text('Email Unverified'), findsOneWidget);
     });
   });
@@ -548,6 +637,7 @@ void main() {
       await tester.pumpWidget(
         _buildScreen(farmerProfile),
       );
+      await tester.pump();
       await tester.pump();
       expect(find.byType(EditProfileScreen), findsOneWidget);
 
@@ -567,6 +657,7 @@ void main() {
         (tester) async {
       final buyerProfile = _buyerProfile();
       await tester.pumpWidget(_buildScreen(buyerProfile));
+      await tester.pump();
       await tester.pump();
       expect(find.byType(EditProfileScreen), findsOneWidget);
 
@@ -589,6 +680,7 @@ void main() {
 
       final buyerProfile = _buyerProfile();
       await tester.pumpWidget(_buildScreen(buyerProfile));
+      await tester.pump();
       await tester.pump();
 
       // Tap Save Changes to trigger _buildUpdateMap with buyer fields

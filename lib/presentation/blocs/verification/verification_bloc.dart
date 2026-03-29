@@ -43,6 +43,7 @@ class VerificationBloc extends Bloc<VerificationEvent, VerificationState> {
       await _statusSub?.cancel();
       _statusSub = _repository.watchVerificationStatus(event.userId).listen(
         (s) => add(_VerificationStatusChanged(s)),
+        onError: (_) => _statusSub?.cancel(),
       );
     } catch (e) {
       emit(VerificationFailure(e.toString()));

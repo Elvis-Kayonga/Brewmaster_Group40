@@ -6,6 +6,8 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_core_platform_interface/test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -125,6 +127,13 @@ Widget _buildScreen({
   final userRepo = FakeUserRepository();
 
   return MaterialApp(
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
     home: MultiBlocProvider(
       providers: [
         BlocProvider<DashboardBloc>(
@@ -172,15 +181,18 @@ void main() {
   });
 
   group('FarmerDashboardScreen — loading/error states', () {
-    testWidgets('shows "Brew Master" in app bar', (tester) async {
+    testWidgets('shows "BrewMaster" in app bar', (tester) async {
       await tester.pumpWidget(_buildScreen(dashboardRepo: _NeverDashboardRepository()));
       await tester.pump();
-      expect(find.text('Brew Master'), findsOneWidget);
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('BrewMaster'), findsOneWidget);
     });
 
     testWidgets('shows loading indicator while dashboard is loading',
         (tester) async {
       await tester.pumpWidget(_buildScreen(dashboardRepo: _NeverDashboardRepository()));
+      await tester.pump();
       await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
@@ -190,11 +202,13 @@ void main() {
       await tester.pumpWidget(
           _buildScreen(dashboardRepo: _ErrorDashboardRepository('Server error')));
       await tester.pump();
+      await tester.pump();
       expect(find.textContaining('Server error'), findsOneWidget);
     });
 
     testWidgets('shows refresh icon button in app bar', (tester) async {
       await tester.pumpWidget(_buildScreen(dashboardRepo: _NeverDashboardRepository()));
+      await tester.pump();
       await tester.pump();
       expect(find.byIcon(Icons.refresh), findsOneWidget);
     });
@@ -205,12 +219,14 @@ void main() {
       await tester.pumpWidget(
           _buildScreen(dashboardRepo: _DataDashboardRepository(_makeDashboard())));
       await tester.pump();
+      await tester.pump();
       expect(find.textContaining('Farmer'), findsWidgets);
     });
 
     testWidgets('shows three tab labels', (tester) async {
       await tester.pumpWidget(
           _buildScreen(dashboardRepo: _DataDashboardRepository(_makeDashboard())));
+      await tester.pump();
       await tester.pump();
       expect(find.text('ANALYTICS'), findsOneWidget);
       expect(find.text('ORDERS'), findsOneWidget);
@@ -221,12 +237,14 @@ void main() {
       await tester.pumpWidget(
           _buildScreen(dashboardRepo: _DataDashboardRepository(_makeDashboard())));
       await tester.pump();
+      await tester.pump();
       expect(find.textContaining('Active Seller'), findsOneWidget);
     });
 
     testWidgets('shows TOTAL REVENUE metric card', (tester) async {
       await tester.pumpWidget(
           _buildScreen(dashboardRepo: _DataDashboardRepository(_makeDashboard())));
+      await tester.pump();
       await tester.pump();
       expect(find.text('TOTAL REVENUE'), findsOneWidget);
     });
@@ -235,12 +253,14 @@ void main() {
       await tester.pumpWidget(
           _buildScreen(dashboardRepo: _DataDashboardRepository(_makeDashboard())));
       await tester.pump();
+      await tester.pump();
       expect(find.text('ORDERS LOGGED'), findsOneWidget);
     });
 
     testWidgets('shows ACTIVE LOTS metric card', (tester) async {
       await tester.pumpWidget(
           _buildScreen(dashboardRepo: _DataDashboardRepository(_makeDashboard())));
+      await tester.pump();
       await tester.pump();
       expect(find.text('ACTIVE LOTS'), findsOneWidget);
     });
@@ -249,12 +269,14 @@ void main() {
       await tester.pumpWidget(
           _buildScreen(dashboardRepo: _DataDashboardRepository(_makeDashboard())));
       await tester.pump();
+      await tester.pump();
       expect(find.text('VELOCITY COMMAND'), findsOneWidget);
     });
 
     testWidgets('shows MARKET INTELLIGENCE section', (tester) async {
       await tester.pumpWidget(
           _buildScreen(dashboardRepo: _DataDashboardRepository(_makeDashboard())));
+      await tester.pump();
       await tester.pump();
       expect(find.text('MARKET INTELLIGENCE'), findsOneWidget);
     });
@@ -266,6 +288,7 @@ void main() {
                 _makeDashboard(responseRate: 75.0))),
       );
       await tester.pump();
+      await tester.pump();
       expect(find.textContaining('75%'), findsOneWidget);
     });
 
@@ -275,6 +298,7 @@ void main() {
             dashboardRepo:
                 _DataDashboardRepository(_makeDashboard(savedCount: 42))),
       );
+      await tester.pump();
       await tester.pump();
       expect(find.textContaining('Saved: 42'), findsOneWidget);
     });
@@ -286,6 +310,7 @@ void main() {
       await tester.pumpWidget(_buildScreen(
         dashboardRepo: _DataDashboardRepository(_makeDashboard()),
       ));
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.text('ORDERS'));
@@ -300,6 +325,7 @@ void main() {
         dashboardRepo: _DataDashboardRepository(_makeDashboard()),
         paymentState: const PaymentHistoryLoaded(transactions: []),
       ));
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.text('ORDERS'));
@@ -316,6 +342,7 @@ void main() {
         listingState: const FarmerListingsLoaded([]),
       ));
       await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.text('LISTINGS'));
       await tester.pump();
@@ -330,6 +357,7 @@ void main() {
         listingState: const FarmerListingsLoaded([]),
       ));
       await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.text('LISTINGS'));
       await tester.pump();
@@ -342,6 +370,7 @@ void main() {
         dashboardRepo: _DataDashboardRepository(_makeDashboard()),
         listingState: const ListingLoading(),
       ));
+      await tester.pump();
       await tester.pump();
 
       await tester.tap(find.text('LISTINGS'));
@@ -360,6 +389,7 @@ void main() {
             _makeDashboard(revenueChangePct: 25.0)),
       ));
       await tester.pump();
+      await tester.pump();
       expect(find.textContaining('Revenue is up'), findsOneWidget);
     });
 
@@ -370,6 +400,7 @@ void main() {
             _makeDashboard(revenueChangePct: 10.0)),
       ));
       await tester.pump();
+      await tester.pump();
       expect(find.textContaining('trending upward'), findsOneWidget);
     });
 
@@ -378,6 +409,7 @@ void main() {
         dashboardRepo: _DataDashboardRepository(
             _makeDashboard(revenueChangePct: -8.0)),
       ));
+      await tester.pump();
       await tester.pump();
       expect(find.textContaining('Revenue dipped'), findsOneWidget);
     });
@@ -389,6 +421,7 @@ void main() {
             _makeDashboard(responseRate: 90.0)),
       ));
       await tester.pump();
+      await tester.pump();
       expect(find.textContaining('excellent'), findsOneWidget);
     });
 
@@ -398,6 +431,7 @@ void main() {
         dashboardRepo: _DataDashboardRepository(
             _makeDashboard(responseRate: 30.0, conversations: 3)),
       ));
+      await tester.pump();
       await tester.pump();
       expect(find.textContaining('response rate'), findsOneWidget);
     });
@@ -409,6 +443,7 @@ void main() {
             _makeDashboard(activeListings: 0)),
       ));
       await tester.pump();
+      await tester.pump();
       expect(find.textContaining('no active listings'), findsOneWidget);
     });
 
@@ -418,6 +453,7 @@ void main() {
         dashboardRepo: _DataDashboardRepository(
             _makeDashboard(savedCount: 0, activeListings: 2)),
       ));
+      await tester.pump();
       await tester.pump();
       expect(find.textContaining('No buyers have saved your lots yet'), findsOneWidget);
     });
@@ -606,6 +642,7 @@ void main() {
         listingState: FarmerListingsLoaded([makeListing()]),
       ));
       await tester.pump();
+      await tester.pump();
       await tester.tap(find.text('LISTINGS'));
       await tester.pump();
 
@@ -618,6 +655,7 @@ void main() {
         dashboardRepo: _DataDashboardRepository(_makeDashboard()),
         listingState: FarmerListingsLoaded([makeListing()]),
       ));
+      await tester.pump();
       await tester.pump();
       await tester.tap(find.text('LISTINGS'));
       await tester.pump();
@@ -635,6 +673,7 @@ void main() {
         dashboardRepo: _DataDashboardRepository(_makeDashboard()),
         listingState: FarmerListingsLoaded([makeListing()]),
       ));
+      await tester.pump();
       await tester.pump();
       await tester.tap(find.text('LISTINGS'));
       await tester.pump();
@@ -654,6 +693,7 @@ void main() {
         listingState: FarmerListingsLoaded([makeListing()]),
       ));
       await tester.pump();
+      await tester.pump();
       await tester.tap(find.text('LISTINGS'));
       await tester.pump();
 
@@ -671,6 +711,7 @@ void main() {
         dashboardRepo: _DataDashboardRepository(_makeDashboard()),
         listingState: FarmerListingsLoaded([makeListing()]),
       ));
+      await tester.pump();
       await tester.pump();
       await tester.tap(find.text('LISTINGS'));
       await tester.pump();
@@ -733,6 +774,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(
           _buildScreen(dashboardRepo: _ErrorDashboardRepository('Load failed')));
+      await tester.pump();
       await tester.pump();
 
       expect(find.textContaining('Load failed'), findsOneWidget);

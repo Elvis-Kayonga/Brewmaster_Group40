@@ -30,7 +30,9 @@ import 'package:brewmaster/presentation/blocs/auth/auth_bloc.dart';
 import 'package:brewmaster/presentation/blocs/connectivity/connectivity_bloc.dart';
 import 'package:brewmaster/presentation/blocs/dashboard/dashboard_bloc.dart';
 import 'package:brewmaster/presentation/blocs/listing/listing_bloc.dart';
+import 'package:brewmaster/presentation/blocs/listing_detail/listing_detail_bloc.dart';
 import 'package:brewmaster/presentation/blocs/market_price/market_price_bloc.dart';
+import 'package:brewmaster/presentation/blocs/saved_lots/saved_lots_bloc.dart';
 import 'package:brewmaster/presentation/blocs/messaging/messaging_bloc.dart';
 import 'package:brewmaster/presentation/blocs/messaging/notification_bloc.dart';
 import 'package:brewmaster/presentation/blocs/payment/payment_bloc.dart';
@@ -41,6 +43,7 @@ import 'package:brewmaster/presentation/screens/auth/login_screen.dart';
 import 'package:brewmaster/presentation/widgets/common/home_shell.dart';
 import 'package:brewmaster/main.dart';
 import 'package:brewmaster/config/theme_notifier.dart';
+import 'package:brewmaster/config/locale_notifier.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -180,18 +183,25 @@ class _FakeMarketPriceRepository implements MarketPriceRepository {
 }
 
 ThemeNotifier? _themeNotifier;
+LocaleNotifier? _localeNotifier;
 
 Widget _buildApp({fb.User? user, UserProfile? profile}) {
   final authRepo = _FakeAuthRepository(user);
   final userRepo = _FakeUserRepository(profile);
-  return ChangeNotifierProvider<ThemeNotifier>.value(
-    value: _themeNotifier!,
+  final listingRepo = _FakeListingRepository();
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider<ThemeNotifier>.value(value: _themeNotifier!),
+      ChangeNotifierProvider<LocaleNotifier>.value(value: _localeNotifier!),
+    ],
     child: MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => AuthBloc(authRepository: authRepo, userRepository: userRepo)),
         BlocProvider(create: (_) => ProfileBloc(userRepository: userRepo)),
         BlocProvider(create: (_) => PaymentBloc(paymentRepository: _FakePaymentRepository())),
-        BlocProvider(create: (_) => ListingBloc(repository: _FakeListingRepository())),
+        BlocProvider(create: (_) => ListingBloc(repository: listingRepo)),
+        BlocProvider(create: (_) => ListingDetailBloc(repository: listingRepo)),
+        BlocProvider(create: (_) => SavedLotsBloc(userRepository: userRepo)),
         BlocProvider(create: (_) => MessagingBloc(repository: _FakeMessageRepository())),
         BlocProvider(create: (_) => NotificationBloc(repository: _FakeNotificationRepository())),
         BlocProvider(create: (_) => ConnectivityBloc(repository: _FakeOfflineSyncRepository())),
@@ -212,6 +222,7 @@ void main() {
   setUpAll(() async {
     SharedPreferences.setMockInitialValues({});
     _themeNotifier = await ThemeNotifier.load();
+    _localeNotifier = await LocaleNotifier.load();
   });
 
   group('Integration 7.1 – Unauthenticated launch → LoginScreen', () {
@@ -307,7 +318,7 @@ void main() {
       await tester.pumpWidget(_buildApp(user: fakeUser, profile: fakeProfile));
       await tester.pumpAndSettle();
 
-      expect(find.text('Brew Master'), findsOneWidget);
+      expect(find.text('BrewMaster'), findsOneWidget);
     });
 
     testWidgets('Authenticated launch does not show login UI elements',

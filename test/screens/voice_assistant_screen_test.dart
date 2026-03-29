@@ -26,8 +26,9 @@ Widget _wrap() => MaterialApp(
 
 void main() {
   group('VoiceAssistantScreen — idle state', () {
-    testWidgets('shows "Brew Master" app bar title', (tester) async {
+    testWidgets('shows "BrewMaster" app bar title', (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
       expect(find.text('Brew Master'), findsOneWidget);
     });
@@ -35,11 +36,13 @@ void main() {
     testWidgets('shows mic icon in idle state', (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
       expect(find.byIcon(Icons.mic_none_rounded), findsOneWidget);
     });
 
     testWidgets('shows "Chief Curator" title in idle state', (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
       expect(find.text('Chief Curator'), findsOneWidget);
     });
@@ -48,11 +51,13 @@ void main() {
         (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
       expect(find.text('INITIALIZE SESSION'), findsOneWidget);
     });
 
     testWidgets('shows greeting description text', (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
       expect(find.textContaining('brewing chemistry'), findsOneWidget);
     });
@@ -60,11 +65,13 @@ void main() {
     testWidgets('shows chevron back icon in app bar', (tester) async {
       await tester.pumpWidget(_wrap());
       await tester.pump();
+      await tester.pump();
       expect(find.byIcon(Icons.chevron_left), findsOneWidget);
     });
 
     testWidgets('shows person icon in app bar', (tester) async {
       await tester.pumpWidget(_wrap());
+      await tester.pump();
       await tester.pump();
       expect(find.byIcon(Icons.person), findsOneWidget);
     });

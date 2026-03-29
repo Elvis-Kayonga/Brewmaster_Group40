@@ -1,6 +1,8 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_core_platform_interface/test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:brewmaster/config/localization/app_localizations.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -21,6 +23,13 @@ Widget _buildScreen({
 }) {
   final vb = verificationBloc ?? VerificationBloc(repository: FakeVerificationRepository());
   return MaterialApp(
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
     home: MultiBlocProvider(
       providers: [
         BlocProvider<AuthBloc>(create: (_) => authBloc),
@@ -53,6 +62,8 @@ void main() {
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
       await tester.pump();
+      await tester.pump();
+      await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
@@ -66,6 +77,7 @@ void main() {
         ..emit(ProfileLoaded(profile));
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
+      await tester.pump();
       await tester.pump();
       expect(find.text('Test User'), findsOneWidget);
     });
@@ -81,6 +93,7 @@ void main() {
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
       await tester.pump();
+      await tester.pump();
       expect(find.text('test@test.com'), findsOneWidget);
     });
 
@@ -95,6 +108,7 @@ void main() {
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Farmer'), findsOneWidget);
     });
 
@@ -108,6 +122,7 @@ void main() {
         ..emit(ProfileLoaded(profile));
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
+      await tester.pump();
       await tester.pump();
       expect(find.text('Edit Profile'), findsOneWidget);
     });
@@ -124,6 +139,7 @@ void main() {
         ..emit(ProfileLoaded(profile));
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
+      await tester.pump();
       await tester.pump();
 
       final editButton = find.text('Edit Profile');
@@ -148,6 +164,7 @@ void main() {
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Pending'), findsOneWidget);
     });
 
@@ -163,6 +180,7 @@ void main() {
         ..emit(ProfileLoaded(profile));
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
+      await tester.pump();
       await tester.pump();
       expect(find.text('Verified'), findsOneWidget);
     });
@@ -181,6 +199,7 @@ void main() {
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Get Verified'), findsOneWidget);
     });
 
@@ -198,6 +217,7 @@ void main() {
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Get Verified'), findsNothing);
     });
 
@@ -214,6 +234,7 @@ void main() {
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Farm Details'), findsOneWidget);
     });
 
@@ -227,6 +248,7 @@ void main() {
         ..emit(ProfileLoaded(profile));
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
+      await tester.pump();
       await tester.pump();
       // makeProfile sets farmSize: 5.0
       expect(find.textContaining('5.0 hectares'), findsOneWidget);
@@ -242,6 +264,7 @@ void main() {
         ..emit(ProfileLoaded(profile));
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
+      await tester.pump();
       await tester.pump();
       // makeProfile sets farmLocation: 'Kigali'
       expect(find.text('Kigali'), findsOneWidget);
@@ -260,6 +283,7 @@ void main() {
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Business Details'), findsOneWidget);
     });
 
@@ -273,6 +297,7 @@ void main() {
         ..emit(ProfileLoaded(profile));
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
+      await tester.pump();
       await tester.pump();
       // makeProfile sets businessName: 'CoffeeCo'
       expect(find.text('CoffeeCo'), findsOneWidget);
@@ -289,6 +314,7 @@ void main() {
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
       await tester.pump();
+      await tester.pump();
       // makeProfile sets businessType: 'Roaster'
       expect(find.text('Roaster'), findsOneWidget);
     });
@@ -304,6 +330,7 @@ void main() {
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Buyer'), findsOneWidget);
     });
 
@@ -318,6 +345,7 @@ void main() {
         ..emit(ProfileLoaded(profile));
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
+      await tester.pump();
       await tester.pump();
       expect(find.text('Farm Details'), findsNothing);
     });
@@ -337,6 +365,7 @@ void main() {
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Get Verified'), findsNothing);
     });
 
@@ -353,7 +382,8 @@ void main() {
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
       await tester.pump();
-      expect(find.text('Sign out'), findsOneWidget);
+      await tester.pump();
+      expect(find.text('Sign Out'), findsOneWidget);
     });
 
     testWidgets('tapping Sign out dispatches AuthSignOutRequested event',
@@ -369,8 +399,9 @@ void main() {
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
       await tester.pump();
+      await tester.pump();
 
-      await tester.tap(find.text('Sign out'));
+      await tester.tap(find.text('Sign Out'));
       await tester.pump();
       // After tapping, the AuthBloc should have processed the sign-out event.
       // We verify no exception was thrown (FakeAuthRepository.signOut is a no-op).
@@ -390,6 +421,7 @@ void main() {
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Email Verified'), findsOneWidget);
     });
 
@@ -405,6 +437,7 @@ void main() {
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Email Unverified'), findsOneWidget);
     });
 
@@ -419,6 +452,7 @@ void main() {
         ..emit(ProfileLoaded(profile));
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
+      await tester.pump();
       await tester.pump();
       expect(find.text('Verify Email'), findsOneWidget);
     });
@@ -436,6 +470,7 @@ void main() {
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
       await tester.pump();
+      await tester.pump();
       expect(find.text('Settings'), findsOneWidget);
     });
 
@@ -450,6 +485,7 @@ void main() {
         ..emit(const ProfileFailure('Something went wrong'));
 
       await tester.pumpWidget(_buildScreen(authBloc: ab, profileBloc: pb));
+      await tester.pump();
       await tester.pump();
       expect(find.text('Something went wrong'), findsOneWidget);
     });

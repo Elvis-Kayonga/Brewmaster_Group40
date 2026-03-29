@@ -229,16 +229,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         const SizedBox(height: 12),
                         // Always show price in USD (canonical currency)
                         _buildSummaryRow(
-                          '${loc.amountUsd}:',
+                          loc.amountUsd,
                           CurrencyUtils.format(widget.amount, 'USD'),
                         ),
                         _buildSummaryRow(
-                          '${loc.transactionFee}:',
+                          loc.transactionFee,
                           CurrencyUtils.format(0, 'USD'),
                         ),
                         const Divider(height: 20),
                         _buildSummaryRow(
-                          '${loc.totalUsd}:',
+                          loc.totalUsd,
                           CurrencyUtils.format(widget.amount, 'USD'),
                           isTotal: true,
                         ),
