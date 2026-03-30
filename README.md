@@ -124,11 +124,11 @@ flutter build appbundle --release
 
 | Name | Role | GitHub |
 | --- | --- | --- |
-| Ryan Apreala | UI/UX · Offline Sync · Integration · Testing | rapreala |
-| Elvis Kayonga | Firebase · Auth · Profiles · Verification | Elvis-Kayonga |
-| Dan Paul Dushime | Payments · Escrow | DUSHIME Dan Paul |
-| Justine Neema | Messaging · Notifications | justine-neema |
-| Clarisse | Listings · Search | Clarisse-12 |
+| Ryan Apreala | Offline Sync · Integration · Testing Firebase · Auth · Profiles · Verification| rapreala |
+| Elvis Kayonga | Payments · Escrow | Elvis-Kayonga | 
+| Dan Paul Dushime | UI/UX  | DUSHIME Dan Paul |
+| Justine Neema | Listings · Search | justine-neema |
+| Clarisse | Messaging · Notifications | Clarisse-12 |
 | Claudia Adeline | Dashboard · Market Prices | iclaudiaadeline |
 
 ## AI Tool Disclosure
